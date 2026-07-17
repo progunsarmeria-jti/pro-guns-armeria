@@ -1,5 +1,5 @@
 import React from 'react'
-import { Users, FileText, Calculator, DollarSign, Settings, Shield, Crosshair } from 'lucide-react'
+import { Users, FileText, Calculator, DollarSign, Settings } from 'lucide-react'
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const menuItems = [
@@ -17,16 +17,16 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       borderRight: '1px solid var(--border-color)',
       display: 'flex',
       flexDirection: 'column',
-      minHeight: 'calc(100vh - 65px)'
+      minHeight: 'calc(100vh - 70px)'
     }}>
       <div style={{ padding: '1.5rem 1.25rem 1rem 1.25rem' }}>
         <div style={{
-          fontSize: '0.75rem',
+          fontSize: '0.72rem',
           textTransform: 'uppercase',
           letterSpacing: '1px',
           color: 'var(--text-muted)',
           fontWeight: '600',
-          marginBottom: '0.75rem'
+          marginBottom: '0.85rem'
         }}>
           Portal G-CAC - Pró Guns
         </div>
@@ -46,9 +46,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   padding: '0.75rem 0.9rem',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: isActive ? 'var(--gold-glow)' : 'transparent',
-                  color: isActive ? 'var(--gold-primary)' : 'var(--text-muted)',
-                  borderLeft: isActive ? '3px solid var(--gold-primary)' : '3px solid transparent',
+                  backgroundColor: isActive ? 'rgba(139, 38, 42, 0.18)' : 'transparent',
+                  color: isActive ? '#FFFFFF' : 'var(--text-muted)',
+                  borderLeft: isActive ? '3px solid var(--red-light)' : '3px solid transparent',
                   fontWeight: isActive ? '600' : '400',
                   cursor: 'pointer',
                   fontSize: '0.92rem',
@@ -56,7 +56,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Icon size={18} color={isActive ? 'var(--gold-primary)' : '#8E8EA0'} />
+                  <Icon size={18} color={isActive ? '#F87171' : '#8E96A0'} />
                   <span>{item.label}</span>
                 </div>
                 {item.badgeCount && (
@@ -64,8 +64,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     fontSize: '0.7rem',
                     padding: '0.15rem 0.45rem',
                     borderRadius: '10px',
-                    backgroundColor: isActive ? 'var(--gold-primary)' : 'var(--border-color)',
-                    color: isActive ? '#0A0A0C' : 'var(--text-main)',
+                    backgroundColor: isActive ? 'var(--red-tactical)' : 'var(--border-color)',
+                    color: '#FFFFFF',
                     fontWeight: '700'
                   }}>
                     {item.badgeCount}
@@ -77,27 +77,21 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </nav>
       </div>
 
+      {/* Footer do Sidebar com a Logo Pequena */}
       <div style={{
         marginTop: 'auto',
         padding: '1.25rem',
         borderTop: '1px solid var(--border-color)',
-        backgroundColor: 'rgba(0,0,0,0.2)'
+        backgroundColor: 'rgba(0,0,0,0.25)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--gold-glow)',
-            border: '1px solid var(--border-gold)',
-            display: 'flex',
-            alignItems: 'center',
-            justify: 'center'
-          }}>
-            <Crosshair size={18} color="var(--gold-primary)" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Logo Pró Guns"
+            style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+          />
           <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>
               Pró Guns Armeria
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>

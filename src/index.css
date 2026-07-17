@@ -1,27 +1,31 @@
-/* CSS DESIGN SYSTEM - PRÓ GUNS ARMERIA */
+/* CSS DESIGN SYSTEM - PRÓ GUNS ARMERIA (PALETA LOGO OFICIAL) */
 
 :root {
-  --bg-dark: #0A0A0C;
-  --bg-card: #121216;
-  --bg-card-hover: #1A1A20;
-  --bg-input: #16161C;
+  --bg-dark: #0A0B0D;
+  --bg-card: #121418;
+  --bg-card-hover: #1A1D24;
+  --bg-input: #161920;
   
-  --border-color: #262630;
-  --border-gold: rgba(212, 175, 55, 0.3);
+  --border-color: #262B36;
+  --border-green: rgba(19, 70, 51, 0.4);
+  --border-red: rgba(139, 38, 42, 0.4);
   
-  --gold-primary: #D4AF37;
-  --gold-hover: #F3C623;
+  /* Cores da Logo Pró Guns */
+  --green-tactical: #134633;
+  --green-hover: #1A5B43;
+  --green-light: #227859;
+  
+  --red-tactical: #8B262A;
+  --red-hover: #A32E33;
+  --red-light: #C0393E;
+  
+  --gold-accent: #D4AF37;
   --gold-glow: rgba(212, 175, 55, 0.15);
   
-  --text-main: #F0F0F5;
-  --text-muted: #8E8EA0;
-  --text-gold: #E5C158;
-  
-  --status-green: #10B981;
-  --status-yellow: #F59E0B;
-  --status-blue: #3B82F6;
-  --status-purple: #8B5CF6;
-  --status-red: #EF4444;
+  --text-main: #F0F2F5;
+  --text-muted: #8E96A0;
+  --text-green: #34D399;
+  --text-red: #F87171;
 
   --font-heading: 'Cinzel', serif;
   --font-body: 'Inter', sans-serif;
@@ -55,7 +59,7 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gold-primary);
+  background: var(--red-tactical);
 }
 
 /* Tipografia */
@@ -64,25 +68,64 @@ h1, h2, h3, .brand-font {
   letter-spacing: 0.5px;
 }
 
-/* Componentes Globais */
-.btn-gold {
-  background: linear-gradient(135deg, #D4AF37 0%, #AA820A 100%);
-  color: #0A0A0C;
+/* Botões */
+.btn-red {
+  background: linear-gradient(135deg, #8B262A 0%, #60181B 100%);
+  color: #FFFFFF;
   font-weight: 600;
   padding: 0.6rem 1.2rem;
   border-radius: 6px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 2px 10px rgba(139, 38, 42, 0.3);
+}
+.btn-red:hover {
+  background: linear-gradient(135deg, #A32E33 0%, #751E22 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(139, 38, 42, 0.45);
+}
+
+.btn-green {
+  background: linear-gradient(135deg, #134633 0%, #0D2E22 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(19, 70, 51, 0.3);
+}
+.btn-green:hover {
+  background: linear-gradient(135deg, #1A5B43 0%, #113D2D 100%);
+  transform: translateY(-1px);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #8B262A 0%, #134633 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 12px rgba(139, 38, 42, 0.35);
 }
 .btn-gold:hover {
-  background: linear-gradient(135deg, #F3C623 0%, #C89B15 100%);
+  background: linear-gradient(135deg, #A32E33 0%, #1A5B43 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);
+  border-color: var(--gold-accent);
 }
 
 .btn-secondary {
@@ -99,16 +142,17 @@ h1, h2, h3, .brand-font {
 }
 .btn-secondary:hover {
   background-color: var(--bg-card-hover);
-  border-color: var(--gold-primary);
-  color: var(--gold-primary);
+  border-color: var(--red-light);
+  color: var(--text-main);
 }
 
+/* Cards */
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .input-field {
@@ -123,8 +167,8 @@ h1, h2, h3, .brand-font {
   transition: border-color 0.2s;
 }
 .input-field:focus {
-  border-color: var(--gold-primary);
-  box-shadow: 0 0 0 2px var(--gold-glow);
+  border-color: var(--red-light);
+  box-shadow: 0 0 0 2px rgba(139, 38, 42, 0.25);
 }
 
 /* Badges */
@@ -137,11 +181,10 @@ h1, h2, h3, .brand-font {
   align-items: center;
   gap: 0.3rem;
 }
-.badge-green { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-green { background: rgba(19, 70, 51, 0.3); color: #34D399; border: 1px solid rgba(52, 211, 153, 0.3); }
+.badge-red { background: rgba(139, 38, 42, 0.3); color: #F87171; border: 1px solid rgba(248, 113, 113, 0.3); }
 .badge-yellow { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
 .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
-.badge-purple { background: rgba(139, 92, 246, 0.15); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.3); }
-.badge-red { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
 /* Printable document styles */
 @media print {

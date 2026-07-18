@@ -107,12 +107,14 @@ export default function ModuloOrdens({
     alert(`OS #${ordem.numero_os} concluída! Receita lançada no Financeiro.`)
   }
 
-  // Filtro de ordens
+  // Filtro de ordens — sempre em ordem numérica crescente de emissão
+  const ordensOrdenadas = [...ordens].sort((a, b) => (a.numero_os || 0) - (b.numero_os || 0))
+
   const ordensFiltradas = filtroStatus === 'TODAS'
-    ? ordens
+    ? ordensOrdenadas
     : filtroStatus === 'EM ABERTO'
-      ? ordens.filter(o => o.status !== 'CONCLUÍDO')
-      : ordens.filter(o => o.status === filtroStatus)
+      ? ordensOrdenadas.filter(o => o.status !== 'CONCLUÍDO')
+      : ordensOrdenadas.filter(o => o.status === filtroStatus)
 
   const ordensPorStatus = STATUS_LISTA.reduce((acc, s) => {
     acc[s] = ordens.filter(o => o.status === s).length

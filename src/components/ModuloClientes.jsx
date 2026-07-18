@@ -4,6 +4,7 @@ import {
   FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
+import { maskCPF, maskRG, maskTelefone } from '../lib/masks'
 
 export default function ModuloClientes({
   clientes,
@@ -561,11 +562,22 @@ export default function ModuloClientes({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
-                    <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} />
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="000.000.000-00"
+                      value={maskCPF(clienteForm.cpf)}
+                      onChange={e => setClienteForm({...clienteForm, cpf: maskCPF(e.target.value)})}
+                    />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG</label>
-                    <input className="input-field" value={clienteForm.rg} onChange={e => setClienteForm({...clienteForm, rg: e.target.value})} />
+                    <input
+                      className="input-field"
+                      placeholder="00.000.000-0"
+                      value={maskRG(clienteForm.rg)}
+                      onChange={e => setClienteForm({...clienteForm, rg: maskRG(e.target.value)})}
+                    />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data de Nasc.</label>
@@ -576,7 +588,13 @@ export default function ModuloClientes({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
-                    <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} />
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="(00) 00000-0000"
+                      value={maskTelefone(clienteForm.telefone)}
+                      onChange={e => setClienteForm({...clienteForm, telefone: maskTelefone(e.target.value)})}
+                    />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>
@@ -900,12 +918,23 @@ export default function ModuloClientes({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
-                  <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} placeholder="000.000.000-00" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF * (Máscara Automática)</label>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="000.000.000-00"
+                    value={maskCPF(clienteForm.cpf)}
+                    onChange={e => setClienteForm({...clienteForm, cpf: maskCPF(e.target.value)})}
+                  />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG</label>
-                  <input className="input-field" value={clienteForm.rg} onChange={e => setClienteForm({...clienteForm, rg: e.target.value})} placeholder="00.000.000-0" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG (Máscara Automática)</label>
+                  <input
+                    className="input-field"
+                    placeholder="00.000.000-0"
+                    value={maskRG(clienteForm.rg)}
+                    onChange={e => setClienteForm({...clienteForm, rg: maskRG(e.target.value)})}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data Nasc.</label>
@@ -915,8 +944,14 @@ export default function ModuloClientes({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
-                  <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} placeholder="(11) 99999-8888" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) * (Máscara Automática)</label>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="(00) 00000-0000"
+                    value={maskTelefone(clienteForm.telefone)}
+                    onChange={e => setClienteForm({...clienteForm, telefone: maskTelefone(e.target.value)})}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>

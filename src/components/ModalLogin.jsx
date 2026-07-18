@@ -1,10 +1,22 @@
 import React, { useState } from 'react'
 import { Lock, UserCheck, Shield, Key, ArrowRight, User, AlertCircle } from 'lucide-react'
+import { maskCPF } from '../lib/masks'
 
 export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, onClose, config }) {
   const [loginInput, setLoginInput] = useState('')
   const [senhaDigitada, setSenhaDigitada] = useState('')
   const [erroLogin, setErroLogin] = useState('')
+
+  const handleInputChange = (val) => {
+    setErroLogin('')
+    // Se digitou apenas números, aplica máscara de CPF automaticamente
+    const limpo = val.replace(/\D/g, '')
+    if (limpo.length > 0 && !val.includes('@')) {
+      setLoginInput(maskCPF(val))
+    } else {
+      setLoginInput(val)
+    }
+  }
 
   const handleEfetuarLogin = (e) => {
     e.preventDefault()
@@ -88,7 +100,7 @@ export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, 
                 className="input-field"
                 placeholder="Ex: 000.000.000-00 ou admin@proguns.com.br"
                 value={loginInput}
-                onChange={e => { setLoginInput(e.target.value); setErroLogin(''); }}
+                onChange={e => handleInputChange(e.target.value)}
                 style={{ paddingLeft: '2.6rem', fontWeight: '600' }}
                 autoFocus
               />

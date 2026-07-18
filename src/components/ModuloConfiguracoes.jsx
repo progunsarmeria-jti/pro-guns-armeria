@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag } from 'lucide-react'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
+import { maskCNPJ, maskTelefone } from '../lib/masks'
 
 export default function ModuloConfiguracoes({ config, setConfig }) {
   const [formData, setFormData] = useState(config)
@@ -182,8 +183,13 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CNPJ *</label>
-                  <input className="input-field" value={formData.cnpj || ''} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CNPJ * (Máscara Automática)</label>
+                  <input
+                    className="input-field"
+                    placeholder="00.000.000/0000-00"
+                    value={maskCNPJ(formData.cnpj || '')}
+                    onChange={e => setFormData({...formData, cnpj: maskCNPJ(e.target.value)})}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N° CR da Armeria *</label>
@@ -197,8 +203,13 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp *</label>
-                  <input className="input-field" value={formData.whatsapp || ''} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp * (Máscara Automática)</label>
+                  <input
+                    className="input-field"
+                    placeholder="(00) 00000-0000"
+                    value={maskTelefone(formData.whatsapp || '')}
+                    onChange={e => setFormData({...formData, whatsapp: maskTelefone(e.target.value)})}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail Oficial *</label>

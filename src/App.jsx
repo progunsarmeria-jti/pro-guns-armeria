@@ -27,6 +27,17 @@ export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(INITIAL_USUARIOS[0]) // Admin Master por padrão
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
 
+  // Configurações Institucionais da Armeria com Persistência em LocalStorage
+  const [config, setConfig] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_CONFIG')
+    return saved ? JSON.parse(saved) : INITIAL_CONFIG
+  })
+
+  const handleAtualizarConfig = (novosDados) => {
+    setConfig(novosDados)
+    localStorage.setItem('PROGUNS_CONFIG', JSON.stringify(novosDados))
+  }
+
   // Central de Notificações / Alertas da Recepção
   const [notificacoes, setNotificacoes] = useState([
     {
@@ -46,7 +57,6 @@ export default function App() {
   const [ordens, setOrdens] = useState(INITIAL_ORDENS)
   const [orcamentos, setOrcamentos] = useState(INITIAL_ORCAMENTOS)
   const [financeiro, setFinanceiro] = useState(INITIAL_FINANCEIRO)
-  const [config, setConfig] = useState(INITIAL_CONFIG)
 
   // Verifica se o usuário logado possui permissão para acessar a aba atual. Se não, redireciona.
   useEffect(() => {
@@ -88,6 +98,7 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           usuarioLogado={usuarioLogado}
+          config={config}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
@@ -106,6 +117,7 @@ export default function App() {
               setActiveTab={setActiveTab}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}
+              config={config}
             />
           )}
 
@@ -120,6 +132,7 @@ export default function App() {
               usuarioLogado={usuarioLogado}
               notificacoes={notificacoes}
               setNotificacoes={setNotificacoes}
+              config={config}
             />
           )}
 
@@ -132,6 +145,7 @@ export default function App() {
               setOrdens={setOrdens}
               financeiro={financeiro}
               setFinanceiro={setFinanceiro}
+              config={config}
             />
           )}
 
@@ -153,7 +167,7 @@ export default function App() {
           {activeTab === 'configuracoes' && (
             <ModuloConfiguracoes
               config={config}
-              setConfig={setConfig}
+              setConfig={handleAtualizarConfig}
             />
           )}
         </main>

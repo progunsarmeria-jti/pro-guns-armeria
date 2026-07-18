@@ -9,8 +9,10 @@ export default function ModuloOrdens({
   financeiro,
   setFinanceiro,
   perfilOperador,
+  usuarioLogado,
   notificacoes,
-  setNotificacoes
+  setNotificacoes,
+  config
 }) {
   const [showModalOrdem, setShowModalOrdem] = useState(false)
   const [docModalOrdem, setDocModalOrdem] = useState(null)
@@ -86,7 +88,7 @@ export default function ModuloOrdens({
     const limpo = telefone.replace(/\D/g, '')
     const numero = limpo.length <= 11 ? `55${limpo}` : limpo
 
-    const mensagemText = `Olá ${ordem.cliente_nome}, aqui é da Pró Guns Armeria! 🛡️\n\nConcluímos a análise técnica da sua ${ordem.marca_arma} ${ordem.modelo_arma} (OS #${ordem.numero_os}).\n\n🛠️ *Laudo do Armeiro:* ${ordem.diagnostico_armeiro || 'Revisão e manutenção recomendada.'}\n💡 *Solução:* ${ordem.solucao_proposta || 'Manutenção técnica'}\n💰 *Valor Total:* R$ ${(ordem.valor_servico || 0).toFixed(2)}\n\nPodemos aprovar o início do serviço?`
+    const mensagemText = `Olá ${ordem.cliente_nome}, aqui é da ${config?.nome_fantasia || 'Pró Guns Armeria'}! 🛡️\n\nConcluímos a análise técnica da sua ${ordem.marca_arma} ${ordem.modelo_arma} (OS #${ordem.numero_os}).\n\n🛠️ *Laudo do Armeiro:* ${ordem.diagnostico_armeiro || 'Revisão e manutenção recomendada.'}\n💡 *Solução:* ${ordem.solucao_proposta || 'Manutenção técnica'}\n💰 *Valor Total:* R$ ${(ordem.valor_servico || 0).toFixed(2)}\n\nPodemos aprovar o início do serviço?`
 
     window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensagemText)}`, '_blank')
   }
@@ -411,9 +413,13 @@ export default function ModuloOrdens({
           }}>
             <div className="print-area">
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000' }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000' }}>
+                  {(config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA & DESPACHANTARIA').toUpperCase()}
+                </h2>
                 <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#333' }}>COMPROVANTE DE ENTRADA DE EQUIPAMENTO — OS #{docModalOrdem.numero_os}</div>
-                <div style={{ fontSize: '0.75rem', color: '#555' }}>CR Armeria N° 998877/2ª RM — Jataí/GO</div>
+                <div style={{ fontSize: '0.75rem', color: '#555' }}>
+                  {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.cidade || 'Jataí'}/{config?.uf || 'GO'}
+                </div>
               </div>
 
               <div style={{ fontSize: '0.88rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -442,7 +448,7 @@ export default function ModuloOrdens({
                 </div>
                 <div>
                   <div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>
-                    Pró Guns Armeria
+                    {config?.nome_fantasia || 'Pró Guns Armeria'}
                     <br /> Responsável Técnico Armeiro
                   </div>
                 </div>

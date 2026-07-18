@@ -1,7 +1,7 @@
 import React from 'react'
 import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield } from 'lucide-react'
 
-export default function Sidebar({ activeTab, setActiveTab, usuarioLogado }) {
+export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config }) {
   const permissoes = usuarioLogado?.permissoes || {}
 
   const menuItems = [
@@ -86,7 +86,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado }) {
         </nav>
       </div>
 
-      {/* Footer do Sidebar com a Logo Pequena */}
+      {/* Footer do Sidebar com a Logo Pequena e Dados da Armeria Dinâmicos */}
       <div style={{
         marginTop: 'auto',
         padding: '1.25rem',
@@ -101,10 +101,10 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado }) {
           />
           <div>
             <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>
-              Pró Guns Armeria
+              {config?.nome_fantasia || 'Pró Guns Armeria'}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              CR-998877/2ª RM
+              {config?.cr_armeria || 'CR-998877/2ª RM'}
             </div>
           </div>
         </div>

@@ -19,6 +19,22 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
 
+  // Perfil de Acesso Ativo ('recepcao' | 'armeiro')
+  const [perfilOperador, setPerfilOperador] = useState('recepcao')
+
+  // Central de Notificações / Alertas da Recepção
+  const [notificacoes, setNotificacoes] = useState([
+    {
+      id: 'n1',
+      os_numero: 1002,
+      cliente_nome: 'ROBERTO ALVES MENDES',
+      mensagem: 'Armeiro concluiu o laudo técnico da Carabina Rossi. Aguardando contato para aprovação com cliente.',
+      tipo: 'LAUDO_PRONTO',
+      lida: false,
+      created_at: 'Há 10 min'
+    }
+  ])
+
   // Data state
   const [clientes, setClientes] = useState(INITIAL_CLIENTES)
   const [armas, setArmas] = useState(INITIAL_ARMAS)
@@ -29,7 +45,14 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
-      <Navbar activeTab={activeTab} />
+      <Navbar
+        activeTab={activeTab}
+        perfilOperador={perfilOperador}
+        setPerfilOperador={setPerfilOperador}
+        notificacoes={notificacoes}
+        setNotificacoes={setNotificacoes}
+        setActiveTab={setActiveTab}
+      />
 
       <div style={{ display: 'flex', flex: 1 }}>
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -48,6 +71,7 @@ export default function App() {
               financeiro={financeiro}
               setFinanceiro={setFinanceiro}
               setActiveTab={setActiveTab}
+              perfilOperador={perfilOperador}
             />
           )}
 
@@ -56,6 +80,11 @@ export default function App() {
               ordens={ordens}
               setOrdens={setOrdens}
               clientes={clientes}
+              financeiro={financeiro}
+              setFinanceiro={setFinanceiro}
+              perfilOperador={perfilOperador}
+              notificacoes={notificacoes}
+              setNotificacoes={setNotificacoes}
             />
           )}
 

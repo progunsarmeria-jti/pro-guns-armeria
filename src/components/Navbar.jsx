@@ -1,14 +1,29 @@
-import React from 'react'
-import { Bell, Database } from 'lucide-react'
+import React, { useState } from 'react'
+import { Bell, Database, Shield, Wrench, Check, X, MessageCircle } from 'lucide-react'
 import { isSupabaseConfigured } from '../lib/supabase'
 
-export default function Navbar({ activeTab }) {
+export default function Navbar({
+  activeTab,
+  perfilOperador,
+  setPerfilOperador,
+  notificacoes,
+  setNotificacoes,
+  setActiveTab
+}) {
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false)
+
   const titles = {
     clientes: 'Clientes (CACs & Acervo)',
-    ordens: 'Ordens de Serviço (Processos GCAC)',
+    ordens: 'Ordens de Serviço (Armeria & Manutenção)',
     orcamentos: 'Orçamentos & Propostas',
     financeiro: 'Financeiro & Fluxo de Caixa',
     configuracoes: 'Configurações do Sistema'
+  }
+
+  const naoLidas = notificacoes.filter(n => !n.lida).length
+
+  const handleMarcarTodasLidas = () => {
+    setNotificacoes(notificacoes.map(n => ({ ...n, lida: true })))
   }
 
   return (
@@ -55,44 +70,169 @@ export default function Navbar({ activeTab }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* SELETOR DE PERFIL MULTIUSUÁRIO (RECEPÇÃO VS ARMEIRO) */}
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'var(--bg-input)',
+          borderRadius: '20px',
+          border: '1px solid var(--border-color)',
+          padding: '2px'
+        }}>
+          <button
+            onClick={() => setPerfilOperador('recepcao')}
+            style={{
+              padding: '0.35rem 0.85rem',
+              borderRadius: '16px',
+              border: 'none',
+              backgroundColor: perfilOperador === 'recepcao' ? 'var(--red-tactical)' : 'transparent',
+              color: perfilOperador === 'recepcao' ? '#FFFFFF' : 'var(--text-muted)',
+              fontSize: '0.78rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Shield size={14} />
+            <span>🏢 RECEPÇÃO</span>
+          </button>
+
+          <button
+            onClick={() => setPerfilOperador('armeiro')}
+            style={{
+              padding: '0.35rem 0.85rem',
+              borderRadius: '16px',
+              border: 'none',
+              backgroundColor: perfilOperador === 'armeiro' ? 'var(--green-tactical)' : 'transparent',
+              color: perfilOperador === 'armeiro' ? '#FFFFFF' : 'var(--text-muted)',
+              fontSize: '0.78rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Wrench size={14} />
+            <span>🛠️ ARMEIRO</span>
+          </button>
+        </div>
+
         {/* Supabase Status Badge */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.4rem',
-          fontSize: '0.78rem',
+          fontSize: '0.75rem',
           padding: '0.35rem 0.75rem',
           borderRadius: '20px',
           backgroundColor: isSupabaseConfigured ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
           border: `1px solid ${isSupabaseConfigured ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
           color: isSupabaseConfigured ? '#34D399' : '#FBBF24'
         }}>
-          <Database size={14} />
-          <span>{isSupabaseConfigured ? 'Supabase Conectado' : 'Modo Demonstrativo Local'}</span>
+          <Database size={13} />
+          <span>{isSupabaseConfigured ? 'Supabase' : 'Local'}</span>
         </div>
 
-        <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--bg-input)',
-          border: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justify: 'center',
-          cursor: 'pointer',
-          position: 'relative'
-        }}>
-          <Bell size={18} color="var(--text-muted)" />
-          <span style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--red-light)'
-          }}></span>
+        {/* SININHO DE NOTIFICAÇÕES EM TEMPO REAL */}
+        <div style={{ position: 'relative' }}>
+          <div
+            onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--bg-input)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+          >
+            <Bell size={18} color={naoLidas > 0 ? '#F87171' : 'var(--text-muted)'} />
+            {naoLidas > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                backgroundColor: '#F87171',
+                color: '#FFFFFF',
+                fontSize: '0.68rem',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center'
+              }}>
+                {naoLidas}
+              </span>
+            )}
+          </div>
+
+          {/* Dropdown de Notificações */}
+          {showNotifDropdown && (
+            <div style={{
+              position: 'absolute',
+              top: '120%',
+              right: 0,
+              width: '340px',
+              backgroundColor: '#161920',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.7)',
+              zIndex: 200,
+              padding: '1rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Central de Alertas</span>
+                {naoLidas > 0 && (
+                  <button onClick={handleMarcarTodasLidas} style={{ background: 'none', border: 'none', color: '#60A5FA', fontSize: '0.72rem', cursor: 'pointer' }}>
+                    Marcar lidas
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '280px', overflowY: 'auto' }}>
+                {notificacoes.length === 0 ? (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
+                    Nenhum alerta no momento.
+                  </div>
+                ) : (
+                  notificacoes.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => { setActiveTab('ordens'); setShowNotifDropdown(false); }}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '6px',
+                        backgroundColor: n.lida ? 'var(--bg-dark)' : 'rgba(139, 38, 42, 0.2)',
+                        border: n.lida ? '1px solid var(--border-color)' : '1px solid rgba(248, 113, 113, 0.4)',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      <div style={{ fontWeight: '700', color: n.lida ? 'var(--text-main)' : '#F87171' }}>
+                        OS #{n.os_numero} — {n.cliente_nome}
+                      </div>
+                      <div style={{ color: 'var(--text-muted)', marginTop: '0.2rem', fontSize: '0.74rem' }}>
+                        {n.mensagem}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#60A5FA', marginTop: '0.3rem', textAlign: 'right' }}>
+                        {n.created_at} — Clique para abrir
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

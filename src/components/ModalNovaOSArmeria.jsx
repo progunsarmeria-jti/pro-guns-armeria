@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info } from 'lucide-react'
+import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package } from 'lucide-react'
 
 export default function ModalNovaOSArmeria({
   clienteInicial,
@@ -29,6 +29,13 @@ export default function ModalNovaOSArmeria({
 
   // Problema Relatado
   const [problemaRelatado, setProblemaRelatado] = useState('')
+
+  // ACESSÓRIOS ACOMPANHANTES (Checklist de Entrada da Recepção)
+  const [qtdCarregadores, setQtdCarregadores] = useState(1)
+  const [temCaseRigido, setTemCaseRigido] = useState(false)
+  const [temLunetaRedDot, setTemLunetaRedDot] = useState(false)
+  const [descricaoLuneta, setDescricaoLuneta] = useState('')
+  const [acessoriosAdicionais, setAcessoriosAdicionais] = useState('')
 
   // Guia de Tráfego de Manutenção (GT)
   const [gtProtocolo, setGtProtocolo] = useState('')
@@ -60,6 +67,14 @@ export default function ModalNovaOSArmeria({
       return
     }
 
+    // Monta string formatada de Acessórios
+    const acessoriosFormatados = [
+      `${qtdCarregadores} carregador(es)`,
+      temCaseRigido ? 'Maleta/Case Rígido' : null,
+      temLunetaRedDot ? `Óptica: ${descricaoLuneta || 'Red Dot / Luneta'}` : null,
+      acessoriosAdicionais ? `Outros: ${acessoriosAdicionais}` : null
+    ].filter(Boolean).join(' | ')
+
     const novaOSObj = {
       id: `o_${Date.now()}`,
       numero_os: 1000 + ordens.length + 1,
@@ -72,18 +87,19 @@ export default function ModalNovaOSArmeria({
       calibre_arma: calibreArma,
       numero_serie_arma: numeroSerieArma,
       problema_relatado: problemaRelatado || 'Manutenção geral solicitada.',
+      acessorios_acompanhantes: acessoriosFormatados,
       gt_protocolo: categoriaArma === 'Arma de Fogo' ? gtProtocolo : 'N/A (Ar Comprimido)',
       gt_data_emissao: categoriaArma === 'Arma de Fogo' ? gtDataEmissao : null,
       gt_data_vencimento: categoriaArma === 'Arma de Fogo' ? gtDataVencimento : null,
       tipo_servico: `Manutenção ${tipoArma} ${marcaArma}`,
       valor_servico: 0,
       valor_taxamento: 0,
-      status: 'AGUARDANDO ANÁLISE', // Entrada na Recepção (Armeiro ainda não olhou)
+      status: 'NÃO INICIADO', // Armário de Entrada da Recepção (Aguardando o Armeiro retirar)
       created_at: new Date().toISOString().split('T')[0]
     }
 
     setOrdens([novaOSObj, ...ordens])
-    alert(`Entrada registrada com sucesso! Ordem de Serviço #${novaOSObj.numero_os} em 'AGUARDANDO ANÁLISE'.`)
+    alert(`Entrada registrada pela Recepção! Ordem de Serviço #${novaOSObj.numero_os} em 'NÃO INICIADO' guardada no armário de entrada.`)
     onClose()
   }
 
@@ -92,15 +108,15 @@ export default function ModalNovaOSArmeria({
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem'
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+      <div className="card" style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
         {/* Top Header Modal */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
           <div>
             <h2 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Crosshair size={22} color="var(--red-light)" />
-              <span>Entrada de Equipamento - Nova O.S. de Armeria</span>
+              <span>Recepção — Entrada de Equipamento para Armeria</span>
             </h2>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Recepção & Armaria da Pró Guns Armeria</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Check-in de Entrada com Registro de Acessórios</div>
           </div>
           <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={onClose}>
             <X size={22} />
@@ -229,10 +245,47 @@ export default function ModalNovaOSArmeria({
             </div>
           </div>
 
-          {/* 3. PROBLEMA RELATADO */}
+          {/* 3. CHECKLIST DE ACESSÓRIOS ACOMPANHANTES DA ARMA */}
+          <div style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#60A5FA', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Package size={16} />
+              <span>CHECKLIST DE ACESSÓRIOS INCLUÍDOS COM A ARMA</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Qtd. Carregadores</label>
+                <input className="input-field" type="number" min="0" value={qtdCarregadores} onChange={e => setQtdCarregadores(e.target.value)} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.2rem' }}>
+                <input type="checkbox" id="chkCase" checked={temCaseRigido} onChange={e => setTemCaseRigido(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                <label htmlFor="chkCase" style={{ fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>Veio com Maleta/Case Rígido</label>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.2rem' }}>
+                <input type="checkbox" id="chkLuneta" checked={temLunetaRedDot} onChange={e => setTemLunetaRedDot(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+                <label htmlFor="chkLuneta" style={{ fontSize: '0.8rem', color: 'var(--text-main)', cursor: 'pointer' }}>Possui Luneta / Red Dot</label>
+              </div>
+            </div>
+
+            {temLunetaRedDot && (
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Modelo/Marca da Óptica (Red Dot / Luneta)</label>
+                <input className="input-field" value={descricaoLuneta} onChange={e => setDescricaoLuneta(e.target.value)} placeholder="Ex: Red Dot Holosun 507C ou Luneta 4x32 Rossi" />
+              </div>
+            )}
+
+            <div>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Outros Acessórios / Observações da Entrega</label>
+              <input className="input-field" value={acessoriosAdicionais} onChange={e => setAcessoriosAdicionais(e.target.value)} placeholder="Ex: Bandoleira tática, compensador, supressor inerte..." />
+            </div>
+          </div>
+
+          {/* 4. PROBLEMA RELATADO PELO CLIENTE */}
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.4rem' }}>
-              PROBLEMA RELATADO PELO CLIENTE *
+              PROBLEMA RELATADO PELO CLIENTE (QUEIXA) *
             </label>
             <textarea
               required
@@ -240,11 +293,11 @@ export default function ModalNovaOSArmeria({
               rows="3"
               value={problemaRelatado}
               onChange={e => setProblemaRelatado(e.target.value)}
-              placeholder="Descreva detalhadamente o defeito relatado, falha de disparo ou serviço solicitado..."
+              placeholder="Descreva detalhadamente a falha relatada pelo cliente..."
             />
           </div>
 
-          {/* 4. GUIA DE TRÁFEGO DE MANUTENÇÃO (GT) */}
+          {/* 5. GUIA DE TRÁFEGO DE MANUTENÇÃO (GT) */}
           {categoriaArma === 'Arma de Fogo' ? (
             <div style={{ backgroundColor: 'rgba(139, 38, 42, 0.12)', padding: '1.1rem', borderRadius: '8px', border: '1px solid rgba(139, 38, 42, 0.3)', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#F87171', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -277,7 +330,7 @@ export default function ModalNovaOSArmeria({
           {/* BOTÕES DO RODAPÉ */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
             <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn-red">Dar Entrada na O.S. (Aguardando Análise)</button>
+            <button type="submit" className="btn-red">Registrar Entrada no Armário (NÃO INICIADO)</button>
           </div>
         </form>
       </div>

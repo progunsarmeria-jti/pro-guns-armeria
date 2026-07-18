@@ -332,8 +332,8 @@ export const INITIAL_ORCAMENTOS = [
     validade_dias: 15,
     status: "Aprovado",
     itens: [
-      { descricao: "Substituição do Extrator Glock G17 + Ajuste de Mola", quantidade: 1, valor_unitario: 250.00 },
-      { descricao: "Limpeza Ultra-sônica e Lubrificação Tática", quantidade: 1, valor_unitario: 200.00 }
+      { descricao: "SUBSTITUIÇÃO DO EXTRATOR GLOCK G17 + AJUSTE DE MOLA", quantidade: 1, valor_unitario: 250.00 },
+      { descricao: "LIMPEZA ULTRASSÔNICA E LUBRIFICAÇÃO TÁTICA", quantidade: 1, valor_unitario: 200.00 }
     ],
     observacoes: "Equipamento em manutenção na armeria."
   }
@@ -367,20 +367,20 @@ export const INITIAL_CONFIG = {
   uf: "SP",
   endereco: "Av. das Armas, 1000 - Centro",
   categorias_servicos: [
-    "Manutenção",
-    "Reparo",
-    "Personalização",
-    "Óptica",
-    "Acabamento",
-    "Limpeza & Conservação",
-    "Customização",
-    "Pintura & Cerakote"
+    "MANUTENÇÃO",
+    "REPARO",
+    "PERSONALIZAÇÃO",
+    "ÓPTICA",
+    "ACABAMENTO",
+    "LIMPEZA & CONSERVAÇÃO",
+    "CUSTOMIZAÇÃO",
+    "PINTURA & CERAKOTE"
   ],
   catalogo_servicos: [
-    { id: "s1", nome: "Manutenção Geral & Limpeza Ultrassônica", valor: 250.00, categoria: "Manutenção" },
-    { id: "s2", nome: "Revisão de Extrator e Mola Recuperadora", valor: 180.00, categoria: "Reparo" },
-    { id: "s3", nome: "Ajuste e Alívio de Gatilho Tático", valor: 350.00, categoria: "Personalização" },
-    { id: "s4", nome: "Instalação de Red Dot / Luneta e Colimação", valor: 150.00, categoria: "Óptica" },
-    { id: "s5", nome: "Polimento de Rampa de Alimentação e Tambor", valor: 200.00, categoria: "Acabamento" }
+    { id: "s1", nome: "MANUTENÇÃO GERAL & LIMPEZA ULTRASSÔNICA", valor: 250.00, categoria: "MANUTENÇÃO" },
+    { id: "s2", nome: "REVISÃO DE EXTRATOR E MOLA RECUPERADORA", valor: 180.00, categoria: "REPARO" },
+    { id: "s3", nome: "AJUSTE E ALÍVIO DE GATILHO TÁTICO", valor: 350.00, categoria: "PERSONALIZAÇÃO" },
+    { id: "s4", nome: "INSTALAÇÃO DE RED DOT / LUNETA E COLIMAÇÃO", valor: 150.00, categoria: "ÓPTICA" },
+    { id: "s5", nome: "POLIMENTO DE RAMPA DE ALIMENTAÇÃO E TAMBOR", valor: 200.00, categoria: "ACABAMENTO" }
   ]
 };

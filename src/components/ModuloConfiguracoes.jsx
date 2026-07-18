@@ -22,7 +22,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   // Estado para Cadastro de Novo Serviço
   const [novoServicoNome, setNovoServicoNome] = useState('')
   const [novoServicoValor, setNovoServicoValor] = useState('')
-  const [novoServicoCategoria, setNovoServicoCategoria] = useState('Manutenção')
+  const [novoServicoCategoria, setNovoServicoCategoria] = useState('MANUTENÇÃO')
 
   useEffect(() => {
     if (config) {
@@ -50,17 +50,17 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     saveSupabaseKeys(supaUrl, supaKey)
   }
 
-  // Adicionar Nova Categoria
+  // Adicionar Nova Categoria (FORÇA CAIXA ALTA AUTOMÁTICO)
   const handleAdicionarCategoria = (e) => {
     e.preventDefault()
-    const nomeLimpo = novaCategoriaNome.trim()
+    const nomeLimpo = novaCategoriaNome.trim().toUpperCase()
     if (!nomeLimpo) return
 
     const listaAtual = formData.categorias_servicos || [
-      'Manutenção', 'Reparo', 'Personalização', 'Óptica', 'Acabamento'
+      'MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO'
     ]
 
-    if (listaAtual.map(c => c.toLowerCase()).includes(nomeLimpo.toLowerCase())) {
+    if (listaAtual.map(c => c.toUpperCase()).includes(nomeLimpo)) {
       alert(`A categoria "${nomeLimpo}" já está cadastrada!`)
       return
     }
@@ -71,7 +71,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     setFormData(updated)
     setConfig(updated)
     setNovaCategoriaNome('')
-    alert(`Categoria "${nomeLimpo}" cadastrada com sucesso!`)
+    alert(`Categoria "${nomeLimpo}" cadastrada em CAIXA ALTA com sucesso!`)
   }
 
   // Remover Categoria
@@ -86,7 +86,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
-  // Adicionar Novo Serviço ao Catálogo
+  // Adicionar Novo Serviço ao Catálogo (FORÇA CAIXA ALTA AUTOMÁTICO)
   const handleAdicionarServico = (e) => {
     e.preventDefault()
     if (!novoServicoNome || !novoServicoValor) {
@@ -96,9 +96,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
     const item = {
       id: `s_${Date.now()}`,
-      nome: novoServicoNome,
+      nome: novoServicoNome.trim().toUpperCase(),
       valor: parseFloat(novoServicoValor) || 0,
-      categoria: novoServicoCategoria || 'Manutenção'
+      categoria: (novoServicoCategoria || 'MANUTENÇÃO').trim().toUpperCase()
     }
 
     const catalogoAtual = formData.catalogo_servicos || []
@@ -110,7 +110,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
     setNovoServicoNome('')
     setNovoServicoValor('')
-    alert(`Serviço "${item.nome}" adicionado com sucesso ao catálogo!`)
+    alert(`Serviço "${item.nome}" cadastrado com sucesso em CAIXA ALTA!`)
   }
 
   // Remover Serviço do Catálogo
@@ -125,9 +125,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
-  const categoriasDisponiveis = formData.categorias_servicos || [
-    'Manutenção', 'Reparo', 'Personalização', 'Óptica', 'Acabamento', 'Limpeza & Conservação', 'Customização', 'Pintura & Cerakote'
-  ]
+  const categoriasDisponiveis = (formData.categorias_servicos || [
+    'MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO', 'LIMPEZA & CONSERVAÇÃO', 'CUSTOMIZAÇÃO', 'PINTURA & CERAKOTE'
+  ]).map(c => c.toUpperCase())
 
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '960px' }}>
@@ -228,7 +228,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          2. SEÇÃO SUSPENSA: CADASTRO DE CATEGORIAS (NOVO)
+          2. SEÇÃO SUSPENSA: CADASTRO DE CATEGORIAS (EM CAIXA ALTA)
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
@@ -257,18 +257,19 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
         {openSections.categorias && (
           <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Formulário de Cadastro de Categoria */}
+            {/* Formulário de Cadastro de Categoria (Automático em CAIXA ALTA) */}
             <form onSubmit={handleAdicionarCategoria} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                  NOME DA NOVA CATEGORIA *
+                  NOME DA NOVA CATEGORIA * (CONVERTIDO AUTOMATICAMENTE EM CAIXA ALTA)
                 </label>
                 <input
                   required
                   className="input-field"
-                  placeholder="Ex: Limpeza & Conservação, Cerakote, Customização..."
+                  placeholder="EX: LIMPEZA & CONSERVAÇÃO, CERAKOTE, CUSTOMIZAÇÃO..."
                   value={novaCategoriaNome}
-                  onChange={e => setNovaCategoriaNome(e.target.value)}
+                  onChange={e => setNovaCategoriaNome(e.target.value.toUpperCase())}
+                  style={{ textTransform: 'uppercase' }}
                 />
               </div>
 
@@ -297,11 +298,11 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                       padding: '0.4rem 0.85rem',
                       fontSize: '0.82rem',
                       color: 'var(--text-main)',
-                      fontWeight: '600'
+                      fontWeight: '700'
                     }}
                   >
                     <Tag size={14} color="#FBBF24" />
-                    <span>{cat}</span>
+                    <span>{cat.toUpperCase()}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoverCategoria(cat)}
@@ -319,7 +320,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES
+          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES (EM CAIXA ALTA)
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
@@ -348,11 +349,11 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
         {openSections.servicos && (
           <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Formulário de Cadastro de Novo Serviço */}
+            {/* Formulário de Cadastro de Novo Serviço em CAIXA ALTA */}
             <form onSubmit={handleAdicionarServico} style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <Plus size={16} />
-                <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO</span>
+                <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO (CAIXA ALTA AUTOMÁTICA)</span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
@@ -361,9 +362,10 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                   <input
                     required
                     className="input-field"
-                    placeholder="Ex: Limpeza Ultra-sônica + Lubrificação Tática"
+                    placeholder="EX: LIMPEZA ULTRASSÔNICA + LUBRIFICAÇÃO TÁTICA"
                     value={novoServicoNome}
-                    onChange={e => setNovoServicoNome(e.target.value)}
+                    onChange={e => setNovoServicoNome(e.target.value.toUpperCase())}
+                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
                   />
                 </div>
 
@@ -386,6 +388,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                     className="input-field"
                     value={novoServicoCategoria}
                     onChange={e => setNovoServicoCategoria(e.target.value)}
+                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
                   >
                     {categoriasDisponiveis.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -429,10 +432,10 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                       formData.catalogo_servicos.map(s => (
                         <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                           <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                            {s.nome}
+                            {s.nome.toUpperCase()}
                           </td>
                           <td style={{ padding: '0.75rem 1rem' }}>
-                            <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>{s.categoria || 'Geral'}</span>
+                            <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>{(s.categoria || 'GERAL').toUpperCase()}</span>
                           </td>
                           <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#FBBF24' }}>
                             R$ {(parseFloat(s.valor) || 0).toFixed(2)}

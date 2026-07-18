@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ModuloClientes from './components/ModuloClientes'
@@ -8,6 +8,7 @@ import ModuloFinanceiro from './components/ModuloFinanceiro'
 import ModuloConfiguracoes from './components/ModuloConfiguracoes'
 import ModuloUsuarios from './components/ModuloUsuarios'
 import ModalLogin from './components/ModalLogin'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 import {
   INITIAL_USUARIOS,
@@ -120,29 +121,58 @@ export default function App() {
   // =========================================================
   // HOOKS DE SINCRONIZAÇÃO AUTOMÁTICA EM TEMPO REAL NO BROWSER
   // =========================================================
-  useEffect(() => {
-    localStorage.setItem('PROGUNS_USUARIOS', JSON.stringify(usuarios))
-  }, [usuarios])
+  const saveKey = (key, data) => {
+    const str = JSON.stringify(data)
+    localStorage.setItem(key, str)
+    // Notifica outras abas abertas no MESMO dispositivo/browser
+    try {
+      const channel = new BroadcastChannel('PROGUNS_SYNC')
+      channel.postMessage({ key, data })
+      channel.close()
+    } catch (e) {}
+  }
 
-  useEffect(() => {
-    localStorage.setItem('PROGUNS_CLIENTES', JSON.stringify(clientes))
-  }, [clientes])
+  useEffect(() => { saveKey('PROGUNS_USUARIOS',   usuarios)   }, [usuarios])
+  useEffect(() => { saveKey('PROGUNS_CLIENTES',   clientes)   }, [clientes])
+  useEffect(() => { saveKey('PROGUNS_ARMAS',      armas)      }, [armas])
+  useEffect(() => { saveKey('PROGUNS_ORDENS',     ordens)     }, [ordens])
+  useEffect(() => { saveKey('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
+  useEffect(() => { saveKey('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
 
+  // Escuta atualizações de OUTRAS ABAS no mesmo dispositivo em tempo real
   useEffect(() => {
-    localStorage.setItem('PROGUNS_ARMAS', JSON.stringify(armas))
-  }, [armas])
+    let channel
+    try {
+      channel = new BroadcastChannel('PROGUNS_SYNC')
+      channel.onmessage = (event) => {
+        const { key, data } = event.data
+        if (key === 'PROGUNS_ORDENS')     setOrdens(data)
+        if (key === 'PROGUNS_CLIENTES')   setClientes(data)
+        if (key === 'PROGUNS_ORCAMENTOS') setOrcamentos(data)
+        if (key === 'PROGUNS_FINANCEIRO') setFinanceiro(data)
+        if (key === 'PROGUNS_USUARIOS')   setUsuarios(data)
+      }
+    } catch (e) {}
+    return () => { try { channel?.close() } catch (e) {} }
+  }, [])
 
+  // Garante dados mais recentes ao focar a janela/aba (ex: voltar ao app no tablet)
   useEffect(() => {
-    localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(ordens))
-  }, [ordens])
-
-  useEffect(() => {
-    localStorage.setItem('PROGUNS_ORCAMENTOS', JSON.stringify(orcamentos))
-  }, [orcamentos])
-
-  useEffect(() => {
-    localStorage.setItem('PROGUNS_FINANCEIRO', JSON.stringify(financeiro))
-  }, [financeiro])
+    const handleFocus = () => {
+      try {
+        const ords  = localStorage.getItem('PROGUNS_ORDENS')
+        const clis  = localStorage.getItem('PROGUNS_CLIENTES')
+        const orcs  = localStorage.getItem('PROGUNS_ORCAMENTOS')
+        const fins  = localStorage.getItem('PROGUNS_FINANCEIRO')
+        if (ords)  setOrdens(JSON.parse(ords))
+        if (clis)  setClientes(JSON.parse(clis))
+        if (orcs)  setOrcamentos(JSON.parse(orcs))
+        if (fins)  setFinanceiro(JSON.parse(fins))
+      } catch (e) {}
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
 
   // Verifica permissões do usuário
   useEffect(() => {
@@ -179,6 +209,62 @@ export default function App() {
     )
   }
 
+  // BANNER DE AVISO: modo LOCAL não sincroniza entre dispositivos diferentes
+  const BannerSyncLocal = () => (
+    <div style={{
+      backgroundColor: 'rgba(120, 90, 20, 0.15)',
+      borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
+      padding: '0.4rem 1.25rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '0.75rem',
+      fontSize: '0.75rem',
+      color: '#D4AF37',
+      flexWrap: 'wrap'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <AlertTriangle size={14} />
+        <span>
+          <strong>MODO LOCAL:</strong> os dados estão salvos apenas neste dispositivo/navegador.
+          Para sincronizar entre computador, tablet e celular, conecte o Supabase em{' '}
+          <strong>Configurações → Conexão Supabase</strong>.
+        </span>
+      </div>
+      <button
+        onClick={() => {
+          try {
+            const ords = localStorage.getItem('PROGUNS_ORDENS')
+            const clis = localStorage.getItem('PROGUNS_CLIENTES')
+            const orcs = localStorage.getItem('PROGUNS_ORCAMENTOS')
+            const fins = localStorage.getItem('PROGUNS_FINANCEIRO')
+            if (ords) setOrdens(JSON.parse(ords))
+            if (clis) setClientes(JSON.parse(clis))
+            if (orcs) setOrcamentos(JSON.parse(orcs))
+            if (fins) setFinanceiro(JSON.parse(fins))
+          } catch (e) {}
+        }}
+        style={{
+          background: 'none',
+          border: '1px solid rgba(212, 175, 55, 0.35)',
+          color: '#D4AF37',
+          padding: '0.25rem 0.6rem',
+          borderRadius: '4px',
+          fontSize: '0.72rem',
+          fontWeight: '700',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.3rem',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <RefreshCw size={12} />
+        Recarregar Dados
+      </button>
+    </div>
+  )
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
       <Navbar
@@ -192,6 +278,9 @@ export default function App() {
         config={config}
         setMobileSidebarOpen={setMobileSidebarOpen}
       />
+
+      {/* Banner de aviso sobre modo local */}
+      <BannerSyncLocal />
 
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         <Sidebar

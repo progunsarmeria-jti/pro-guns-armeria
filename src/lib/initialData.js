@@ -16,7 +16,7 @@ export const INITIAL_CLIENTES = [
     data_emissao_cr: "2022-08-15",
     validade_cr: "2027-08-15",
     regiao_militar: "2ª RM",
-    atividades_apostiladas: ["Atirador Desportivo", "Recarga de Munição", "Colecionador"],
+    atividades_apostiladas: ["Atirador Desportivo", "Colecionador"],
     status: "Ativo"
   },
   {

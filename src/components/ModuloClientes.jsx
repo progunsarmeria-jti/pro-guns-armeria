@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
-  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award
+  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 
@@ -28,13 +28,13 @@ export default function ModuloClientes({
   const [showModalGerarOS, setShowModalGerarOS] = useState(false)
   const [showModalGerarOrcamento, setShowModalGerarOrcamento] = useState(false)
   const [showModalRecibo, setShowModalRecibo] = useState(null)
+  const [modalVerOSDetalhes, setModalVerOSDetalhes] = useState(null)
 
-  // Lista de Opções de Atividades Apostiladas
+  // Lista de Opções de Atividades Apostiladas (Sem Recarga de Munição)
   const OPCOES_ATIVIDADES = [
     'Atirador Desportivo',
     'Caçador Excepcional',
-    'Colecionador',
-    'Recarga de Munição'
+    'Colecionador'
   ]
 
   // Form State do Cliente (Novo & Editar)
@@ -108,7 +108,7 @@ export default function ModuloClientes({
       numero_cr: cliente.numero_cr || '',
       data_emissao_cr: cliente.data_emissao_cr || '',
       validade_cr: cliente.validade_cr || '',
-      atividades_apostiladas: cliente.atividades_apostiladas || ['Atirador Desportivo']
+      atividades_apostiladas: (cliente.atividades_apostiladas || ['Atirador Desportivo']).filter(a => a !== 'Recarga de Munição')
     })
     setShowModalEditarCliente(true)
   }
@@ -283,8 +283,8 @@ export default function ModuloClientes({
                       ATIVIDADES APOSTILADAS NO CR
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                      {selectedCliente.atividades_apostiladas && selectedCliente.atividades_apostiladas.length > 0 ? (
-                        selectedCliente.atividades_apostiladas.map(atv => (
+                      {selectedCliente.atividades_apostiladas && selectedCliente.atividades_apostiladas.filter(a => a !== 'Recarga de Munição').length > 0 ? (
+                        selectedCliente.atividades_apostiladas.filter(a => a !== 'Recarga de Munição').map(atv => (
                           <span key={atv} className="badge badge-green" style={{ fontSize: '0.7rem' }}>{atv}</span>
                         ))
                       ) : (
@@ -477,7 +477,23 @@ export default function ModuloClientes({
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {ordensExibidas.map(o => (
-                          <div key={o.id} style={{ padding: '0.85rem', backgroundColor: 'var(--bg-input)', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div
+                            key={o.id}
+                            onClick={() => setModalVerOSDetalhes(o)}
+                            style={{
+                              padding: '0.85rem 1rem',
+                              backgroundColor: 'var(--bg-input)',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              justify: 'space-between',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = '#F87171'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                          >
                             <div>
                               <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.85rem' }}>
                                 OS #{o.numero_os} — {o.marca_arma} {o.modelo_arma} ({o.calibre_arma})
@@ -491,9 +507,12 @@ export default function ModuloClientes({
                                 </div>
                               )}
                             </div>
-                            <span className={`badge ${o.status === 'CONCLUÍDO' ? 'badge-green' : 'badge-yellow'}`}>
-                              {o.status}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span className={`badge ${o.status === 'CONCLUÍDO' ? 'badge-green' : 'badge-yellow'}`}>
+                                {o.status}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#60A5FA', textDecoration: 'underline' }}>Abrir O.S.</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -537,7 +556,7 @@ export default function ModuloClientes({
           </div>
         </div>
 
-        {/* Modal Editar Cadastro do Cliente (com CR, Emissão, Validade e Atividades) */}
+        {/* Modal Editar Cadastro do Cliente */}
         {showModalEditarCliente && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
             <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -644,6 +663,69 @@ export default function ModuloClientes({
             setOrdens={setOrdens}
             onClose={() => setShowModalGerarOS(false)}
           />
+        )}
+
+        {/* Modal Visualizar Ficha/Detalhes da O.S. (ao clicar na Ordem de Manutenção) */}
+        {modalVerOSDetalhes && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '650px', backgroundColor: '#fff', color: '#000' }}>
+              <div className="print-area">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>ORDEM DE SERVIÇO #{modalVerOSDetalhes.numero_os} — MANUTENÇÃO</div>
+                  </div>
+                  <span style={{ padding: '0.3rem 0.7rem', backgroundColor: '#000', color: '#fff', fontSize: '0.75rem', fontWeight: '800', borderRadius: '4px' }}>
+                    STATUS: {modalVerOSDetalhes.status}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '0.88rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#f8f9fa', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ddd' }}>
+                    <div><strong>Proprietário:</strong> {modalVerOSDetalhes.cliente_nome?.toUpperCase()}</div>
+                    <div><strong>Categoria:</strong> {modalVerOSDetalhes.categoria_arma || 'Arma de Fogo'}</div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#f8f9fa', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ddd' }}>
+                    <div><strong>Equipamento:</strong> {modalVerOSDetalhes.tipo_arma} — {modalVerOSDetalhes.marca_arma} {modalVerOSDetalhes.modelo_arma} ({modalVerOSDetalhes.calibre_arma})</div>
+                    <div><strong>Número de Série:</strong> {modalVerOSDetalhes.numero_serie_arma || modalVerOSDetalhes.numero_serie}</div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#fff8e6', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ffe58f' }}>
+                    <strong>Problema Relatado pelo Cliente:</strong>
+                    <div style={{ marginTop: '0.2rem', fontStyle: 'italic' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
+                  </div>
+
+                  {modalVerOSDetalhes.gt_protocolo && modalVerOSDetalhes.gt_protocolo !== 'N/A (Ar Comprimido)' && (
+                    <div style={{ backgroundColor: '#e6f7ff', padding: '0.8rem', borderRadius: '4px', border: '1px solid #91d5ff' }}>
+                      <div><strong>Protocolo da Guia de Tráfego:</strong> {modalVerOSDetalhes.gt_protocolo}</div>
+                      {modalVerOSDetalhes.gt_data_vencimento && <div><strong>Vencimento da Guia:</strong> {modalVerOSDetalhes.gt_data_vencimento}</div>}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.8rem' }}>
+                  <div>
+                    <div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>
+                      {modalVerOSDetalhes.cliente_nome}
+                      <br /> Proprietário / Requerente
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>
+                      Pró Guns Armeria
+                      <br /> Responsável Técnico Armeiro
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                <button className="btn-secondary" onClick={() => setModalVerOSDetalhes(null)}>Fechar</button>
+                <button className="btn-gold" onClick={() => window.print()}>Imprimir Ficha da O.S.</button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Modal Recibo Impressão */}

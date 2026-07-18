@@ -366,6 +366,16 @@ export const INITIAL_CONFIG = {
   cidade: "São Paulo",
   uf: "SP",
   endereco: "Av. das Armas, 1000 - Centro",
+  categorias_servicos: [
+    "Manutenção",
+    "Reparo",
+    "Personalização",
+    "Óptica",
+    "Acabamento",
+    "Limpeza & Conservação",
+    "Customização",
+    "Pintura & Cerakote"
+  ],
   catalogo_servicos: [
     { id: "s1", nome: "Manutenção Geral & Limpeza Ultrassônica", valor: 250.00, categoria: "Manutenção" },
     { id: "s2", nome: "Revisão de Extrator e Mola Recuperadora", valor: 180.00, categoria: "Reparo" },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag } from 'lucide-react'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 
 export default function ModuloConfiguracoes({ config, setConfig }) {
@@ -11,11 +11,15 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   // Estado dos Acordeões (Seções Suspensas Que Abrem ao Clicar)
   const [openSections, setOpenSections] = useState({
     dados: true,
+    categorias: true,
     servicos: true,
     supabase: false
   })
 
-  // Estado do Form do Novo Serviço
+  // Estado para Cadastro de Nova Categoria
+  const [novaCategoriaNome, setNovaCategoriaNome] = useState('')
+
+  // Estado para Cadastro de Novo Serviço
   const [novoServicoNome, setNovoServicoNome] = useState('')
   const [novoServicoValor, setNovoServicoValor] = useState('')
   const [novoServicoCategoria, setNovoServicoCategoria] = useState('Manutenção')
@@ -46,6 +50,42 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     saveSupabaseKeys(supaUrl, supaKey)
   }
 
+  // Adicionar Nova Categoria
+  const handleAdicionarCategoria = (e) => {
+    e.preventDefault()
+    const nomeLimpo = novaCategoriaNome.trim()
+    if (!nomeLimpo) return
+
+    const listaAtual = formData.categorias_servicos || [
+      'Manutenção', 'Reparo', 'Personalização', 'Óptica', 'Acabamento'
+    ]
+
+    if (listaAtual.map(c => c.toLowerCase()).includes(nomeLimpo.toLowerCase())) {
+      alert(`A categoria "${nomeLimpo}" já está cadastrada!`)
+      return
+    }
+
+    const novaLista = [...listaAtual, nomeLimpo]
+    const updated = { ...formData, categorias_servicos: novaLista }
+
+    setFormData(updated)
+    setConfig(updated)
+    setNovaCategoriaNome('')
+    alert(`Categoria "${nomeLimpo}" cadastrada com sucesso!`)
+  }
+
+  // Remover Categoria
+  const handleRemoverCategoria = (catNome) => {
+    if (window.confirm(`Deseja remover a categoria "${catNome}"?`)) {
+      const listaAtual = formData.categorias_servicos || []
+      const novaLista = listaAtual.filter(c => c !== catNome)
+
+      const updated = { ...formData, categorias_servicos: novaLista }
+      setFormData(updated)
+      setConfig(updated)
+    }
+  }
+
   // Adicionar Novo Serviço ao Catálogo
   const handleAdicionarServico = (e) => {
     e.preventDefault()
@@ -58,7 +98,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       id: `s_${Date.now()}`,
       nome: novoServicoNome,
       valor: parseFloat(novoServicoValor) || 0,
-      categoria: novoServicoCategoria
+      categoria: novoServicoCategoria || 'Manutenção'
     }
 
     const catalogoAtual = formData.catalogo_servicos || []
@@ -85,15 +125,19 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
+  const categoriasDisponiveis = formData.categorias_servicos || [
+    'Manutenção', 'Reparo', 'Personalização', 'Óptica', 'Acabamento', 'Limpeza & Conservação', 'Customização', 'Pintura & Cerakote'
+  ]
+
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '960px' }}>
       <div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <Settings size={28} color="var(--red-light)" />
-          <span>Configurações da Armeria & Catálogo de Serviços</span>
+          <span>Configurações & Gestão de Categorias</span>
         </h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Alinhe dados institucionais, gerencie a tabela de serviços/preços e configure a conexão com o banco de dados.
+          Cadastre categorias de serviços, gerencie a tabela de preços e dados da Pró Guns Armeria.
         </p>
       </div>
 
@@ -101,7 +145,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           1. SEÇÃO SUSPENSA: DADOS INSTITUCIONAIS
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {/* Header Suspenso Clicável */}
         <div
           onClick={() => toggleSection('dados')}
           style={{
@@ -123,7 +166,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           {openSections.dados ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
         </div>
 
-        {/* Conteúdo Expansível */}
         {openSections.dados && (
           <div style={{ padding: '1.5rem' }}>
             <form onSubmit={handleSalvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -186,10 +228,100 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          2. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES
+          2. SEÇÃO SUSPENSA: CADASTRO DE CATEGORIAS (NOVO)
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {/* Header Suspenso Clicável */}
+        <div
+          onClick={() => toggleSection('categorias')}
+          style={{
+            padding: '1.2rem 1.5rem',
+            backgroundColor: 'var(--bg-input)',
+            borderBottom: openSections.categorias ? '1px solid var(--border-color)' : 'none',
+            display: 'flex',
+            justify: 'space-between',
+            alignItems: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Tag size={22} color="#FBBF24" />
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
+              Cadastro & Gerenciamento de Categorias
+            </h3>
+            <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24', fontWeight: '800' }}>
+              {categoriasDisponiveis.length} Categorias
+            </span>
+          </div>
+          {openSections.categorias ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+        </div>
+
+        {openSections.categorias && (
+          <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Formulário de Cadastro de Categoria */}
+            <form onSubmit={handleAdicionarCategoria} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  NOME DA NOVA CATEGORIA *
+                </label>
+                <input
+                  required
+                  className="input-field"
+                  placeholder="Ex: Limpeza & Conservação, Cerakote, Customização..."
+                  value={novaCategoriaNome}
+                  onChange={e => setNovaCategoriaNome(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" className="btn-gold" style={{ padding: '0.65rem 1.2rem' }}>
+                <Plus size={16} />
+                <span>Cadastrar Categoria</span>
+              </button>
+            </form>
+
+            {/* Grid de Categorias Cadastradas */}
+            <div>
+              <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
+                CATEGORIAS CADASTRADAS NO SISTEMA:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {categoriasDisponiveis.map(cat => (
+                  <div
+                    key={cat}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      backgroundColor: 'var(--bg-input)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '20px',
+                      padding: '0.4rem 0.85rem',
+                      fontSize: '0.82rem',
+                      color: 'var(--text-main)',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <Tag size={14} color="#FBBF24" />
+                    <span>{cat}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverCategoria(cat)}
+                      style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      title="Excluir Categoria"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ==========================================
+          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES
+      ========================================== */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
           onClick={() => toggleSection('servicos')}
           style={{
@@ -214,7 +346,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           {openSections.servicos ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
         </div>
 
-        {/* Conteúdo Expansível */}
         {openSections.servicos && (
           <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Formulário de Cadastro de Novo Serviço */}
@@ -256,11 +387,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                     value={novoServicoCategoria}
                     onChange={e => setNovoServicoCategoria(e.target.value)}
                   >
-                    <option value="Manutenção">Manutenção</option>
-                    <option value="Reparo">Reparo</option>
-                    <option value="Personalização">Personalização</option>
-                    <option value="Óptica">Óptica</option>
-                    <option value="Acabamento">Acabamento</option>
+                    {categoriasDisponiveis.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -329,10 +458,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          3. SEÇÃO SUSPENSA: CONEXÃO SUPABASE
+          4. SEÇÃO SUSPENSA: CONEXÃO SUPABASE
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {/* Header Suspenso Clicável */}
         <div
           onClick={() => toggleSection('supabase')}
           style={{
@@ -359,7 +487,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           {openSections.supabase ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
         </div>
 
-        {/* Conteúdo Expansível */}
         {openSections.supabase && (
           <div style={{ padding: '1.5rem' }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>

@@ -22,10 +22,23 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
 
-  // Lista de Usuários e Usuário Logado
+  // Lista de Usuários e Usuário Logado Autenticado
   const [usuarios, setUsuarios] = useState(INITIAL_USUARIOS)
-  const [usuarioLogado, setUsuarioLogado] = useState(INITIAL_USUARIOS[0]) // Admin Master por padrão
+
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_AUTH_USER')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return null }
+    }
+    return null // Por padrão inicia deslogado exigindo CPF e Senha
+  })
+
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
+
+  const handleLogoff = () => {
+    localStorage.removeItem('PROGUNS_AUTH_USER')
+    setUsuarioLogado(null)
+  }
 
   // Configurações Institucionais da Armeria com Persistência em LocalStorage
   const [config, setConfig] = useState(() => {
@@ -75,12 +88,23 @@ export default function App() {
 
     const reqPerm = reqMap[activeTab]
     if (reqPerm && !permissoes[reqPerm]) {
-      // Procura a primeira aba permitida
       const disponiveis = ['clientes', 'ordens', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes']
       const primeiraLivre = disponiveis.find(tab => permissoes[reqMap[tab]]) || 'clientes'
       setActiveTab(primeiraLivre)
     }
   }, [usuarioLogado, activeTab])
+
+  // TELA DE LOGIN OBRIGATÓRIA CASO NÃO ESTEJA AUTENTICADO
+  if (!usuarioLogado) {
+    return (
+      <ModalLogin
+        usuarios={usuarios}
+        usuarioLogado={usuarioLogado}
+        setUsuarioLogado={setUsuarioLogado}
+        config={config}
+      />
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
@@ -88,9 +112,11 @@ export default function App() {
         activeTab={activeTab}
         usuarioLogado={usuarioLogado}
         setModalLoginAberto={setModalLoginAberto}
+        handleLogoff={handleLogoff}
         notificacoes={notificacoes}
         setNotificacoes={setNotificacoes}
         setActiveTab={setActiveTab}
+        config={config}
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
@@ -180,6 +206,7 @@ export default function App() {
           usuarioLogado={usuarioLogado}
           setUsuarioLogado={setUsuarioLogado}
           onClose={() => setModalLoginAberto(false)}
+          config={config}
         />
       )}
     </div>

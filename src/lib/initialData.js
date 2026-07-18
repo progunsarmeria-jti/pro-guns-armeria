@@ -4,6 +4,7 @@ export const INITIAL_USUARIOS = [
   {
     id: "u1",
     nome_completo: "GUILHERME GOMES (ADMIN)",
+    cpf: "000.000.000-00",
     email: "admin@proguns.com.br",
     senha_pessoal: "admin123",
     cargo: "Diretor Master",
@@ -32,6 +33,7 @@ export const INITIAL_USUARIOS = [
   {
     id: "u2",
     nome_completo: "JOÃO SILVA",
+    cpf: "111.111.111-11",
     email: "joao.recepcao@proguns.com.br",
     senha_pessoal: "rec123",
     cargo: "Atendente de Recepção",
@@ -60,6 +62,7 @@ export const INITIAL_USUARIOS = [
   {
     id: "u3",
     nome_completo: "MARIA SANTOS",
+    cpf: "222.222.222-22",
     email: "maria.recepcao@proguns.com.br",
     senha_pessoal: "rec123",
     cargo: "Atendente de Recepção",
@@ -88,6 +91,7 @@ export const INITIAL_USUARIOS = [
   {
     id: "u4",
     nome_completo: "PAULO ARMEIRO",
+    cpf: "333.333.333-33",
     email: "paulo.armeiro@proguns.com.br",
     senha_pessoal: "arm123",
     cargo: "Armeiro Responsável Técnico",
@@ -116,6 +120,7 @@ export const INITIAL_USUARIOS = [
   {
     id: "u5",
     nome_completo: "OSMAIR ARMEIRO",
+    cpf: "444.444.444-44",
     email: "osmair.armeiro@proguns.com.br",
     senha_pessoal: "arm123",
     cargo: "Armeiro Assistente",
@@ -350,7 +355,7 @@ export const INITIAL_FINANCEIRO = [
 
 export const INITIAL_CONFIG = {
   nome_fantasia: "Pró Guns Armeria",
-  razao_social: "Pró Guns Armeria & Despachantaria LTDA",
+  razao_social: "Pró Guns Armeria LTDA",
   cnpj: "12.345.678/0001-99",
   cr_armeria: "CR-998877/2ª RM",
   validade_cr: "2029-12-31",

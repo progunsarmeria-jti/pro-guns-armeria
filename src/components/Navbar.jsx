@@ -6,6 +6,7 @@ export default function Navbar({
   activeTab,
   usuarioLogado,
   setModalLoginAberto,
+  handleLogoff,
   notificacoes,
   setNotificacoes,
   setActiveTab,
@@ -83,31 +84,51 @@ export default function Navbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {/* CRACHÁ DO OPERADOR AUTENTICADO */}
         {usuarioLogado && (
-          <div
-            onClick={() => setModalLoginAberto(true)}
-            title="Clique para trocar de usuário"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              backgroundColor: 'var(--bg-input)',
-              borderRadius: '20px',
-              border: '1px solid var(--border-color)',
-              padding: '0.35rem 0.85rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            <UserCheck size={16} color={badge.color} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
-                {usuarioLogado.nome_completo.split(' ')[0]}
-              </span>
-              <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
-                {badge.label}
-              </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div
+              onClick={() => setModalLoginAberto(true)}
+              title="Clique para trocar de usuário"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                backgroundColor: 'var(--bg-input)',
+                borderRadius: '20px',
+                border: '1px solid var(--border-color)',
+                padding: '0.35rem 0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <UserCheck size={16} color={badge.color} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
+                  {usuarioLogado.nome_completo.split(' ')[0]}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
+                  {badge.label}
+                </span>
+              </div>
             </div>
-            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.2rem' }} />
+
+            <button
+              onClick={handleLogoff}
+              title="Sair / Bloquear Tela de Login"
+              style={{
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'center',
+                cursor: 'pointer',
+                color: '#F87171'
+              }}
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         )}
 

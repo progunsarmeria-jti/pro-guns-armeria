@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ModuloClientes from './components/ModuloClientes'
@@ -8,7 +8,7 @@ import ModuloFinanceiro from './components/ModuloFinanceiro'
 import ModuloConfiguracoes from './components/ModuloConfiguracoes'
 import ModuloUsuarios from './components/ModuloUsuarios'
 import ModalLogin from './components/ModalLogin'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw, CheckCircle2, Loader } from 'lucide-react'
 
 import {
   INITIAL_USUARIOS,
@@ -20,127 +20,155 @@ import {
   INITIAL_CONFIG
 } from './lib/initialData'
 
+import {
+  isSupabaseConfigured,
+  dbLoad,
+  dbUpsert,
+  dbUpsertAll,
+  dbDelete,
+  subscribeToTable
+} from './lib/supabase'
+
+// ─── Helper localStorage ──────────────────────────────────────────────────────
+const ls = {
+  get: (key, fallback) => {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback }
+    catch (e) { return fallback }
+  },
+  set: (key, val) => {
+    try { localStorage.setItem(key, JSON.stringify(val)) } catch (e) {}
+  }
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [syncStatus, setSyncStatus] = useState('idle') // 'idle' | 'loading' | 'ok' | 'error'
 
-  // 1. USUÁRIOS COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [usuarios, setUsuarios] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_USUARIOS')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_USUARIOS }
-    }
-    return INITIAL_USUARIOS
-  })
+  // ── Estados com fallback localStorage ─────────────────────────────────────
+  const [usuarios,   setUsuarios]   = useState(() => ls.get('PROGUNS_USUARIOS',   INITIAL_USUARIOS))
+  const [clientes,   setClientes]   = useState(() => ls.get('PROGUNS_CLIENTES',   INITIAL_CLIENTES))
+  const [armas,      setArmas]      = useState(() => ls.get('PROGUNS_ARMAS',      INITIAL_ARMAS))
+  const [ordens,     setOrdens]     = useState(() => ls.get('PROGUNS_ORDENS',     INITIAL_ORDENS))
+  const [orcamentos, setOrcamentos] = useState(() => ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS))
+  const [financeiro, setFinanceiro] = useState(() => ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
+  const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
-  // 2. USUÁRIO LOGADO SESSÃO
-  const [usuarioLogado, setUsuarioLogado] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_AUTH_USER')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return null }
-    }
-    return null
-  })
-
+  const [usuarioLogado, setUsuarioLogado] = useState(() => ls.get('PROGUNS_AUTH_USER', null))
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
+
+  const [notificacoes, setNotificacoes] = useState([{
+    id: 'n1', os_numero: 1002, cliente_nome: 'ROBERTO ALVES MENDES',
+    mensagem: 'Armeiro concluiu o laudo técnico da Carabina Rossi.',
+    tipo: 'LAUDO_PRONTO', lida: false, created_at: 'Há 10 min'
+  }])
 
   const handleLogoff = () => {
     localStorage.removeItem('PROGUNS_AUTH_USER')
     setUsuarioLogado(null)
   }
 
-  // 3. CONFIGURAÇÕES INSTITUCIONAIS COM PERSISTÊNCIA
-  const [config, setConfig] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_CONFIG')
-    return saved ? JSON.parse(saved) : INITIAL_CONFIG
-  })
-
-  const handleAtualizarConfig = (novosDados) => {
-    setConfig(novosDados)
-    localStorage.setItem('PROGUNS_CONFIG', JSON.stringify(novosDados))
-  }
-
-  // 4. CENTRAL DE NOTIFICAÇÕES
-  const [notificacoes, setNotificacoes] = useState([
-    {
-      id: 'n1',
-      os_numero: 1002,
-      cliente_nome: 'ROBERTO ALVES MENDES',
-      mensagem: 'Armeiro concluiu o laudo técnico da Carabina Rossi. Aguardando contato para aprovação com cliente.',
-      tipo: 'LAUDO_PRONTO',
-      lida: false,
-      created_at: 'Há 10 min'
-    }
-  ])
-
-  // 5. CLIENTES COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [clientes, setClientes] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_CLIENTES')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_CLIENTES }
-    }
-    return INITIAL_CLIENTES
-  })
-
-  // 6. ARMAS COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [armas, setArmas] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_ARMAS')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_ARMAS }
-    }
-    return INITIAL_ARMAS
-  })
-
-  // 7. ORDENS DE SERVIÇO (O.S.) COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [ordens, setOrdens] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_ORDENS')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_ORDENS }
-    }
-    return INITIAL_ORDENS
-  })
-
-  // 8. ORÇAMENTOS COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [orcamentos, setOrcamentos] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_ORCAMENTOS')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_ORCAMENTOS }
-    }
-    return INITIAL_ORCAMENTOS
-  })
-
-  // 9. FINANCEIRO COM PERSISTÊNCIA EM LOCALSTORAGE
-  const [financeiro, setFinanceiro] = useState(() => {
-    const saved = localStorage.getItem('PROGUNS_FINANCEIRO')
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return INITIAL_FINANCEIRO }
-    }
-    return INITIAL_FINANCEIRO
-  })
-
-  // =========================================================
-  // HOOKS DE SINCRONIZAÇÃO AUTOMÁTICA EM TEMPO REAL NO BROWSER
-  // =========================================================
-  const saveKey = (key, data) => {
-    const str = JSON.stringify(data)
-    localStorage.setItem(key, str)
-    // Notifica outras abas abertas no MESMO dispositivo/browser
+  // ─── CARREGAR DADOS DO SUPABASE (ao iniciar) ────────────────────────────────
+  const carregarDoSupabase = useCallback(async (silencioso = false) => {
+    if (!isSupabaseConfigured()) return
+    if (!silencioso) setSyncStatus('loading')
     try {
-      const channel = new BroadcastChannel('PROGUNS_SYNC')
-      channel.postMessage({ key, data })
-      channel.close()
-    } catch (e) {}
-  }
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios] = await Promise.all([
+        dbLoad('clientes'),
+        dbLoad('ordens'),
+        dbLoad('orcamentos'),
+        dbLoad('financeiro'),
+        dbLoad('usuarios'),
+      ])
+      if (dbClientes   !== null && dbClientes.length   > 0) { setClientes(dbClientes);     ls.set('PROGUNS_CLIENTES',   dbClientes)   }
+      if (dbOrdens     !== null && dbOrdens.length     > 0) { setOrdens(dbOrdens);         ls.set('PROGUNS_ORDENS',     dbOrdens)     }
+      if (dbOrcamentos !== null && dbOrcamentos.length > 0) { setOrcamentos(dbOrcamentos); ls.set('PROGUNS_ORCAMENTOS', dbOrcamentos) }
+      if (dbFinanceiro !== null && dbFinanceiro.length > 0) { setFinanceiro(dbFinanceiro); ls.set('PROGUNS_FINANCEIRO', dbFinanceiro) }
+      if (dbUsuarios   !== null && dbUsuarios.length   > 0) { setUsuarios(dbUsuarios);     ls.set('PROGUNS_USUARIOS',   dbUsuarios)   }
+      if (!silencioso) setSyncStatus('ok')
+      setTimeout(() => setSyncStatus('idle'), 3000)
+    } catch (e) {
+      console.error('[Supabase] Erro ao carregar:', e)
+      if (!silencioso) setSyncStatus('error')
+      setTimeout(() => setSyncStatus('idle'), 4000)
+    }
+  }, [])
 
-  useEffect(() => { saveKey('PROGUNS_USUARIOS',   usuarios)   }, [usuarios])
-  useEffect(() => { saveKey('PROGUNS_CLIENTES',   clientes)   }, [clientes])
-  useEffect(() => { saveKey('PROGUNS_ARMAS',      armas)      }, [armas])
-  useEffect(() => { saveKey('PROGUNS_ORDENS',     ordens)     }, [ordens])
-  useEffect(() => { saveKey('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
-  useEffect(() => { saveKey('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
-
-  // Escuta atualizações de OUTRAS ABAS no mesmo dispositivo em tempo real
+  // Carrega ao montar
   useEffect(() => {
+    if (isSupabaseConfigured()) {
+      carregarDoSupabase()
+    }
+  }, [carregarDoSupabase])
+
+  // Recarrega ao focar a janela (voltar ao app no tablet/celular)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isSupabaseConfigured()) {
+        carregarDoSupabase(true)
+      } else {
+        // Fallback localStorage entre abas
+        try {
+          const ords = localStorage.getItem('PROGUNS_ORDENS')
+          const clis = localStorage.getItem('PROGUNS_CLIENTES')
+          const orcs = localStorage.getItem('PROGUNS_ORCAMENTOS')
+          const fins = localStorage.getItem('PROGUNS_FINANCEIRO')
+          if (ords) setOrdens(JSON.parse(ords))
+          if (clis) setClientes(JSON.parse(clis))
+          if (orcs) setOrcamentos(JSON.parse(orcs))
+          if (fins) setFinanceiro(JSON.parse(fins))
+        } catch (e) {}
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [carregarDoSupabase])
+
+  // ─── REALTIME: escuta mudanças de outros dispositivos ────────────────────────
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return
+    const channels = [
+      subscribeToTable('ordens',     () => carregarDoSupabase(true)),
+      subscribeToTable('clientes',   () => carregarDoSupabase(true)),
+      subscribeToTable('orcamentos', () => carregarDoSupabase(true)),
+      subscribeToTable('financeiro', () => carregarDoSupabase(true)),
+    ].filter(Boolean)
+    return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }
+  }, [carregarDoSupabase])
+
+  // ─── PERSISTÊNCIA: salva localStorage E Supabase ao mudar estado ─────────────
+  useEffect(() => {
+    ls.set('PROGUNS_USUARIOS', usuarios)
+    if (isSupabaseConfigured()) dbUpsertAll('usuarios', usuarios)
+  }, [usuarios])
+
+  useEffect(() => {
+    ls.set('PROGUNS_CLIENTES', clientes)
+    if (isSupabaseConfigured()) dbUpsertAll('clientes', clientes)
+  }, [clientes])
+
+  useEffect(() => {
+    ls.set('PROGUNS_ARMAS', armas)
+  }, [armas])
+
+  useEffect(() => {
+    ls.set('PROGUNS_ORDENS', ordens)
+    if (isSupabaseConfigured()) dbUpsertAll('ordens', ordens)
+  }, [ordens])
+
+  useEffect(() => {
+    ls.set('PROGUNS_ORCAMENTOS', orcamentos)
+    if (isSupabaseConfigured()) dbUpsertAll('orcamentos', orcamentos)
+  }, [orcamentos])
+
+  useEffect(() => {
+    ls.set('PROGUNS_FINANCEIRO', financeiro)
+    if (isSupabaseConfigured()) dbUpsertAll('financeiro', financeiro)
+  }, [financeiro])
+
+  // Sincronização entre abas do mesmo dispositivo
+  useEffect(() => {
+    if (isSupabaseConfigured()) return // Supabase já cuida disso
     let channel
     try {
       channel = new BroadcastChannel('PROGUNS_SYNC')
@@ -156,48 +184,27 @@ export default function App() {
     return () => { try { channel?.close() } catch (e) {} }
   }, [])
 
-  // Garante dados mais recentes ao focar a janela/aba (ex: voltar ao app no tablet)
-  useEffect(() => {
-    const handleFocus = () => {
-      try {
-        const ords  = localStorage.getItem('PROGUNS_ORDENS')
-        const clis  = localStorage.getItem('PROGUNS_CLIENTES')
-        const orcs  = localStorage.getItem('PROGUNS_ORCAMENTOS')
-        const fins  = localStorage.getItem('PROGUNS_FINANCEIRO')
-        if (ords)  setOrdens(JSON.parse(ords))
-        if (clis)  setClientes(JSON.parse(clis))
-        if (orcs)  setOrcamentos(JSON.parse(orcs))
-        if (fins)  setFinanceiro(JSON.parse(fins))
-      } catch (e) {}
-    }
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
-  }, [])
+  const handleAtualizarConfig = (novosDados) => {
+    setConfig(novosDados)
+    ls.set('PROGUNS_CONFIG', novosDados)
+  }
 
-  // Verifica permissões do usuário
+  // Verifica permissões
   useEffect(() => {
-    if (!usuarioLogado) return
-    if (usuarioLogado.perfil === 'master') return
-
+    if (!usuarioLogado || usuarioLogado.perfil === 'master') return
     const permissoes = usuarioLogado.permissoes || {}
     const reqMap = {
-      clientes: 'ver_clientes',
-      ordens: 'ver_ordens',
-      orcamentos: 'ver_orcamentos',
-      financeiro: 'ver_financeiro',
-      usuarios: 'gerenciar_usuarios',
-      configuracoes: 'ver_configuracoes'
+      clientes: 'ver_clientes', ordens: 'ver_ordens', orcamentos: 'ver_orcamentos',
+      financeiro: 'ver_financeiro', usuarios: 'gerenciar_usuarios', configuracoes: 'ver_configuracoes'
     }
-
     const reqPerm = reqMap[activeTab]
     if (reqPerm && !permissoes[reqPerm]) {
-      const disponiveis = ['clientes', 'ordens', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes']
+      const disponiveis = Object.keys(reqMap)
       const primeiraLivre = disponiveis.find(tab => permissoes[reqMap[tab]]) || 'clientes'
       setActiveTab(primeiraLivre)
     }
   }, [usuarioLogado, activeTab])
 
-  // TELA DE LOGIN OBRIGATÓRIA CASO NÃO ESTEJA AUTENTICADO
   if (!usuarioLogado) {
     return (
       <ModalLogin
@@ -209,61 +216,53 @@ export default function App() {
     )
   }
 
-  // BANNER DE AVISO: modo LOCAL não sincroniza entre dispositivos diferentes
-  const BannerSyncLocal = () => (
-    <div style={{
-      backgroundColor: 'rgba(120, 90, 20, 0.15)',
-      borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
-      padding: '0.4rem 1.25rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '0.75rem',
-      fontSize: '0.75rem',
-      color: '#D4AF37',
-      flexWrap: 'wrap'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <AlertTriangle size={14} />
-        <span>
-          <strong>MODO LOCAL:</strong> os dados estão salvos apenas neste dispositivo/navegador.
-          Para sincronizar entre computador, tablet e celular, conecte o Supabase em{' '}
-          <strong>Configurações → Conexão Supabase</strong>.
-        </span>
+  // Banner de status de sincronização
+  const BannerSync = () => {
+    if (isSupabaseConfigured()) {
+      if (syncStatus === 'loading') return (
+        <div style={{ backgroundColor: 'rgba(30,50,80,0.4)', borderBottom: '1px solid rgba(59,130,246,0.2)', padding: '0.3rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.73rem', color: '#93C5FD' }}>
+          <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
+          <span>Sincronizando com o banco de dados...</span>
+        </div>
+      )
+      if (syncStatus === 'ok') return (
+        <div style={{ backgroundColor: 'rgba(19,70,51,0.25)', borderBottom: '1px solid rgba(52,211,153,0.2)', padding: '0.3rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.73rem', color: '#6EE7B7' }}>
+          <CheckCircle2 size={13} />
+          <span>Dados sincronizados com Supabase ✓</span>
+        </div>
+      )
+      if (syncStatus === 'error') return (
+        <div style={{ backgroundColor: 'rgba(139,38,42,0.2)', borderBottom: '1px solid rgba(139,38,42,0.3)', padding: '0.3rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.73rem', color: '#FCA5A5' }}>
+          <AlertTriangle size={13} />
+          <span>Erro ao sincronizar. Verifique a conexão Supabase em Configurações.</span>
+        </div>
+      )
+      return null // sincronizado e idle: sem banner
+    }
+
+    // Modo local
+    return (
+      <div style={{ backgroundColor: 'rgba(120,90,20,0.15)', borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '0.35rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', fontSize: '0.73rem', color: '#D4AF37', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <AlertTriangle size={13} />
+          <span><strong>MODO LOCAL:</strong> dados salvos apenas neste dispositivo. Para sincronizar entre dispositivos, conecte o Supabase em <strong>Configurações</strong>.</span>
+        </div>
+        <button
+          onClick={() => {
+            try {
+              const ords = localStorage.getItem('PROGUNS_ORDENS')
+              const clis = localStorage.getItem('PROGUNS_CLIENTES')
+              if (ords) setOrdens(JSON.parse(ords))
+              if (clis) setClientes(JSON.parse(clis))
+            } catch (e) {}
+          }}
+          style={{ background: 'none', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37', padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
+        >
+          <RefreshCw size={11} /> Recarregar
+        </button>
       </div>
-      <button
-        onClick={() => {
-          try {
-            const ords = localStorage.getItem('PROGUNS_ORDENS')
-            const clis = localStorage.getItem('PROGUNS_CLIENTES')
-            const orcs = localStorage.getItem('PROGUNS_ORCAMENTOS')
-            const fins = localStorage.getItem('PROGUNS_FINANCEIRO')
-            if (ords) setOrdens(JSON.parse(ords))
-            if (clis) setClientes(JSON.parse(clis))
-            if (orcs) setOrcamentos(JSON.parse(orcs))
-            if (fins) setFinanceiro(JSON.parse(fins))
-          } catch (e) {}
-        }}
-        style={{
-          background: 'none',
-          border: '1px solid rgba(212, 175, 55, 0.35)',
-          color: '#D4AF37',
-          padding: '0.25rem 0.6rem',
-          borderRadius: '4px',
-          fontSize: '0.72rem',
-          fontWeight: '700',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.3rem',
-          whiteSpace: 'nowrap'
-        }}
-      >
-        <RefreshCw size={12} />
-        Recarregar Dados
-      </button>
-    </div>
-  )
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
@@ -279,8 +278,7 @@ export default function App() {
         setMobileSidebarOpen={setMobileSidebarOpen}
       />
 
-      {/* Banner de aviso sobre modo local */}
-      <BannerSyncLocal />
+      <BannerSync />
 
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         <Sidebar
@@ -295,16 +293,11 @@ export default function App() {
         <main style={{ flex: 1, overflowY: 'auto' }}>
           {activeTab === 'clientes' && (
             <ModuloClientes
-              clientes={clientes}
-              setClientes={setClientes}
-              armas={armas}
-              setArmas={setArmas}
-              ordens={ordens}
-              setOrdens={setOrdens}
-              orcamentos={orcamentos}
-              setOrcamentos={setOrcamentos}
-              financeiro={financeiro}
-              setFinanceiro={setFinanceiro}
+              clientes={clientes} setClientes={setClientes}
+              armas={armas} setArmas={setArmas}
+              ordens={ordens} setOrdens={setOrdens}
+              orcamentos={orcamentos} setOrcamentos={setOrcamentos}
+              financeiro={financeiro} setFinanceiro={setFinanceiro}
               setActiveTab={setActiveTab}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}
@@ -314,57 +307,47 @@ export default function App() {
 
           {activeTab === 'ordens' && (
             <ModuloOrdens
-              ordens={ordens}
-              setOrdens={setOrdens}
+              ordens={ordens} setOrdens={setOrdens}
               clientes={clientes}
-              financeiro={financeiro}
-              setFinanceiro={setFinanceiro}
+              financeiro={financeiro} setFinanceiro={setFinanceiro}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}
-              notificacoes={notificacoes}
-              setNotificacoes={setNotificacoes}
+              notificacoes={notificacoes} setNotificacoes={setNotificacoes}
               config={config}
             />
           )}
 
           {activeTab === 'orcamentos' && (
             <ModuloOrcamentos
-              orcamentos={orcamentos}
-              setOrcamentos={setOrcamentos}
+              orcamentos={orcamentos} setOrcamentos={setOrcamentos}
               clientes={clientes}
-              ordens={ordens}
-              setOrdens={setOrdens}
-              financeiro={financeiro}
-              setFinanceiro={setFinanceiro}
+              ordens={ordens} setOrdens={setOrdens}
+              financeiro={financeiro} setFinanceiro={setFinanceiro}
               config={config}
             />
           )}
 
           {activeTab === 'financeiro' && (
             <ModuloFinanceiro
-              financeiro={financeiro}
-              setFinanceiro={setFinanceiro}
+              financeiro={financeiro} setFinanceiro={setFinanceiro}
             />
           )}
 
           {activeTab === 'usuarios' && (
             <ModuloUsuarios
-              usuarios={usuarios}
-              setUsuarios={setUsuarios}
+              usuarios={usuarios} setUsuarios={setUsuarios}
               usuarioLogado={usuarioLogado}
             />
           )}
 
           {activeTab === 'configuracoes' && (
             <ModuloConfiguracoes
-              config={config}
-              setConfig={handleAtualizarConfig}
+              config={config} setConfig={handleAtualizarConfig}
             />
           )}
         </main>
       </div>
 
-      {/* Modal de Autenticação / Troca de Operador */}
       {modalLoginAberto && (
         <ModalLogin
           usuarios={usuarios}

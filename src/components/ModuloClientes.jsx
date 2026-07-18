@@ -3,6 +3,7 @@ import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
   FileText, DollarSign, Receipt, MessageCircle, History
 } from 'lucide-react'
+import ModalNovaOS from './ModalNovaOS'
 
 export default function ModuloClientes({
   clientes,
@@ -42,15 +43,6 @@ export default function ModuloClientes({
     categorias: ['Atirador'],
     cidade: '',
     uf: 'SP'
-  })
-
-  // Nova OS Form State
-  const [novaOS, setNovaOS] = useState({
-    tipo_servico: 'Autorização de Compra de Arma de Fogo',
-    orgao_destino: 'Exército (SIGMA)',
-    valor_servico: '450.00',
-    valor_taxamento: '88.00',
-    detalhes: ''
   })
 
   const filteredClientes = clientes.filter(c =>
@@ -129,28 +121,6 @@ export default function ModuloClientes({
     }
   }
 
-  const handleSalvarOS = (e) => {
-    e.preventDefault()
-    if (!selectedCliente) return
-    const created = {
-      id: `o_${Date.now()}`,
-      numero_os: 1000 + ordens.length + 1,
-      cliente_id: selectedCliente.id,
-      cliente_nome: selectedCliente.nome_completo,
-      tipo_servico: novaOS.tipo_servico,
-      orgao_destino: novaOS.orgao_destino,
-      numero_protocolo: `2026.07.${Math.floor(1000 + Math.random() * 9000)}`,
-      data_protocolo: new Date().toISOString().split('T')[0],
-      valor_servico: parseFloat(novaOS.valor_servico) || 0,
-      valor_taxamento: parseFloat(novaOS.valor_taxamento) || 0,
-      status: 'Aguardando Doc',
-      detalhes: novaOS.detalhes || 'Processo registrado.'
-    }
-    setOrdens([created, ...ordens])
-    setShowModalGerarOS(false)
-    alert(`Ordem de Serviço #${created.numero_os} gerada com sucesso!`)
-  }
-
   const handleAbrirWhatsApp = (telefone) => {
     const limpo = (telefone || '').replace(/\D/g, '')
     const numero = limpo.length <= 11 ? `55${limpo}` : limpo
@@ -221,7 +191,7 @@ export default function ModuloClientes({
 
         {/* Grid Principal do Perfil */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
-          {/* Coluna Esquerda: Informações Pessoais (com Endereço) */}
+          {/* Coluna Esquerda: Informações Pessoais */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--border-color)' }}>
@@ -432,8 +402,7 @@ export default function ModuloClientes({
                       <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>
                         {mostrarHistoricoOS ? 'HISTÓRICO DE O.S. CONCLUÍDAS' : 'ORDENS EM ABERTO'}
                       </span>
-                      
-                      {/* Botão de Alternar para Histórico (Substituindo + Nova Ordem de Serviço) */}
+
                       <button
                         style={{
                           background: 'none',
@@ -517,7 +486,7 @@ export default function ModuloClientes({
           </div>
         </div>
 
-        {/* Modal Editar Cadastro do Cliente (com Endereço) */}
+        {/* Modal Editar Cadastro do Cliente */}
         {showModalEditarCliente && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
             <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -580,45 +549,17 @@ export default function ModuloClientes({
           </div>
         )}
 
-        {/* Modal Gerar OS no Perfil */}
+        {/* Modal Gerar OS (Estilo Exato Portal GCAC 3 passos) */}
         {showModalGerarOS && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#60A5FA', marginBottom: '1rem' }}>Gerar Ordem de Serviço para {selectedCliente.nome_completo}</h3>
-              <form onSubmit={handleSalvarOS} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tipo de Serviço / Processo</label>
-                  <select className="input-field" value={novaOS.tipo_servico} onChange={e => setNovaOS({...novaOS, tipo_servico: e.target.value})}>
-                    <option value="Autorização de Compra de Arma de Fogo">Autorização de Compra de Arma de Fogo</option>
-                    <option value="Concessão de CR (Primeiro CR)">Concessão de CR (Primeiro CR)</option>
-                    <option value="Renovação de CR">Renovação de CR</option>
-                    <option value="Emissão de CRAF">Emissão de CRAF</option>
-                    <option value="Guia de Tráfego (GT)">Guia de Tráfego (GT)</option>
-                    <option value="Transferência de Propriedade">Transferência de Propriedade</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Órgão Destino</label>
-                    <select className="input-field" value={novaOS.orgao_destino} onChange={e => setNovaOS({...novaOS, orgao_destino: e.target.value})}>
-                      <option value="Exército (SIGMA)">Exército (SIGMA)</option>
-                      <option value="Polícia Federal (SINARM)">Polícia Federal (SINARM)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Valor Serviço (R$)</label>
-                    <input className="input-field" type="number" value={novaOS.valor_servico} onChange={e => setNovaOS({...novaOS, valor_servico: e.target.value})} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                  <button type="button" className="btn-secondary" onClick={() => setShowModalGerarOS(false)}>Cancelar</button>
-                  <button type="submit" className="btn-gold">Gerar O.S.</button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <ModalNovaOS
+            clienteInicial={selectedCliente}
+            clientes={clientes}
+            ordens={ordens}
+            setOrdens={setOrdens}
+            financeiro={financeiro}
+            setFinanceiro={setFinanceiro}
+            onClose={() => setShowModalGerarOS(false)}
+          />
         )}
 
         {/* Modal Recibo Impressão */}

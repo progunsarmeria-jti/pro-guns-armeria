@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag, X } from 'lucide-react'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
 
@@ -19,11 +19,13 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
   // Estado para Cadastro de Nova Categoria
   const [novaCategoriaNome, setNovaCategoriaNome] = useState('')
+  const [categoriaParaEditar, setCategoriaParaEditar] = useState(null) // { original, editado }
 
-  // Estado para Cadastro de Novo Serviço
+  // Estado para Cadastro e Edição de Serviço
   const [novoServicoNome, setNovoServicoNome] = useState('')
   const [novoServicoValor, setNovoServicoValor] = useState('')
   const [novoServicoCategoria, setNovoServicoCategoria] = useState('MANUTENÇÃO')
+  const [servicoParaEditar, setServicoParaEditar] = useState(null) // { id, nome, valor, categoria }
 
   useEffect(() => {
     if (config) {
@@ -72,14 +74,42 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     setFormData(updated)
     setConfig(updated)
     setNovaCategoriaNome('')
-    alert(`Categoria "${nomeLimpo}" cadastrada em CAIXA ALTA com sucesso!`)
+    alert(`Categoria "${nomeLimpo}" cadastrada com sucesso!`)
+  }
+
+  // Editar Categoria Cadastrada
+  const handleSalvarEdicaoCategoria = (e) => {
+    e.preventDefault()
+    if (!categoriaParaEditar || !categoriaParaEditar.editado) return
+    const original = categoriaParaEditar.original.toUpperCase()
+    const novoNome = categoriaParaEditar.editado.trim().toUpperCase()
+
+    if (!novoNome) return
+
+    const listaAtual = formData.categorias_servicos || []
+    const novaLista = listaAtual.map(c => c.toUpperCase() === original ? novoNome : c.toUpperCase())
+
+    // Atualiza também os serviços vinculados a essa categoria antiga
+    const catalogoAtual = formData.catalogo_servicos || []
+    const novoCatalogo = catalogoAtual.map(s => {
+      if ((s.categoria || '').toUpperCase() === original) {
+        return { ...s, categoria: novoNome }
+      }
+      return s
+    })
+
+    const updated = { ...formData, categorias_servicos: novaLista, catalogo_servicos: novoCatalogo }
+    setFormData(updated)
+    setConfig(updated)
+    setCategoriaParaEditar(null)
+    alert(`Categoria atualizada para "${novoNome}"!`)
   }
 
   // Remover Categoria
   const handleRemoverCategoria = (catNome) => {
     if (window.confirm(`Deseja remover a categoria "${catNome}"?`)) {
       const listaAtual = formData.categorias_servicos || []
-      const novaLista = listaAtual.filter(c => c !== catNome)
+      const novaLista = listaAtual.filter(c => c.toUpperCase() !== catNome.toUpperCase())
 
       const updated = { ...formData, categorias_servicos: novaLista }
       setFormData(updated)
@@ -111,7 +141,29 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
     setNovoServicoNome('')
     setNovoServicoValor('')
-    alert(`Serviço "${item.nome}" cadastrado com sucesso em CAIXA ALTA!`)
+    alert(`Serviço "${item.nome}" cadastrado com sucesso!`)
+  }
+
+  // Editar Serviço Existente no Catálogo
+  const handleSalvarEdicaoServico = (e) => {
+    e.preventDefault()
+    if (!servicoParaEditar) return
+
+    const itemAtualizado = {
+      ...servicoParaEditar,
+      nome: servicoParaEditar.nome.trim().toUpperCase(),
+      valor: parseFloat(servicoParaEditar.valor) || 0,
+      categoria: (servicoParaEditar.categoria || 'MANUTENÇÃO').trim().toUpperCase()
+    }
+
+    const catalogoAtual = formData.catalogo_servicos || []
+    const novoCatalogo = catalogoAtual.map(s => s.id === itemAtualizado.id ? itemAtualizado : s)
+
+    const updated = { ...formData, catalogo_servicos: novoCatalogo }
+    setFormData(updated)
+    setConfig(updated)
+    setServicoParaEditar(null)
+    alert(`Serviço "${itemAtualizado.nome}" atualizado com sucesso!`)
   }
 
   // Remover Serviço do Catálogo
@@ -138,7 +190,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           <span>Configurações & Gestão de Categorias</span>
         </h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          Cadastre categorias de serviços, gerencie a tabela de preços e dados da Pró Guns Armeria.
+          Cadastre e edite categorias de serviços, gerencie a tabela de preços e dados institucionais.
         </p>
       </div>
 
@@ -239,7 +291,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          2. SEÇÃO SUSPENSA: CADASTRO DE CATEGORIAS (EM CAIXA ALTA)
+          2. SEÇÃO SUSPENSA: CADASTRO E EDIÇÃO DE CATEGORIAS
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
@@ -257,7 +309,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Tag size={22} color="#FBBF24" />
             <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              Cadastro & Gerenciamento de Categorias
+              Cadastro & Edição de Categorias
             </h3>
             <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24', fontWeight: '800' }}>
               {categoriasDisponiveis.length} Categorias
@@ -268,11 +320,11 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
         {openSections.categorias && (
           <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Formulário de Cadastro de Categoria (Automático em CAIXA ALTA) */}
+            {/* Formulário de Cadastro de Categoria */}
             <form onSubmit={handleAdicionarCategoria} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                  NOME DA NOVA CATEGORIA * (CONVERTIDO AUTOMATICAMENTE EM CAIXA ALTA)
+                  NOME DA NOVA CATEGORIA * (CAIXA ALTA AUTOMÁTICO)
                 </label>
                 <input
                   required
@@ -290,10 +342,10 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
               </button>
             </form>
 
-            {/* Grid de Categorias Cadastradas */}
+            {/* Grid de Categorias Cadastradas com Botões de EDITAR e EXCLUIR */}
             <div>
               <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                CATEGORIAS CADASTRADAS NO SISTEMA:
+                CATEGORIAS CADASTRADAS (CLIQUE NO LÁPIS PARA EDITAR):
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {categoriasDisponiveis.map(cat => (
@@ -314,6 +366,18 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                   >
                     <Tag size={14} color="#FBBF24" />
                     <span>{cat.toUpperCase()}</span>
+
+                    {/* BOTÃO EDITAR CATEGORIA */}
+                    <button
+                      type="button"
+                      onClick={() => setCategoriaParaEditar({ original: cat, editado: cat })}
+                      style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      title="Editar Nome da Categoria"
+                    >
+                      <Edit size={13} />
+                    </button>
+
+                    {/* BOTÃO EXCLUIR CATEGORIA */}
                     <button
                       type="button"
                       onClick={() => handleRemoverCategoria(cat)}
@@ -331,7 +395,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES (EM CAIXA ALTA)
+          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES (COM EDITAR E EXCLUIR)
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
@@ -364,7 +428,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             <form onSubmit={handleAdicionarServico} style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <Plus size={16} />
-                <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO (CAIXA ALTA AUTOMÁTICA)</span>
+                <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO</span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
@@ -416,7 +480,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
               </div>
             </form>
 
-            {/* Tabela de Serviços Cadastrados */}
+            {/* Tabela de Serviços Cadastrados com Ações de EDITAR e EXCLUIR */}
             <div>
               <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
                 SERVIÇOS DISPONÍVEIS NA ARMERIA
@@ -452,13 +516,26 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                             R$ {(parseFloat(s.valor) || 0).toFixed(2)}
                           </td>
                           <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoverServico(s.id)}
-                              style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div style={{ display: 'inline-flex', gap: '0.6rem' }}>
+                              {/* BOTÃO EDITAR SERVIÇO */}
+                              <button
+                                type="button"
+                                onClick={() => setServicoParaEditar(s)}
+                                style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer' }}
+                                title="Editar Serviço"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              {/* BOTÃO EXCLUIR SERVIÇO */}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoverServico(s.id)}
+                                style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
+                                title="Excluir Serviço"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -470,6 +547,115 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           </div>
         )}
       </div>
+
+      {/* ==========================================
+          MODAL: EDITAR CATEGORIA
+      ========================================== */}
+      {categoriaParaEditar && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--gold-accent)' }}>Editar Nome da Categoria</h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setCategoriaParaEditar(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicaoCategoria} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.4rem' }}>
+                  NOME DA CATEGORIA *
+                </label>
+                <input
+                  required
+                  className="input-field"
+                  value={categoriaParaEditar.editado}
+                  onChange={e => setCategoriaParaEditar({ ...categoriaParaEditar, editado: e.target.value.toUpperCase() })}
+                  style={{ textTransform: 'uppercase', fontWeight: '700' }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setCategoriaParaEditar(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold">Salvar Categoria</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL: EDITAR SERVIÇO E PREÇO
+      ========================================== */}
+      {servicoParaEditar && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#60A5FA', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Edit size={18} />
+                <span>Editar Serviço do Catálogo</span>
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setServicoParaEditar(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicaoServico} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  NOME DO SERVIÇO * (CAIXA ALTA AUTOMÁTICO)
+                </label>
+                <input
+                  required
+                  className="input-field"
+                  value={servicoParaEditar.nome}
+                  onChange={e => setServicoParaEditar({ ...servicoParaEditar, nome: e.target.value.toUpperCase() })}
+                  style={{ textTransform: 'uppercase', fontWeight: '700' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                    VALOR PADRÃO (R$) *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={servicoParaEditar.valor}
+                    onChange={e => setServicoParaEditar({ ...servicoParaEditar, valor: e.target.value })}
+                    style={{ fontWeight: '700' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                    CATEGORIA
+                  </label>
+                  <select
+                    className="input-field"
+                    value={servicoParaEditar.categoria}
+                    onChange={e => setServicoParaEditar({ ...servicoParaEditar, categoria: e.target.value })}
+                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
+                  >
+                    {categoriasDisponiveis.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setServicoParaEditar(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold">Salvar Alterações</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ==========================================
           4. SEÇÃO SUSPENSA: CONEXÃO SUPABASE

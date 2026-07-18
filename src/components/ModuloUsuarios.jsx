@@ -22,10 +22,13 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
       preencher_laudo_armeiro: false,
       aprovar_os: true,
       concluir_retirada: true,
+      excluir_os: false,
       ver_orcamentos: true,
       criar_orcamentos: true,
+      excluir_orcamentos: false,
       ver_financeiro: false,
       lancar_financeiro: true,
+      ver_configuracoes: false,
       gerenciar_usuarios: false
     }
   })
@@ -36,20 +39,26 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
     if (novoPerfil === 'master') {
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: true,
-        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: true, aprovar_os: true, concluir_retirada: true,
-        ver_orcamentos: true, criar_orcamentos: true, ver_financeiro: true, lancar_financeiro: true, gerenciar_usuarios: true
+        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: true, aprovar_os: true, concluir_retirada: true, excluir_os: true,
+        ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: true,
+        ver_financeiro: true, lancar_financeiro: true,
+        ver_configuracoes: true, gerenciar_usuarios: true
       }
     } else if (novoPerfil === 'recepcao') {
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
-        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true,
-        ver_orcamentos: true, criar_orcamentos: true, ver_financeiro: false, lancar_financeiro: true, gerenciar_usuarios: false
+        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
+        ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_financeiro: false, lancar_financeiro: true,
+        ver_configuracoes: false, gerenciar_usuarios: false
       }
     } else if (novoPerfil === 'armeiro') {
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: false, editar_clientes: false, excluir_clientes: false,
-        ver_ordens: true, dar_entrada_os: false, preencher_laudo_armeiro: true, aprovar_os: false, concluir_retirada: false,
-        ver_orcamentos: false, criar_orcamentos: false, ver_financeiro: false, lancar_financeiro: false, gerenciar_usuarios: false
+        ver_ordens: true, dar_entrada_os: false, preencher_laudo_armeiro: true, aprovar_os: false, concluir_retirada: false, excluir_os: false,
+        ver_orcamentos: false, criar_orcamentos: false, excluir_orcamentos: false,
+        ver_financeiro: false, lancar_financeiro: false,
+        ver_configuracoes: false, gerenciar_usuarios: false
       }
     }
     setUsuarioForm({
@@ -121,8 +130,10 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
       status: 'Ativo',
       permissoes: {
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
-        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true,
-        ver_orcamentos: true, criar_orcamentos: true, ver_financeiro: false, lancar_financeiro: true, gerenciar_usuarios: false
+        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
+        ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_financeiro: false, lancar_financeiro: true,
+        ver_configuracoes: false, gerenciar_usuarios: false
       }
     })
   }
@@ -231,7 +242,7 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
       {/* Modal Novo / Editar Usuário & Permissões */}
       {showModalNovoUsuario && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-accent)', marginBottom: '1rem' }}>
               {editingUsuario ? `Editar Permissões de ${editingUsuario.nome_completo}` : 'Cadastrar Novo Operador / Usuário'}
             </h3>
@@ -268,11 +279,11 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
                 </div>
               </div>
 
-              {/* MATRIZ DE PERMISSÕES CUSTOMIZÁVEIS */}
+              {/* MATRIZ COMPLETA DE PERMISSÕES CUSTOMIZÁVEIS */}
               <div style={{ backgroundColor: 'var(--bg-input)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Shield size={16} color="#FBBF24" />
-                  <span>MATRIZ DE PERMISSÕES GRANULARES (CUSTOMIZAR ACESSO)</span>
+                  <span>MATRIZ COMPLETA DE PERMISSÕES GRANULARES</span>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', fontSize: '0.78rem' }}>
@@ -286,9 +297,13 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
                     { key: 'preencher_laudo_armeiro', label: 'Preencher Laudo do Armeiro' },
                     { key: 'aprovar_os', label: 'Aprovar Orçamento com Cliente' },
                     { key: 'concluir_retirada', label: 'Registrar Retirada & Pagamento' },
+                    { key: 'excluir_os', label: 'Excluir Ordens de Serviço' },
                     { key: 'ver_orcamentos', label: 'Ver Módulo Orçamentos' },
+                    { key: 'criar_orcamentos', label: 'Criar Novos Orçamentos' },
                     { key: 'ver_financeiro', label: 'Ver Módulo Financeiro' },
-                    { key: 'gerenciar_usuarios', label: 'Gerenciar Usuários (Aba Usuários)' }
+                    { key: 'lancar_financeiro', label: 'Lançar Receitas / Despesas' },
+                    { key: 'ver_configuracoes', label: 'Ver Módulo Configurações' },
+                    { key: 'gerenciar_usuarios', label: 'Acessar Aba Usuários' }
                   ].map(p => {
                     const isChecked = usuarioForm.permissoes[p.key]
                     return (
@@ -308,7 +323,7 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
                         }}
                       >
                         <span>{p.label}</span>
-                        <span>{isChecked ? '✓ SIM' : '✕ NÃO'}</span>
+                        <span>{isChecked ? '✓ LIBERADO' : '✕ BLOQUEADO'}</span>
                       </div>
                     )
                   })}

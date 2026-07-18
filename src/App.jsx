@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ModuloClientes from './components/ModuloClientes'
@@ -47,6 +47,30 @@ export default function App() {
   const [orcamentos, setOrcamentos] = useState(INITIAL_ORCAMENTOS)
   const [financeiro, setFinanceiro] = useState(INITIAL_FINANCEIRO)
   const [config, setConfig] = useState(INITIAL_CONFIG)
+
+  // Verifica se o usuário logado possui permissão para acessar a aba atual. Se não, redireciona.
+  useEffect(() => {
+    if (!usuarioLogado) return
+    if (usuarioLogado.perfil === 'master') return
+
+    const permissoes = usuarioLogado.permissoes || {}
+    const reqMap = {
+      clientes: 'ver_clientes',
+      ordens: 'ver_ordens',
+      orcamentos: 'ver_orcamentos',
+      financeiro: 'ver_financeiro',
+      usuarios: 'gerenciar_usuarios',
+      configuracoes: 'ver_configuracoes'
+    }
+
+    const reqPerm = reqMap[activeTab]
+    if (reqPerm && !permissoes[reqPerm]) {
+      // Procura a primeira aba permitida
+      const disponiveis = ['clientes', 'ordens', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes']
+      const primeiraLivre = disponiveis.find(tab => permissoes[reqMap[tab]]) || 'clientes'
+      setActiveTab(primeiraLivre)
+    }
+  }, [usuarioLogado, activeTab])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>

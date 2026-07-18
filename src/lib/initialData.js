@@ -19,10 +19,13 @@ export const INITIAL_USUARIOS = [
       preencher_laudo_armeiro: true,
       aprovar_os: true,
       concluir_retirada: true,
+      excluir_os: true,
       ver_orcamentos: true,
       criar_orcamentos: true,
+      excluir_orcamentos: true,
       ver_financeiro: true,
       lancar_financeiro: true,
+      ver_configuracoes: true,
       gerenciar_usuarios: true
     }
   },
@@ -44,10 +47,13 @@ export const INITIAL_USUARIOS = [
       preencher_laudo_armeiro: false,
       aprovar_os: true,
       concluir_retirada: true,
+      excluir_os: false,
       ver_orcamentos: true,
       criar_orcamentos: true,
+      excluir_orcamentos: false,
       ver_financeiro: false,
       lancar_financeiro: true,
+      ver_configuracoes: false,
       gerenciar_usuarios: false
     }
   },
@@ -69,10 +75,13 @@ export const INITIAL_USUARIOS = [
       preencher_laudo_armeiro: false,
       aprovar_os: true,
       concluir_retirada: true,
+      excluir_os: false,
       ver_orcamentos: true,
       criar_orcamentos: true,
+      excluir_orcamentos: false,
       ver_financeiro: false,
       lancar_financeiro: true,
+      ver_configuracoes: false,
       gerenciar_usuarios: false
     }
   },
@@ -94,10 +103,13 @@ export const INITIAL_USUARIOS = [
       preencher_laudo_armeiro: true,
       aprovar_os: false,
       concluir_retirada: false,
+      excluir_os: false,
       ver_orcamentos: false,
       criar_orcamentos: false,
+      excluir_orcamentos: false,
       ver_financeiro: false,
       lancar_financeiro: false,
+      ver_configuracoes: false,
       gerenciar_usuarios: false
     }
   },
@@ -119,10 +131,13 @@ export const INITIAL_USUARIOS = [
       preencher_laudo_armeiro: true,
       aprovar_os: false,
       concluir_retirada: false,
+      excluir_os: false,
       ver_orcamentos: false,
       criar_orcamentos: false,
+      excluir_orcamentos: false,
       ver_financeiro: false,
       lancar_financeiro: false,
+      ver_configuracoes: false,
       gerenciar_usuarios: false
     }
   }

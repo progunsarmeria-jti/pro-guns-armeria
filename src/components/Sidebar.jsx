@@ -10,7 +10,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado }) {
     { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, badgeCount: '2', reqPerm: 'ver_orcamentos' },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign, badgeCount: null, reqPerm: 'ver_financeiro' },
     { id: 'usuarios', label: 'Usuários', icon: UserCheck, badgeCount: null, reqPerm: 'gerenciar_usuarios' },
-    { id: 'configuracoes', label: 'Configurações', icon: Settings, badgeCount: null, reqPerm: null },
+    { id: 'configuracoes', label: 'Configurações', icon: Settings, badgeCount: null, reqPerm: 'ver_configuracoes' },
   ]
 
   const itemsFiltrados = menuItems.filter(item => {

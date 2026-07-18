@@ -23,15 +23,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  // Lista de Usuários e Usuário Logado Autenticado
-  const [usuarios, setUsuarios] = useState(INITIAL_USUARIOS)
+  // 1. USUÁRIOS COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [usuarios, setUsuarios] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_USUARIOS')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_USUARIOS }
+    }
+    return INITIAL_USUARIOS
+  })
 
+  // 2. USUÁRIO LOGADO SESSÃO
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     const saved = localStorage.getItem('PROGUNS_AUTH_USER')
     if (saved) {
       try { return JSON.parse(saved) } catch (e) { return null }
     }
-    return null // Por padrão inicia deslogado exigindo CPF e Senha
+    return null
   })
 
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
@@ -41,7 +48,7 @@ export default function App() {
     setUsuarioLogado(null)
   }
 
-  // Configurações Institucionais da Armeria com Persistência em LocalStorage
+  // 3. CONFIGURAÇÕES INSTITUCIONAIS COM PERSISTÊNCIA
   const [config, setConfig] = useState(() => {
     const saved = localStorage.getItem('PROGUNS_CONFIG')
     return saved ? JSON.parse(saved) : INITIAL_CONFIG
@@ -52,7 +59,7 @@ export default function App() {
     localStorage.setItem('PROGUNS_CONFIG', JSON.stringify(novosDados))
   }
 
-  // Central de Notificações / Alertas da Recepção
+  // 4. CENTRAL DE NOTIFICAÇÕES
   const [notificacoes, setNotificacoes] = useState([
     {
       id: 'n1',
@@ -65,14 +72,79 @@ export default function App() {
     }
   ])
 
-  // Data state
-  const [clientes, setClientes] = useState(INITIAL_CLIENTES)
-  const [armas, setArmas] = useState(INITIAL_ARMAS)
-  const [ordens, setOrdens] = useState(INITIAL_ORDENS)
-  const [orcamentos, setOrcamentos] = useState(INITIAL_ORCAMENTOS)
-  const [financeiro, setFinanceiro] = useState(INITIAL_FINANCEIRO)
+  // 5. CLIENTES COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [clientes, setClientes] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_CLIENTES')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_CLIENTES }
+    }
+    return INITIAL_CLIENTES
+  })
 
-  // Verifica se o usuário logado possui permissão para acessar a aba atual. Se não, redireciona.
+  // 6. ARMAS COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [armas, setArmas] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_ARMAS')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_ARMAS }
+    }
+    return INITIAL_ARMAS
+  })
+
+  // 7. ORDENS DE SERVIÇO (O.S.) COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [ordens, setOrdens] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_ORDENS')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_ORDENS }
+    }
+    return INITIAL_ORDENS
+  })
+
+  // 8. ORÇAMENTOS COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [orcamentos, setOrcamentos] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_ORCAMENTOS')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_ORCAMENTOS }
+    }
+    return INITIAL_ORCAMENTOS
+  })
+
+  // 9. FINANCEIRO COM PERSISTÊNCIA EM LOCALSTORAGE
+  const [financeiro, setFinanceiro] = useState(() => {
+    const saved = localStorage.getItem('PROGUNS_FINANCEIRO')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { return INITIAL_FINANCEIRO }
+    }
+    return INITIAL_FINANCEIRO
+  })
+
+  // =========================================================
+  // HOOKS DE SINCRONIZAÇÃO AUTOMÁTICA EM TEMPO REAL NO BROWSER
+  // =========================================================
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_USUARIOS', JSON.stringify(usuarios))
+  }, [usuarios])
+
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_CLIENTES', JSON.stringify(clientes))
+  }, [clientes])
+
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_ARMAS', JSON.stringify(armas))
+  }, [armas])
+
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(ordens))
+  }, [ordens])
+
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_ORCAMENTOS', JSON.stringify(orcamentos))
+  }, [orcamentos])
+
+  useEffect(() => {
+    localStorage.setItem('PROGUNS_FINANCEIRO', JSON.stringify(financeiro))
+  }, [financeiro])
+
+  // Verifica permissões do usuário
   useEffect(() => {
     if (!usuarioLogado) return
     if (usuarioLogado.perfil === 'master') return

@@ -28,7 +28,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           fontWeight: '600',
           marginBottom: '0.85rem'
         }}>
-          Portal G-CAC - Pró Guns
+          Pró Guns Gestão
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

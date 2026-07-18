@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
-  UserCheck, Lock, Copy, FileText, DollarSign, Receipt, Calendar, MessageSquare,
-  FileCheck, Crosshair, CheckCircle2
+  FileText, DollarSign, Receipt, MessageCircle, CheckCircle2
 } from 'lucide-react'
 
 export default function ModuloClientes({
@@ -20,18 +19,16 @@ export default function ModuloClientes({
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCliente, setSelectedCliente] = useState(null)
   const [showModalNovoCliente, setShowModalNovoCliente] = useState(false)
-  const [showModalArma, setShowModalArma] = useState(false)
+  const [showModalEditarCliente, setShowModalEditarCliente] = useState(false)
   const [activeSubTab, setActiveSubTab] = useState('os')
 
   // Modais de ações do perfil
   const [showModalGerarOS, setShowModalGerarOS] = useState(false)
   const [showModalGerarOrcamento, setShowModalGerarOrcamento] = useState(false)
   const [showModalRecibo, setShowModalRecibo] = useState(null)
-  const [showModalDeclaracao, setShowModalDeclaracao] = useState(false)
-  const [senhaCopiada, setSenhaCopiada] = useState(false)
 
-  // Novo Cliente Form State
-  const [novoCliente, setNovoCliente] = useState({
+  // Cliente Form State (Usado tanto em criar quanto em editar)
+  const [clienteForm, setClienteForm] = useState({
     nome_completo: '',
     cpf: '',
     rg: '',
@@ -41,10 +38,8 @@ export default function ModuloClientes({
     validade_cr: '',
     regiao_militar: '2ª RM',
     categorias: ['Atirador'],
-    clube_filiado: 'CLUBE DE TIRO E CAÇA PRÓ TIRO (JATAÍ)',
-    cidade: 'Jataí',
-    uf: 'GO',
-    senha_gov: 'Pradalto54*'
+    cidade: 'São Paulo',
+    uf: 'SP'
   })
 
   // Nova OS Form State
@@ -56,35 +51,56 @@ export default function ModuloClientes({
     detalhes: ''
   })
 
-  // Nova Arma Form State
-  const [novaArma, setNovaArma] = useState({
-    tipo: 'Pistola',
-    marca: 'Glock',
-    modelo: 'G17 Gen5',
-    calibre: '9mm',
-    numero_serie: '',
-    numero_sigma_sinarm: '',
-    orgao_registro: 'SIGMA',
-    numero_craf: '',
-    validade_craf: ''
-  })
-
   const filteredClientes = clientes.filter(c =>
     c.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.cpf.includes(searchTerm)
   )
 
-  const handleSalvarCliente = (e) => {
+  const handleSalvarNovoCliente = (e) => {
     e.preventDefault()
-    if (!novoCliente.nome_completo || !novoCliente.cpf) return
+    if (!clienteForm.nome_completo || !clienteForm.cpf) return
     const created = {
-      ...novoCliente,
+      ...clienteForm,
       id: `c_${Date.now()}`,
       status: 'Ativo'
     }
     setClientes([created, ...clientes])
     setShowModalNovoCliente(false)
-    setNovoCliente({
+    resetForm()
+  }
+
+  const handleSalvarEditarCliente = (e) => {
+    e.preventDefault()
+    if (!selectedCliente || !clienteForm.nome_completo) return
+    const updated = {
+      ...selectedCliente,
+      ...clienteForm
+    }
+    setClientes(clientes.map(c => c.id === selectedCliente.id ? updated : c))
+    setSelectedCliente(updated)
+    setShowModalEditarCliente(false)
+    alert('Cadastro do cliente atualizado com sucesso!')
+  }
+
+  const handleAbrirEditar = (cliente) => {
+    setClienteForm({
+      nome_completo: cliente.nome_completo || '',
+      cpf: cliente.cpf || '',
+      rg: cliente.rg || '',
+      telefone: cliente.telefone || '',
+      email: cliente.email || '',
+      numero_cr: cliente.numero_cr || '',
+      validade_cr: cliente.validade_cr || '',
+      regiao_militar: cliente.regiao_militar || '2ª RM',
+      categorias: cliente.categorias || ['Atirador'],
+      cidade: cliente.cidade || '',
+      uf: cliente.uf || 'SP'
+    })
+    setShowModalEditarCliente(true)
+  }
+
+  const resetForm = () => {
+    setClienteForm({
       nome_completo: '',
       cpf: '',
       rg: '',
@@ -94,10 +110,8 @@ export default function ModuloClientes({
       validade_cr: '',
       regiao_militar: '2ª RM',
       categorias: ['Atirador'],
-      clube_filiado: 'CLUBE DE TIRO E CAÇA PRÓ TIRO (JATAÍ)',
-      cidade: 'Jataí',
-      uf: 'GO',
-      senha_gov: 'Pradalto54*'
+      cidade: '',
+      uf: 'SP'
     })
   }
 
@@ -133,29 +147,10 @@ export default function ModuloClientes({
     alert(`Ordem de Serviço #${created.numero_os} gerada com sucesso!`)
   }
 
-  const handleSalvarArma = (e) => {
-    e.preventDefault()
-    if (!novaArma.numero_serie || !selectedCliente) return
-    const createdArma = {
-      ...novaArma,
-      id: `a_${Date.now()}`,
-      cliente_id: selectedCliente.id,
-      status: 'Regular'
-    }
-    setArmas([createdArma, ...armas])
-    setShowModalArma(false)
-  }
-
   const handleAbrirWhatsApp = (telefone) => {
     const limpo = (telefone || '').replace(/\D/g, '')
     const numero = limpo.length <= 11 ? `55${limpo}` : limpo
     window.open(`https://wa.me/${numero}`, '_blank')
-  }
-
-  const handleCopiarSenha = (senha) => {
-    navigator.clipboard.writeText(senha || 'Pradalto54*')
-    setSenhaCopiada(true)
-    setTimeout(() => setSenhaCopiada(false), 2000)
   }
 
   // ==========================================
@@ -164,7 +159,6 @@ export default function ModuloClientes({
   if (selectedCliente) {
     const ordensDoCliente = ordens.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
     const orcamentosDoCliente = orcamentos.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
-    const armasDoCliente = armas.filter(a => a.cliente_id === selectedCliente.id)
 
     return (
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -189,29 +183,25 @@ export default function ModuloClientes({
               <ArrowLeft size={18} />
             </button>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
-                  {selectedCliente.nome_completo.toUpperCase()}
-                </h1>
-                <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
-                  NÃO CADASTRADO NO PORTAL GCAC
-                </span>
-              </div>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
+                {selectedCliente.nome_completo.toUpperCase()}
+              </h1>
               <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Perfil do Cliente</div>
             </div>
           </div>
 
           {/* Botões Superiores de Ação do Perfil */}
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-            <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.45rem 0.8rem' }}>
+            <button
+              className="btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem', cursor: 'pointer' }}
+              onClick={() => handleAbrirEditar(selectedCliente)}
+            >
               <Edit size={14} /> <span>EDITAR CADASTRO</span>
-            </button>
-            <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.45rem 0.8rem', color: '#60A5FA' }}>
-              <UserCheck size={14} /> <span>CONVIDAR PARA PORTAL</span>
             </button>
             <button
               className="btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '0.45rem 0.8rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+              style={{ fontSize: '0.8rem', padding: '0.45rem 0.9rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)', cursor: 'pointer' }}
               onClick={(e) => handleExcluirCliente(selectedCliente.id, e)}
             >
               <Trash2 size={14} /> <span>EXCLUIR CLIENTE</span>
@@ -221,9 +211,8 @@ export default function ModuloClientes({
 
         {/* Grid Principal do Perfil */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
-          {/* Coluna Esquerda: Informações & Gov.br */}
+          {/* Coluna Esquerda: Informações Pessoais */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Card Informações Pessoais */}
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
@@ -249,12 +238,12 @@ export default function ModuloClientes({
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>CLUBE DE TIRO E CAÇA FILIADO</div>
-                  <div style={{ fontWeight: '700', color: '#34D399', marginTop: '0.15rem', fontSize: '0.82rem' }}>
-                    {selectedCliente.clube_filiado || 'CLUBE DE TIRO E CAÇA PRÓ TIRO (JATAÍ)'}
+                {selectedCliente.email && (
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>E-MAIL</div>
+                    <div style={{ fontWeight: '600', color: 'var(--text-main)', marginTop: '0.15rem' }}>{selectedCliente.email}</div>
                   </div>
-                </div>
+                )}
 
                 {selectedCliente.numero_cr && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -270,47 +259,12 @@ export default function ModuloClientes({
                 )}
               </div>
             </div>
-
-            {/* Card Acesso Gov.br */}
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Lock size={16} color="#60A5FA" />
-                  <span style={{ fontSize: '0.78rem', fontWeight: '700', color: '#60A5FA', letterSpacing: '0.5px' }}>
-                    ACESSO GOV.BR
-                  </span>
-                </div>
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}
-                  onClick={() => handleCopiarSenha(selectedCliente.senha_gov)}
-                >
-                  <Copy size={12} />
-                  <span>{senhaCopiada ? 'Copiado!' : 'COPIAR SENHA'}</span>
-                </button>
-              </div>
-
-              <div style={{
-                backgroundColor: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '0.75rem 1rem',
-                textAlign: 'center',
-                fontFamily: 'monospace',
-                fontSize: '1.1rem',
-                fontWeight: '700',
-                color: '#60A5FA',
-                letterSpacing: '1px'
-              }}>
-                {selectedCliente.senha_gov || 'Pradalto54*'}
-              </div>
-            </div>
           </div>
 
           {/* Coluna Direita: Balões de Ações Rápidas & Histórico em Abas */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Grid dos Balões de Ações Rápidas (Estilo Portal GCAC) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.85rem' }}>
+            {/* Grid dos Balões de Ações Rápidas (Sem itens removidos) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
               {/* Balão 1: GERAR O.S. */}
               <button
                 onClick={() => setShowModalGerarOS(true)}
@@ -318,7 +272,7 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(59, 130, 246, 0.12)',
                   border: '1px solid rgba(59, 130, 246, 0.3)',
                   borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
+                  padding: '1.2rem 0.8rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -327,7 +281,7 @@ export default function ModuloClientes({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FileText size={24} color="#60A5FA" />
+                <FileText size={26} color="#60A5FA" />
                 <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#60A5FA', letterSpacing: '0.5px' }}>
                   GERAR O.S.
                 </span>
@@ -340,7 +294,7 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(245, 158, 11, 0.12)',
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                   borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
+                  padding: '1.2rem 0.8rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -349,7 +303,7 @@ export default function ModuloClientes({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <DollarSign size={24} color="#FBBF24" />
+                <DollarSign size={26} color="#FBBF24" />
                 <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#FBBF24', letterSpacing: '0.5px' }}>
                   GERAR ORÇAMENTO
                 </span>
@@ -362,7 +316,7 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(16, 185, 129, 0.12)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
+                  padding: '1.2rem 0.8rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -371,42 +325,20 @@ export default function ModuloClientes({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Receipt size={24} color="#34D399" />
+                <Receipt size={26} color="#34D399" />
                 <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px' }}>
                   GERAR RECIBO
                 </span>
               </button>
 
-              {/* Balão 4: AGENDAR LAUDO */}
-              <button
-                onClick={() => alert('Agendamento de laudo iniciado.')}
-                style={{
-                  backgroundColor: 'rgba(139, 92, 246, 0.12)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Calendar size={24} color="#A78BFA" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#A78BFA', letterSpacing: '0.5px' }}>
-                  AGENDAR LAUDO
-                </span>
-              </button>
-
-              {/* Balão 5: INICIAR CONVERSA (WhatsApp Direct) */}
+              {/* Balão 4: INICIAR CONVERSA (ÍCONE BALÃO WHATSAPP) */}
               <button
                 onClick={() => handleAbrirWhatsApp(selectedCliente.telefone)}
                 style={{
                   backgroundColor: 'rgba(34, 197, 94, 0.18)',
                   border: '1px solid rgba(34, 197, 94, 0.4)',
                   borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
+                  padding: '1.2rem 0.8rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -415,36 +347,14 @@ export default function ModuloClientes({
                   transition: 'all 0.2s ease'
                 }}
               >
-                <MessageSquare size={24} color="#4ADE80" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#4ADE80', letterSpacing: '0.5px' }}>
+                <MessageCircle size={28} color="#25D366" fill="#25D366" />
+                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#25D366', letterSpacing: '0.5px' }}>
                   INICIAR CONVERSA
-                </span>
-              </button>
-
-              {/* Balão 6: GERAR DECLARAÇÃO */}
-              <button
-                onClick={() => setShowModalDeclaracao(true)}
-                style={{
-                  backgroundColor: 'rgba(30, 58, 138, 0.25)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: '10px',
-                  padding: '1.1rem 0.8rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <FileCheck size={24} color="#93C5FD" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#93C5FD', letterSpacing: '0.5px' }}>
-                  GERAR DECLARAÇÃO
                 </span>
               </button>
             </div>
 
-            {/* Container de Abas (O.S., ORÇAMENTOS, RECIBOS, AGENDAMENTOS, ACERVO & DOCS, HAVER) */}
+            {/* Container de Abas (O.S., ORÇAMENTOS, RECIBOS, HAVER) */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{
                 display: 'flex',
@@ -456,15 +366,13 @@ export default function ModuloClientes({
                   { id: 'os', label: 'O.S.', count: ordensDoCliente.length },
                   { id: 'orcamentos', label: 'ORÇAMENTOS', count: orcamentosDoCliente.length },
                   { id: 'recibos', label: 'RECIBOS', count: 0 },
-                  { id: 'agendamentos', label: 'AGENDAMENTOS', count: 0 },
-                  { id: 'acervo', label: 'ACERVO & DOCS', count: armasDoCliente.length },
                   { id: 'haver', label: 'HAVER', count: 0 }
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id)}
                     style={{
-                      padding: '0.85rem 1.1rem',
+                      padding: '0.85rem 1.3rem',
                       border: 'none',
                       backgroundColor: activeSubTab === tab.id ? 'var(--bg-card)' : 'transparent',
                       color: activeSubTab === tab.id ? '#60A5FA' : 'var(--text-muted)',
@@ -518,7 +426,7 @@ export default function ModuloClientes({
                         {ordensDoCliente.map(o => (
                           <div key={o.id} style={{ padding: '0.85rem', backgroundColor: 'var(--bg-input)', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{ fontWeight: '700', color: 'var(--gold-primary)', fontSize: '0.85rem' }}>
+                              <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.85rem' }}>
                                 OS #{o.numero_os} - {o.tipo_servico}
                               </div>
                               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
@@ -559,49 +467,7 @@ export default function ModuloClientes({
                   </div>
                 )}
 
-                {activeSubTab === 'acervo' && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>ARMAS CADASTRADAS NO ACERVO</span>
-                      <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setShowModalArma(true)}>
-                        + Adicionar Arma
-                      </button>
-                    </div>
-
-                    {armasDoCliente.length === 0 ? (
-                      <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                        Nenhuma arma cadastrada neste acervo.
-                      </div>
-                    ) : (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                              <th style={{ padding: '0.6rem' }}>TIPO</th>
-                              <th style={{ padding: '0.6rem' }}>MARCA / MODELO</th>
-                              <th style={{ padding: '0.6rem' }}>CALIBRE</th>
-                              <th style={{ padding: '0.6rem' }}>N° SÉRIE</th>
-                              <th style={{ padding: '0.6rem' }}>REGISTRO</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {armasDoCliente.map(arma => (
-                              <tr key={arma.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '0.6rem', fontWeight: '600' }}>{arma.tipo}</td>
-                                <td style={{ padding: '0.6rem' }}>{arma.marca} {arma.modelo}</td>
-                                <td style={{ padding: '0.6rem', color: '#FBBF24' }}>{arma.calibre}</td>
-                                <td style={{ padding: '0.6rem' }}>{arma.numero_serie}</td>
-                                <td style={{ padding: '0.6rem' }}>{arma.numero_sigma_sinarm || 'SIGMA'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(activeSubTab === 'recibos' || activeSubTab === 'agendamentos' || activeSubTab === 'haver') && (
+                {(activeSubTab === 'recibos' || activeSubTab === 'haver') && (
                   <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
                     Nenhum registro encontrado nesta aba.
                   </div>
@@ -610,6 +476,53 @@ export default function ModuloClientes({
             </div>
           </div>
         </div>
+
+        {/* Modal Editar Cadastro do Cliente */}
+        {showModalEditarCliente && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
+              <h3 style={{ fontSize: '1.2rem', color: '#60A5FA', marginBottom: '1rem' }}>Editar Cadastro do Cliente</h3>
+              <form onSubmit={handleSalvarEditarCliente} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Completo *</label>
+                  <input required className="input-field" value={clienteForm.nome_completo} onChange={e => setClienteForm({...clienteForm, nome_completo: e.target.value})} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
+                    <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
+                    <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>
+                    <input className="input-field" type="email" value={clienteForm.email} onChange={e => setClienteForm({...clienteForm, email: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Número do CR</label>
+                    <input className="input-field" value={clienteForm.numero_cr} onChange={e => setClienteForm({...clienteForm, numero_cr: e.target.value})} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Validade do CR</label>
+                  <input type="date" className="input-field" value={clienteForm.validade_cr} onChange={e => setClienteForm({...clienteForm, validade_cr: e.target.value})} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowModalEditarCliente(false)}>Cancelar</button>
+                  <button type="submit" className="btn-gold">Salvar Alterações</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Modal Gerar OS no Perfil */}
         {showModalGerarOS && (
@@ -682,23 +595,22 @@ export default function ModuloClientes({
   }
 
   // ==========================================
-  // 2. TELA: LISTA "MEUS CLIENTES" (ESTILO GCAC)
+  // 2. TELA: LISTA "MEUS CLIENTES"
   // ==========================================
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <UserCheck size={26} color="#60A5FA" />
-            <span>Meus Clientes</span>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
+            Meus Clientes
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Gerencie a agenda de contatos para preenchimento rápido nas O.S.
           </p>
         </div>
 
-        <button className="btn-gold" onClick={() => setShowModalNovoCliente(true)}>
+        <button className="btn-gold" onClick={() => { resetForm(); setShowModalNovoCliente(true); }}>
           <Plus size={18} />
           <span>Novo Cliente</span>
         </button>
@@ -726,7 +638,6 @@ export default function ModuloClientes({
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
                 <th style={{ padding: '0.85rem 1rem' }}>NOME / CPF</th>
                 <th style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>CLUBE FILIADO</th>
                 <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
               </tr>
             </thead>
@@ -756,23 +667,6 @@ export default function ModuloClientes({
                     {cliente.telefone}
                   </td>
 
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span
-                      className="badge"
-                      style={{
-                        backgroundColor: 'rgba(19, 70, 51, 0.3)',
-                        color: '#34D399',
-                        border: '1px solid rgba(52, 211, 153, 0.3)',
-                        maxWidth: '220px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {cliente.clube_filiado || 'CLUBE DE TIRO E C...'}
-                    </span>
-                  </td>
-
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: '0.6rem' }} onClick={(e) => e.stopPropagation()}>
                       <button
@@ -784,7 +678,7 @@ export default function ModuloClientes({
                       </button>
                       <button
                         style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        onClick={() => setSelectedCliente(cliente)}
+                        onClick={() => handleAbrirEditar(cliente)}
                         title="Editar"
                       >
                         <Edit size={18} />
@@ -810,37 +704,37 @@ export default function ModuloClientes({
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3 style={{ fontSize: '1.2rem', color: '#60A5FA', marginBottom: '1rem' }}>Novo Cliente / Contato</h3>
-            <form onSubmit={handleSalvarCliente} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <form onSubmit={handleSalvarNovoCliente} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Completo *</label>
-                <input required className="input-field" value={novoCliente.nome_completo} onChange={e => setNovoCliente({...novoCliente, nome_completo: e.target.value})} placeholder="ADALTO NUNES DE SOUZA" />
+                <input required className="input-field" value={clienteForm.nome_completo} onChange={e => setClienteForm({...clienteForm, nome_completo: e.target.value})} placeholder="Ex: CARLOS EDUARDO SILVEIRA" />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
-                  <input required className="input-field" value={novoCliente.cpf} onChange={e => setNovoCliente({...novoCliente, cpf: e.target.value})} placeholder="130.443.701-91" />
+                  <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} placeholder="123.456.789-00" />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
-                  <input required className="input-field" value={novoCliente.telefone} onChange={e => setNovoCliente({...novoCliente, telefone: e.target.value})} placeholder="(64) 99968-2860" />
+                  <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} placeholder="(11) 98765-4321" />
                 </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Clube de Tiro Filiado</label>
-                <input className="input-field" value={novoCliente.clube_filiado} onChange={e => setNovoCliente({...novoCliente, clube_filiado: e.target.value})} placeholder="CLUBE DE TIRO E CAÇA PRÓ TIRO (JATAÍ)" />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Senha Gov.br</label>
-                  <input className="input-field" value={novoCliente.senha_gov} onChange={e => setNovoCliente({...novoCliente, senha_gov: e.target.value})} placeholder="Pradalto54*" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>
+                  <input className="input-field" type="email" value={clienteForm.email} onChange={e => setClienteForm({...clienteForm, email: e.target.value})} placeholder="cliente@email.com" />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N° do CR</label>
-                  <input className="input-field" value={novoCliente.numero_cr} onChange={e => setNovoCliente({...novoCliente, numero_cr: e.target.value})} placeholder="123456/2ª RM" />
+                  <input className="input-field" value={clienteForm.numero_cr} onChange={e => setClienteForm({...clienteForm, numero_cr: e.target.value})} placeholder="123456/2ª RM" />
                 </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Validade do CR</label>
+                <input type="date" className="input-field" value={clienteForm.validade_cr} onChange={e => setClienteForm({...clienteForm, validade_cr: e.target.value})} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>

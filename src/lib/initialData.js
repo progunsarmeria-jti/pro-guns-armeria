@@ -365,5 +365,12 @@ export const INITIAL_CONFIG = {
   email: "contato@proguns.com.br",
   cidade: "São Paulo",
   uf: "SP",
-  endereco: "Av. das Armas, 1000 - Centro"
+  endereco: "Av. das Armas, 1000 - Centro",
+  catalogo_servicos: [
+    { id: "s1", nome: "Manutenção Geral & Limpeza Ultrassônica", valor: 250.00, categoria: "Manutenção" },
+    { id: "s2", nome: "Revisão de Extrator e Mola Recuperadora", valor: 180.00, categoria: "Reparo" },
+    { id: "s3", nome: "Ajuste e Alívio de Gatilho Tático", valor: 350.00, categoria: "Personalização" },
+    { id: "s4", nome: "Instalação de Red Dot / Luneta e Colimação", valor: 150.00, categoria: "Óptica" },
+    { id: "s5", nome: "Polimento de Rampa de Alimentação e Tambor", valor: 200.00, categoria: "Acabamento" }
+  ]
 };

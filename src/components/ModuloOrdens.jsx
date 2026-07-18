@@ -138,46 +138,32 @@ export default function ModuloOrdens({
         </button>
       </div>
 
-      {/* ── RESUMO DE STATUS (CHIPS CLICÁVEIS) ── */}
+      {/* ── FILTROS DE STATUS ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <button
-          onClick={() => setFiltroStatus('TODAS')}
-          style={{
-            padding: '0.3rem 0.75rem', borderRadius: '20px', border: '1px solid var(--border-color)',
-            backgroundColor: filtroStatus === 'TODAS' ? 'var(--red-tactical)' : 'var(--bg-input)',
-            color: filtroStatus === 'TODAS' ? '#fff' : 'var(--text-muted)',
-            fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer'
-          }}
-        >
-          TODAS ({ordens.length})
-        </button>
-        <button
-          onClick={() => setFiltroStatus('EM ABERTO')}
-          style={{
-            padding: '0.3rem 0.75rem', borderRadius: '20px', border: '1px solid var(--border-color)',
-            backgroundColor: filtroStatus === 'EM ABERTO' ? '#F59E0B' : 'var(--bg-input)',
-            color: filtroStatus === 'EM ABERTO' ? '#000' : 'var(--text-muted)',
-            fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer'
-          }}
-        >
-          EM ABERTO ({ordens.filter(o => o.status !== 'CONCLUÍDO').length})
-        </button>
-        {STATUS_LISTA.map(s => {
-          const cfg = STATUS_CONFIG[s]
-          const ativo = filtroStatus === s
+        {[
+          { key: 'TODAS', label: `TODAS (${ordens.length})` },
+          { key: 'EM ABERTO', label: `EM ABERTO (${ordens.filter(o => o.status !== 'CONCLUÍDO').length})` },
+          ...STATUS_LISTA.map(s => ({ key: s, label: `${s} (${ordensPorStatus[s]})` }))
+        ].map(({ key, label }) => {
+          const ativo = filtroStatus === key
           return (
             <button
-              key={s}
-              onClick={() => setFiltroStatus(s)}
+              key={key}
+              onClick={() => setFiltroStatus(key)}
               style={{
-                padding: '0.3rem 0.75rem', borderRadius: '20px',
-                border: `1px solid ${cfg.color}`,
-                backgroundColor: ativo ? cfg.color : cfg.bg,
-                color: ativo ? '#000' : cfg.color,
-                fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer'
+                padding: '0.28rem 0.7rem',
+                borderRadius: '4px',
+                border: ativo ? '1px solid rgba(139, 38, 42, 0.6)' : '1px solid var(--border-color)',
+                backgroundColor: ativo ? 'rgba(139, 38, 42, 0.2)' : 'var(--bg-input)',
+                color: ativo ? '#F0F2F5' : 'var(--text-muted)',
+                fontSize: '0.7rem',
+                fontWeight: ativo ? '700' : '500',
+                cursor: 'pointer',
+                letterSpacing: '0.2px',
+                transition: 'all 0.15s ease'
               }}
             >
-              {s} ({ordensPorStatus[s]})
+              {label}
             </button>
           )
         })}
@@ -254,20 +240,29 @@ export default function ModuloOrdens({
 
                 <div style={{ overflow: 'hidden' }}>
                   <span style={{
-                    display: 'inline-block',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
                     maxWidth: '100%',
-                    padding: '0.18rem 0.5rem',
-                    borderRadius: '12px',
-                    backgroundColor: cfg.bg,
-                    color: cfg.color,
-                    fontSize: '0.63rem',
-                    fontWeight: '800',
-                    border: `1px solid ${cfg.color}`,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    overflow: 'hidden'
                   }}>
-                    {ordem.status}
+                    <span style={{
+                      width: '7px', height: '7px',
+                      borderRadius: '50%',
+                      backgroundColor: cfg.color,
+                      flexShrink: 0,
+                      display: 'inline-block'
+                    }} />
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: '600',
+                      color: 'var(--text-muted)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {ordem.status}
+                    </span>
                   </span>
                 </div>
 

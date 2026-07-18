@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
-  FileText, DollarSign, Receipt, MessageCircle, CheckCircle2
+  FileText, DollarSign, Receipt, MessageCircle, History
 } from 'lucide-react'
 
 export default function ModuloClientes({
@@ -21,24 +21,26 @@ export default function ModuloClientes({
   const [showModalNovoCliente, setShowModalNovoCliente] = useState(false)
   const [showModalEditarCliente, setShowModalEditarCliente] = useState(false)
   const [activeSubTab, setActiveSubTab] = useState('os')
+  const [mostrarHistoricoOS, setMostrarHistoricoOS] = useState(false)
 
   // Modais de ações do perfil
   const [showModalGerarOS, setShowModalGerarOS] = useState(false)
   const [showModalGerarOrcamento, setShowModalGerarOrcamento] = useState(false)
   const [showModalRecibo, setShowModalRecibo] = useState(null)
 
-  // Cliente Form State (Usado tanto em criar quanto em editar)
+  // Cliente Form State (Usado em criar e editar)
   const [clienteForm, setClienteForm] = useState({
     nome_completo: '',
     cpf: '',
     rg: '',
     telefone: '',
     email: '',
+    endereco: '',
     numero_cr: '',
     validade_cr: '',
     regiao_militar: '2ª RM',
     categorias: ['Atirador'],
-    cidade: 'São Paulo',
+    cidade: '',
     uf: 'SP'
   })
 
@@ -89,6 +91,7 @@ export default function ModuloClientes({
       rg: cliente.rg || '',
       telefone: cliente.telefone || '',
       email: cliente.email || '',
+      endereco: cliente.endereco || '',
       numero_cr: cliente.numero_cr || '',
       validade_cr: cliente.validade_cr || '',
       regiao_militar: cliente.regiao_militar || '2ª RM',
@@ -106,6 +109,7 @@ export default function ModuloClientes({
       rg: '',
       telefone: '',
       email: '',
+      endereco: '',
       numero_cr: '',
       validade_cr: '',
       regiao_militar: '2ª RM',
@@ -160,6 +164,12 @@ export default function ModuloClientes({
     const ordensDoCliente = ordens.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
     const orcamentosDoCliente = orcamentos.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
 
+    // Filtros de O.S. Em Aberto vs Histórico (Concluídos)
+    const ordensEmAberto = ordensDoCliente.filter(o => o.status !== 'Concluído' && o.status !== 'Deferido')
+    const ordensHistorico = ordensDoCliente.filter(o => o.status === 'Concluído' || o.status === 'Deferido')
+
+    const ordensExibidas = mostrarHistoricoOS ? ordensHistorico : ordensEmAberto
+
     return (
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Top Header Perfil */}
@@ -211,7 +221,7 @@ export default function ModuloClientes({
 
         {/* Grid Principal do Perfil */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
-          {/* Coluna Esquerda: Informações Pessoais */}
+          {/* Coluna Esquerda: Informações Pessoais (com Endereço) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', paddingBottom: '0.6rem', borderBottom: '1px solid var(--border-color)' }}>
@@ -245,6 +255,16 @@ export default function ModuloClientes({
                   </div>
                 )}
 
+                {/* Campo de Endereço */}
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>ENDEREÇO</div>
+                  <div style={{ fontWeight: '600', color: 'var(--text-main)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MapPin size={14} color="#60A5FA" />
+                    <span>{selectedCliente.endereco || 'Endereço não cadastrado'}</span>
+                    {selectedCliente.cidade && <span>({selectedCliente.cidade} - {selectedCliente.uf})</span>}
+                  </div>
+                </div>
+
                 {selectedCliente.numero_cr && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
@@ -261,9 +281,9 @@ export default function ModuloClientes({
             </div>
           </div>
 
-          {/* Coluna Direita: Balões de Ações Rápidas & Histórico em Abas */}
+          {/* Coluna Direita: Balões de Ações Rápidas & Histórico de O.S. */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Grid dos Balões de Ações Rápidas (Sem itens removidos) */}
+            {/* Grid dos Balões de Ações Rápidas */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
               {/* Balão 1: GERAR O.S. */}
               <button
@@ -331,7 +351,7 @@ export default function ModuloClientes({
                 </span>
               </button>
 
-              {/* Balão 4: INICIAR CONVERSA (ÍCONE BALÃO WHATSAPP) */}
+              {/* Balão 4: INICIAR CONVERSA (WHATSAPP) */}
               <button
                 onClick={() => handleAbrirWhatsApp(selectedCliente.telefone)}
                 style={{
@@ -407,23 +427,41 @@ export default function ModuloClientes({
               <div style={{ padding: '1.25rem' }}>
                 {activeSubTab === 'os' && (
                   <div>
+                    {/* Cabeçalho da Aba OS com filtro de HISTÓRICO */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>ORDENS EM ABERTO</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>
+                        {mostrarHistoricoOS ? 'HISTÓRICO DE O.S. CONCLUÍDAS' : 'ORDENS EM ABERTO'}
+                      </span>
+                      
+                      {/* Botão de Alternar para Histórico (Substituindo + Nova Ordem de Serviço) */}
                       <button
-                        style={{ background: 'none', border: 'none', color: '#60A5FA', fontSize: '0.78rem', cursor: 'pointer', fontWeight: '600' }}
-                        onClick={() => setShowModalGerarOS(true)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: mostrarHistoricoOS ? '#34D399' : '#60A5FA',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          fontWeight: '700',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
+                        onClick={() => setMostrarHistoricoOS(!mostrarHistoricoOS)}
                       >
-                        + Nova Ordem de Serviço
+                        <History size={14} />
+                        <span>{mostrarHistoricoOS ? 'Ver Ordens em Aberto' : `Histórico de O.S. (${ordensHistorico.length})`}</span>
                       </button>
                     </div>
 
-                    {ordensDoCliente.length === 0 ? (
+                    {ordensExibidas.length === 0 ? (
                       <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                        Não há ordens de serviço em aberto para este cliente.
+                        {mostrarHistoricoOS
+                          ? 'Nenhuma ordem de serviço concluída no histórico deste cliente.'
+                          : 'Não há ordens de serviço em aberto para este cliente.'}
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {ordensDoCliente.map(o => (
+                        {ordensExibidas.map(o => (
                           <div key={o.id} style={{ padding: '0.85rem', backgroundColor: 'var(--bg-input)', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.85rem' }}>
@@ -433,7 +471,9 @@ export default function ModuloClientes({
                                 Prot: {o.numero_protocolo || 'Pendente'} ({o.orgao_destino})
                               </div>
                             </div>
-                            <span className="badge badge-yellow">{o.status}</span>
+                            <span className={`badge ${o.status === 'Concluído' || o.status === 'Deferido' ? 'badge-green' : 'badge-yellow'}`}>
+                              {o.status}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -477,7 +517,7 @@ export default function ModuloClientes({
           </div>
         </div>
 
-        {/* Modal Editar Cadastro do Cliente */}
+        {/* Modal Editar Cadastro do Cliente (com Endereço) */}
         {showModalEditarCliente && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
             <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -496,6 +536,22 @@ export default function ModuloClientes({
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
                     <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Endereço Completo</label>
+                  <input className="input-field" value={clienteForm.endereco} onChange={e => setClienteForm({...clienteForm, endereco: e.target.value})} placeholder="Rua, Número, Bairro" />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cidade</label>
+                    <input className="input-field" value={clienteForm.cidade} onChange={e => setClienteForm({...clienteForm, cidade: e.target.value})} placeholder="São Paulo" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>UF</label>
+                    <input className="input-field" value={clienteForm.uf} onChange={e => setClienteForm({...clienteForm, uf: e.target.value})} placeholder="SP" />
                   </div>
                 </div>
 
@@ -721,13 +777,29 @@ export default function ModuloClientes({
                 </div>
               </div>
 
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Endereço Completo</label>
+                <input className="input-field" value={clienteForm.endereco} onChange={e => setClienteForm({...clienteForm, endereco: e.target.value})} placeholder="Av. Paulista, 1500 - Bela Vista" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cidade</label>
+                  <input className="input-field" value={clienteForm.cidade} onChange={e => setClienteForm({...clienteForm, cidade: e.target.value})} placeholder="São Paulo" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>UF</label>
+                  <input className="input-field" value={clienteForm.uf} onChange={e => setClienteForm({...clienteForm, uf: e.target.value})} placeholder="SP" />
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>
                   <input className="input-field" type="email" value={clienteForm.email} onChange={e => setClienteForm({...clienteForm, email: e.target.value})} placeholder="cliente@email.com" />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N° do CR</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Número do CR</label>
                   <input className="input-field" value={clienteForm.numero_cr} onChange={e => setClienteForm({...clienteForm, numero_cr: e.target.value})} placeholder="123456/2ª RM" />
                 </div>
               </div>

@@ -8,6 +8,7 @@ export const INITIAL_CLIENTES = [
     rg: "44.555.666-X",
     telefone: "(11) 98765-4321",
     email: "carlos.silveira@email.com",
+    endereco: "Av. Paulista, 1500 - Bela Vista",
     numero_cr: "123456/2ª RM",
     validade_cr: "2027-08-15",
     regiao_militar: "2ª RM",
@@ -24,6 +25,7 @@ export const INITIAL_CLIENTES = [
     rg: "33.222.111-9",
     telefone: "(11) 99123-8877",
     email: "roberto.mendes@email.com",
+    endereco: "Rua Barão de Jaguara, 450 - Centro",
     numero_cr: "654321/2ª RM",
     validade_cr: "2026-09-10",
     regiao_militar: "2ª RM",
@@ -40,6 +42,7 @@ export const INITIAL_CLIENTES = [
     rg: "22.333.444-5",
     telefone: "(11) 97777-6655",
     email: "mariana.prado@email.com",
+    endereco: "Rua XV de Novembro, 200 - Centro",
     numero_cr: "789123/2ª RM",
     validade_cr: "2026-08-01", // prestes a vencer
     regiao_militar: "2ª RM",
@@ -123,7 +126,7 @@ export const INITIAL_ORDENS = [
     data_protocolo: "2026-07-01",
     valor_servico: 250.00,
     valor_taxamento: 50.00,
-    status: "Deferido",
+    status: "Concluído",
     detalhes: "Emissão de GT Nacional para competições do acervo de Atirador.",
     previsao_conclusao: "2026-07-20"
   },

@@ -316,6 +316,27 @@ export const INITIAL_ORDENS = [
     valor_taxamento: 0,
     status: "EM MANUTENÇÃO",
     created_at: "2026-07-14"
+  },
+  {
+    id: "o4",
+    numero_os: 1004,
+    cliente_id: "c1",
+    cliente_nome: "CARLOS EDUARDO SILVEIRA",
+    categoria_arma: "Arma de Fogo",
+    tipo_arma: "Pistola",
+    marca_arma: "Glock",
+    modelo_arma: "G17 Gen5",
+    calibre_arma: "9mm",
+    numero_serie_arma: "561560fs",
+    problema_relatado: "Arma para verificação e revisão geral.",
+    acessorios_acompanhantes: "1 carregador",
+    gt_protocolo: "GT-2026.07.18.1004",
+    gt_data_emissao: "2026-07-18",
+    gt_data_vencimento: "2026-08-18",
+    valor_servico: 0,
+    valor_taxamento: 0,
+    status: "NÃO INICIADO",
+    created_at: "2026-07-18"
   }
 ];
 

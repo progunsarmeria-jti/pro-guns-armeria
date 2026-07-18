@@ -665,64 +665,121 @@ export default function ModuloClientes({
           />
         )}
 
-        {/* Modal Visualizar Ficha/Detalhes da O.S. (Layout Ajustado com scroll e sem cortes) */}
+        {/* Modal Visualizar Ficha/Detalhes da O.S. (MODAL FLUTUANTE MODERNO SEM CORTES) */}
         {modalVerOSDetalhes && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-            <div className="card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#fff', color: '#000', padding: '1.5rem', borderRadius: '10px' }}>
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            overflowY: 'auto',
+            padding: '2rem 1rem',
+            display: 'flex',
+            justify: 'center',
+            alignItems: 'flex-start'
+          }}>
+            <div style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '680px',
+              backgroundColor: '#FFFFFF',
+              color: '#111827',
+              borderRadius: '12px',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)',
+              padding: '2rem',
+              margin: 'auto 0'
+            }}>
+              {/* Botão Fechar 'X' no canto superior */}
+              <button
+                onClick={() => setModalVerOSDetalhes(null)}
+                style={{
+                  position: 'absolute', top: '1rem', right: '1rem',
+                  background: '#F3F4F6', border: 'none', borderRadius: '50%',
+                  width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: '#4B5563'
+                }}
+              >
+                <X size={18} />
+              </button>
+
               <div className="print-area">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem', gap: '1rem' }}>
-                  <div>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000', margin: 0 }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
-                    <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#333', marginTop: '0.2rem' }}>ORDEM DE SERVIÇO #{modalVerOSDetalhes.numero_os} — MANUTENÇÃO</div>
+                <div style={{ borderBottom: '2px solid #111827', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#111827', margin: 0, paddingRight: '2rem' }}>
+                    PRÓ GUNS ARMERIA & DESPACHANTARIA
+                  </h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#8B262A' }}>
+                      ORDEM DE SERVIÇO #{modalVerOSDetalhes.numero_os} — MANUTENÇÃO
+                    </div>
+                    <span style={{ padding: '0.35rem 0.75rem', backgroundColor: '#111827', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: '800', borderRadius: '6px' }}>
+                      STATUS: {modalVerOSDetalhes.status}
+                    </span>
                   </div>
-                  <span style={{ padding: '0.35rem 0.75rem', backgroundColor: '#000', color: '#fff', fontSize: '0.75rem', fontWeight: '800', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                    {modalVerOSDetalhes.status}
-                  </span>
                 </div>
 
-                <div style={{ fontSize: '0.88rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#f8f9fa', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ddd' }}>
+                <div style={{ fontSize: '0.88rem', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#F9FAFB', padding: '0.85rem', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
                     <div><strong>Proprietário:</strong> {modalVerOSDetalhes.cliente_nome?.toUpperCase()}</div>
                     <div><strong>Categoria:</strong> {modalVerOSDetalhes.categoria_arma || 'Arma de Fogo'}</div>
                   </div>
 
-                  <div style={{ backgroundColor: '#f8f9fa', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ddd' }}>
+                  <div style={{ backgroundColor: '#F9FAFB', padding: '0.85rem', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
                     <div><strong>Equipamento:</strong> {modalVerOSDetalhes.tipo_arma} — {modalVerOSDetalhes.marca_arma} {modalVerOSDetalhes.modelo_arma} ({modalVerOSDetalhes.calibre_arma})</div>
                     <div><strong>Número de Série:</strong> {modalVerOSDetalhes.numero_serie_arma || modalVerOSDetalhes.numero_serie}</div>
                   </div>
 
-                  <div style={{ backgroundColor: '#fff8e6', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ffe58f' }}>
-                    <strong>Problema Relatado pelo Cliente:</strong>
-                    <div style={{ marginTop: '0.2rem', fontStyle: 'italic', color: '#333' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
+                  <div style={{ backgroundColor: '#FEF3C7', padding: '0.85rem', borderRadius: '6px', border: '1px solid #FCD34D' }}>
+                    <strong style={{ color: '#92400E' }}>Problema Relatado pelo Cliente:</strong>
+                    <div style={{ marginTop: '0.2rem', fontStyle: 'italic', color: '#111827' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
                   </div>
 
                   {modalVerOSDetalhes.gt_protocolo && modalVerOSDetalhes.gt_protocolo !== 'N/A (Ar Comprimido)' && (
-                    <div style={{ backgroundColor: '#e6f7ff', padding: '0.8rem', borderRadius: '4px', border: '1px solid #91d5ff' }}>
-                      <div><strong>Protocolo da Guia de Tráfego:</strong> {modalVerOSDetalhes.gt_protocolo}</div>
-                      {modalVerOSDetalhes.gt_data_vencimento && <div><strong>Vencimento da Guia:</strong> {modalVerOSDetalhes.gt_data_vencimento}</div>}
+                    <div style={{ backgroundColor: '#EFF6FF', padding: '0.85rem', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
+                      <div style={{ color: '#1E40AF' }}><strong>Protocolo da Guia de Tráfego:</strong> {modalVerOSDetalhes.gt_protocolo}</div>
+                      {modalVerOSDetalhes.gt_data_vencimento && <div style={{ color: '#1E40AF' }}><strong>Vencimento da Guia:</strong> {modalVerOSDetalhes.gt_data_vencimento}</div>}
                     </div>
                   )}
                 </div>
 
                 <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.8rem' }}>
                   <div>
-                    <div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>
+                    <div style={{ borderTop: '1px solid #111827', width: '200px', paddingTop: '0.3rem', fontWeight: '600' }}>
                       {modalVerOSDetalhes.cliente_nome}
-                      <br /> Proprietário / Requerente
+                      <br /> <span style={{ color: '#6B7280' }}>Proprietário / Requerente</span>
                     </div>
                   </div>
                   <div>
-                    <div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>
+                    <div style={{ borderTop: '1px solid #111827', width: '200px', paddingTop: '0.3rem', fontWeight: '600' }}>
                       Pró Guns Armeria
-                      <br /> Responsável Técnico Armeiro
+                      <br /> <span style={{ color: '#6B7280' }}>Responsável Técnico Armeiro</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setModalVerOSDetalhes(null)}>Fechar</button>
-                <button className="btn-gold" onClick={() => window.print()}>Imprimir Ficha da O.S.</button>
+              {/* Botões do Rodapé */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
+                <button
+                  onClick={() => setModalVerOSDetalhes(null)}
+                  style={{
+                    backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB',
+                    padding: '0.6rem 1.2rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer'
+                  }}
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  style={{
+                    background: 'linear-gradient(135deg, #8B262A 0%, #134633 100%)', color: '#FFFFFF', border: 'none',
+                    padding: '0.6rem 1.2rem', borderRadius: '6px', fontWeight: '700', cursor: 'pointer',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '0.4rem'
+                  }}
+                >
+                  <Printer size={16} />
+                  <span>Imprimir Ficha da O.S.</span>
+                </button>
               </div>
             </div>
           </div>

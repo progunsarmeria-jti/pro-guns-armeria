@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign } from 'lucide-react'
 
-export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro }) {
+export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro, config }) {
   const [showModalOrcamento, setShowModalOrcamento] = useState(false)
   const [modalVerOrcamento, setModalVerOrcamento] = useState(null)
 
@@ -9,8 +9,8 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
   const [formaPagamento, setFormaPagamento] = useState('PIX (À Vista com Desconto)')
   const [desconto, setDesconto] = useState('0')
   const [itens, setItens] = useState([
-    { descricao: 'Despachantaria Processo SIGMA Exército', quantidade: 1, valor_unitario: '450.00' },
-    { descricao: 'Taxa GRU Requerimento', quantidade: 1, valor_unitario: '88.00' }
+    { descricao: 'Manutenção Preventiva Tática', quantidade: 1, valor_unitario: '350.00' },
+    { descricao: 'Troca de Mola e Extrator', quantidade: 1, valor_unitario: '150.00' }
   ])
 
   const handleAdicionarItem = () => {
@@ -65,12 +65,9 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
       cliente_id: orcamento.cliente_id,
       cliente_nome: orcamento.cliente_nome,
       tipo_servico: orcamento.itens[0]?.descricao || 'Serviço Armeria',
-      orgao_destino: 'Exército (SIGMA)',
-      numero_protocolo: `2026.07.${Math.floor(1000 + Math.random() * 9000)}`,
-      data_protocolo: new Date().toISOString().split('T')[0],
       valor_servico: orcamento.valor_final,
       valor_taxamento: 0,
-      status: 'Aguardando Doc',
+      status: 'NÃO INICIADO',
       detalhes: `Origem Orçamento #${orcamento.numero_orcamento}`
     }
     setOrdens([novaOS, ...ordens])
@@ -80,7 +77,7 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
       id: `f_${Date.now()}`,
       descricao: `Recebimento Orçamento #${orcamento.numero_orcamento} - ${orcamento.cliente_nome}`,
       tipo: 'Receita',
-      categoria: 'Serviço',
+      categoria: 'Serviço Armeria',
       valor: orcamento.valor_final,
       data_vencimento: new Date().toISOString().split('T')[0],
       data_pagamento: new Date().toISOString().split('T')[0],
@@ -101,7 +98,7 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
             Orçamentos & Cotações
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Emissão de propostas comerciais de serviços de despachantaria, armas e insumos com conversão em OS.
+            Emissão de propostas comerciais de serviços de armeria, peças e manutenção com conversão em OS.
           </p>
         </div>
 
@@ -239,8 +236,13 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
             <div className="print-area">
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA</h2>
-                  <div style={{ fontSize: '0.8rem' }}>ORÇAMENTO E PROPOSTA COMERCIAL #{modalVerOrcamento.numero_orcamento}</div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>
+                    {(config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
+                  </h2>
+                  <div style={{ fontSize: '0.8rem', color: '#444' }}>
+                    {config?.cr_armeria || 'CR-998877/2ª RM'} — CNPJ: {config?.cnpj || '12.345.678/0001-99'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', marginTop: '0.3rem' }}>ORÇAMENTO E PROPOSTA COMERCIAL #{modalVerOrcamento.numero_orcamento}</div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>
                   <strong>Data:</strong> {new Date().toLocaleDateString('pt-BR')} <br />

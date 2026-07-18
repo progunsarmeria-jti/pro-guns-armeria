@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key } from 'lucide-react'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 
@@ -7,6 +7,12 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   const [supaUrl, setSupaUrl] = useState(localStorage.getItem('PROGUNS_SUPABASE_URL') || '')
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
   const [salvoFeedback, setSalvoFeedback] = useState(false)
+
+  useEffect(() => {
+    if (config) {
+      setFormData(config)
+    }
+  }, [config])
 
   const handleSalvarConfig = (e) => {
     e.preventDefault()
@@ -112,43 +118,43 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Fantasia</label>
-              <input className="input-field" value={formData.nome_fantasia} onChange={e => setFormData({...formData, nome_fantasia: e.target.value})} />
+              <input className="input-field" value={formData.nome_fantasia || ''} onChange={e => setFormData({...formData, nome_fantasia: e.target.value})} />
             </div>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Razão Social</label>
-              <input className="input-field" value={formData.razao_social} onChange={e => setFormData({...formData, razao_social: e.target.value})} />
+              <input className="input-field" value={formData.razao_social || ''} onChange={e => setFormData({...formData, razao_social: e.target.value})} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CNPJ</label>
-              <input className="input-field" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
+              <input className="input-field" value={formData.cnpj || ''} onChange={e => setFormData({...formData, cnpj: e.target.value})} />
             </div>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N° CR da Armeria</label>
-              <input className="input-field" value={formData.cr_armeria} onChange={e => setFormData({...formData, cr_armeria: e.target.value})} />
+              <input className="input-field" value={formData.cr_armeria || ''} onChange={e => setFormData({...formData, cr_armeria: e.target.value})} />
             </div>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Região Militar</label>
-              <input className="input-field" value={formData.rm_armeria} onChange={e => setFormData({...formData, rm_armeria: e.target.value})} />
+              <input className="input-field" value={formData.rm_armeria || ''} onChange={e => setFormData({...formData, rm_armeria: e.target.value})} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp</label>
-              <input className="input-field" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
+              <input className="input-field" value={formData.whatsapp || ''} onChange={e => setFormData({...formData, whatsapp: e.target.value})} />
             </div>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail Oficial</label>
-              <input className="input-field" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input className="input-field" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
             </div>
           </div>
 
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Endereço Completo</label>
-            <input className="input-field" value={formData.endereco} onChange={e => setFormData({...formData, endereco: e.target.value})} />
+            <input className="input-field" value={formData.endereco || ''} onChange={e => setFormData({...formData, endereco: e.target.value})} />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>

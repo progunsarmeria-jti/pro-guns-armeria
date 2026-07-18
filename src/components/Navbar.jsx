@@ -8,7 +8,8 @@ export default function Navbar({
   setModalLoginAberto,
   notificacoes,
   setNotificacoes,
-  setActiveTab
+  setActiveTab,
+  config
 }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false)
 
@@ -67,7 +68,7 @@ export default function Navbar({
               </span>
             </div>
             <span style={{ fontSize: '0.68rem', letterSpacing: '1px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
-              ARMERIA & DESPACHANTARIA
+              ARMERIA
             </span>
           </div>
         </div>

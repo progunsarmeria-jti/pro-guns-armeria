@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Lock, UserCheck, Shield, Key, ArrowRight, X } from 'lucide-react'
 
-export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, onClose }) {
+export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, onClose, config }) {
   const [selectedUsuarioId, setSelectedUsuarioId] = useState(usuarioLogado?.id || usuarios[0]?.id || '')
   const [senhaDigitada, setSenhaDigitada] = useState('')
   const [erroLogin, setErroLogin] = useState('')
@@ -39,7 +39,9 @@ export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <img src="/logo.png" alt="Pró Guns" style={{ height: '36px' }} />
             <div>
-              <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA</div>
+              <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-main)', fontFamily: 'Cinzel, serif' }}>
+                {(config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
+              </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Autenticação de Operador</div>
             </div>
           </div>

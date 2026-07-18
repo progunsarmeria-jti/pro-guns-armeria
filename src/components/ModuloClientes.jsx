@@ -15,7 +15,8 @@ export default function ModuloClientes({
   orcamentos,
   setOrcamentos,
   financeiro,
-  setFinanceiro
+  setFinanceiro,
+  config
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCliente, setSelectedCliente] = useState(null)
@@ -186,7 +187,7 @@ export default function ModuloClientes({
               <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
                 {selectedCliente.nome_completo.toUpperCase()}
               </h1>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Perfil do Cliente — Pró Guns Armeria</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Perfil do Cliente — {config?.nome_fantasia || 'Pró Guns Armeria'}</div>
             </div>
           </div>
 
@@ -706,7 +707,7 @@ export default function ModuloClientes({
               <div className="print-area">
                 <div style={{ borderBottom: '2px solid #111827', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                   <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#111827', margin: 0, paddingRight: '2rem' }}>
-                    PRÓ GUNS ARMERIA & DESPACHANTARIA
+                    {(config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
                   </h2>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#8B262A' }}>
@@ -751,7 +752,7 @@ export default function ModuloClientes({
                   </div>
                   <div>
                     <div style={{ borderTop: '1px solid #111827', width: '200px', paddingTop: '0.3rem', fontWeight: '600' }}>
-                      Pró Guns Armeria
+                      {config?.nome_fantasia || 'Pró Guns Armeria'}
                       <br /> <span style={{ color: '#6B7280' }}>Responsável Técnico Armeiro</span>
                     </div>
                   </div>
@@ -791,7 +792,9 @@ export default function ModuloClientes({
             <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#fff', color: '#000', padding: '1.5rem' }}>
               <div className="print-area">
                 <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1rem' }}>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA</h2>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>
+                    {(config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
+                  </h2>
                   <div style={{ fontSize: '0.8rem' }}>RECIBO DE PAGAMENTO DE SERVIÇOS</div>
                 </div>
                 <p style={{ fontSize: '0.9rem', lineHeight: '1.6' }}>
@@ -799,11 +802,12 @@ export default function ModuloClientes({
                 </p>
                 <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.8rem' }}>
                   <div style={{ borderTop: '1px solid #000', width: '220px', margin: '0 auto', paddingTop: '0.3rem' }}>
-                    Pró Guns Armeria & Despachantaria
+                    {config?.nome_fantasia || 'Pró Guns Armeria'}
+                    <br /> {config?.cr_armeria || 'CR-998877/2ª RM'}
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
                 <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setShowModalRecibo(null)}>Fechar</button>
                 <button className="btn-gold" onClick={() => window.print()}>Imprimir Recibo</button>
               </div>
@@ -815,18 +819,18 @@ export default function ModuloClientes({
   }
 
   // ==========================================
-  // 2. TELA: LISTA "MEUS CLIENTES"
+  // 2. TELA: LISTA DE CLIENTES
   // ==========================================
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
-            Meus Clientes
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-primary)' }}>
+            Clientes (CACs & Acervo)
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Gerencie a agenda de contatos para preenchimento rápido nas O.S.
+            Gestão de clientes, dados pessoais, acervo de armas e ordens de serviço.
           </p>
         </div>
 
@@ -836,106 +840,80 @@ export default function ModuloClientes({
         </button>
       </div>
 
-      {/* Tabela Principal "Meus Clientes" */}
-      <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Barra de Pesquisa */}
-        <div style={{ position: 'relative', maxWidth: '400px' }}>
+      {/* Bar de Pesquisa */}
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
           <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
-            type="text"
             className="input-field"
-            placeholder="Buscar por nome ou CPF..."
+            placeholder="Pesquisar por Nome ou CPF..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '2.4rem' }}
+            style={{ paddingLeft: '2.5rem' }}
           />
         </div>
+      </div>
 
-        {/* Tabela de Clientes */}
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-                <th style={{ padding: '0.85rem 1rem' }}>NOME / CPF</th>
-                <th style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>CR / EMISSÃO & VALIDADE</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+      {/* Tabela de Clientes */}
+      <div className="card" style={{ overflowX: 'auto', padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
+              <th style={{ padding: '0.85rem 1rem' }}>NOME DO CLIENTE</th>
+              <th style={{ padding: '0.85rem 1rem' }}>CPF</th>
+              <th style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
+              <th style={{ padding: '0.85rem 1rem' }}>N° DO CR</th>
+              <th style={{ padding: '0.85rem 1rem' }}>VALIDADE CR</th>
+              <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredClientes.map(cliente => (
+              <tr
+                key={cliente.id}
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                onClick={() => setSelectedCliente(cliente)}
+              >
+                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                  {cliente.nome_completo.toUpperCase()}
+                </td>
+                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.cpf}</td>
+                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.telefone}</td>
+                <td style={{ padding: '0.85rem 1rem', fontWeight: '600', color: '#FBBF24' }}>
+                  {cliente.numero_cr || 'Sem CR'}
+                </td>
+                <td style={{ padding: '0.85rem 1rem' }}>
+                  <span className="badge badge-green">{cliente.validade_cr || 'N/A'}</span>
+                </td>
+                <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                  <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedCliente(cliente); }}
+                    >
+                      <Eye size={14} /> <span>Acessar Perfil</span>
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                      onClick={(e) => handleExcluirCliente(cliente.id, e)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredClientes.map(cliente => (
-                <tr
-                  key={cliente.id}
-                  onClick={() => setSelectedCliente(cliente)}
-                  style={{
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.15s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>
-                      {cliente.nome_completo.toUpperCase()}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                      {cliente.cpf}
-                    </div>
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                    {cliente.telefone}
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <div style={{ fontWeight: '700', color: '#FBBF24', fontSize: '0.82rem' }}>
-                      {cliente.numero_cr || 'Sem CR'}
-                    </div>
-                    {cliente.validade_cr && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                        Val: {cliente.validade_cr}
-                      </div>
-                    )}
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: '0.6rem' }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        onClick={() => setSelectedCliente(cliente)}
-                        title="Ver Perfil do Cliente"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        onClick={() => handleAbrirEditar(cliente)}
-                        title="Editar"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
-                        onClick={(e) => handleExcluirCliente(cliente.id, e)}
-                        title="Excluir"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal Novo Cliente */}
       {showModalNovoCliente && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#60A5FA', marginBottom: '1rem' }}>Novo Cliente / Contato</h3>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>Cadastrar Novo Cliente CAC</h3>
             <form onSubmit={handleSalvarNovoCliente} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Completo *</label>
@@ -945,14 +923,14 @@ export default function ModuloClientes({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
-                  <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} placeholder="123.456.789-00" />
+                  <input required className="input-field" value={clienteForm.cpf} onChange={e => setClienteForm({...clienteForm, cpf: e.target.value})} placeholder="000.000.000-00" />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG</label>
-                  <input className="input-field" value={clienteForm.rg} onChange={e => setClienteForm({...clienteForm, rg: e.target.value})} placeholder="44.555.666-X" />
+                  <input className="input-field" value={clienteForm.rg} onChange={e => setClienteForm({...clienteForm, rg: e.target.value})} placeholder="00.000.000-0" />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data de Nasc.</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data Nasc.</label>
                   <input type="date" className="input-field" value={clienteForm.data_nascimento} onChange={e => setClienteForm({...clienteForm, data_nascimento: e.target.value})} />
                 </div>
               </div>
@@ -960,7 +938,7 @@ export default function ModuloClientes({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
-                  <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} placeholder="(11) 98765-4321" />
+                  <input required className="input-field" value={clienteForm.telefone} onChange={e => setClienteForm({...clienteForm, telefone: e.target.value})} placeholder="(11) 99999-8888" />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail</label>
@@ -970,10 +948,10 @@ export default function ModuloClientes({
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Endereço Completo</label>
-                <input className="input-field" value={clienteForm.endereco} onChange={e => setClienteForm({...clienteForm, endereco: e.target.value})} placeholder="Av. Paulista, 1500 - Bela Vista" />
+                <input className="input-field" value={clienteForm.endereco} onChange={e => setClienteForm({...clienteForm, endereco: e.target.value})} placeholder="Rua, Número, Bairro, Cidade - UF" />
               </div>
 
-              {/* DADOS DO CR NO CADASTRO DE CLIENTE */}
+              {/* DADOS DO CR */}
               <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.9rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#FBBF24' }}>DADOS DO CR (CERTIFICADO DE REGISTRO)</div>
 
@@ -983,11 +961,11 @@ export default function ModuloClientes({
                     <input className="input-field" value={clienteForm.numero_cr} onChange={e => setClienteForm({...clienteForm, numero_cr: e.target.value})} placeholder="123456/2ª RM" />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Data de Emissão</label>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Emissão CR</label>
                     <input type="date" className="input-field" value={clienteForm.data_emissao_cr} onChange={e => setClienteForm({...clienteForm, data_emissao_cr: e.target.value})} />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Data de Validade</label>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Validade CR</label>
                     <input type="date" className="input-field" value={clienteForm.validade_cr} onChange={e => setClienteForm({...clienteForm, validade_cr: e.target.value})} />
                   </div>
                 </div>

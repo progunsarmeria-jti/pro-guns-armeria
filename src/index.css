@@ -206,6 +206,36 @@ h1, h2, h3, .brand-font {
 }
 
 /* ==========================================
+   PROTEÇÃO GLOBAL CONTRA OVERFLOW DE TEXTO
+   O sistema adapta automaticamente textos longos
+========================================== */
+
+/* Sidebar: garante que labels de menu NUNCA quebrem linha */
+aside nav button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Células de tabela com texto longo: trunca automaticamente */
+.cell-clip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Badge de status: nunca sobrepõe outros elementos */
+.badge-status {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* ==========================================
    RESPONSIVIDADE MOBILE & TABLET
 ========================================== */
 .mobile-only {

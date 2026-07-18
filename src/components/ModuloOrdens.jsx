@@ -188,12 +188,11 @@ export default function ModuloOrdens({
         {/* Cabeçalho da Tabela */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '70px 1fr 1fr 130px 110px 90px',
-          gap: '0',
+          gridTemplateColumns: '60px 1fr 1fr 160px 100px 60px',
           backgroundColor: 'var(--bg-input)',
           borderBottom: '1px solid var(--border-color)',
-          padding: '0.65rem 1rem',
-          fontSize: '0.72rem',
+          padding: '0.6rem 1rem',
+          fontSize: '0.7rem',
           fontWeight: '800',
           color: 'var(--text-muted)',
           letterSpacing: '0.4px'
@@ -203,7 +202,7 @@ export default function ModuloOrdens({
           <div>EQUIPAMENTO</div>
           <div>STATUS</div>
           <div>VALOR</div>
-          <div style={{ textAlign: 'right' }}>AÇÕES</div>
+          <div></div>
         </div>
 
         {ordensFiltradas.length === 0 && (
@@ -222,8 +221,7 @@ export default function ModuloOrdens({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '70px 1fr 1fr 130px 110px 90px',
-                  gap: '0',
+                  gridTemplateColumns: '60px 1fr 1fr 160px 100px 60px',
                   padding: '0.75rem 1rem',
                   alignItems: 'center',
                   backgroundColor: expandida ? 'rgba(255,255,255,0.03)' : 'transparent',
@@ -232,61 +230,64 @@ export default function ModuloOrdens({
                 }}
                 onClick={() => setOrdemExpandida(expandida ? null : ordem.id)}
               >
-                <div style={{ fontWeight: '800', color: 'var(--red-light)', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: '800', color: 'var(--red-light)', fontSize: '0.83rem', whiteSpace: 'nowrap' }}>
                   #{ordem.numero_os}
                 </div>
 
-                <div>
-                  <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.85rem' }}>
+                <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
+                  <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.83rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {ordem.cliente_nome?.toUpperCase()}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {ordem.categoria_arma || 'Arma de Fogo'}
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ fontWeight: '600', color: 'var(--gold-accent)', fontSize: '0.83rem' }}>
+                <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
+                  <div style={{ fontWeight: '600', color: 'var(--gold-accent)', fontSize: '0.81rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {ordem.marca_arma} {ordem.modelo_arma}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {ordem.calibre_arma} · S/N: {ordem.numero_serie_arma || ordem.numero_serie || '—'}
                   </div>
                 </div>
 
-                <div>
+                <div style={{ overflow: 'hidden' }}>
                   <span style={{
                     display: 'inline-block',
-                    padding: '0.2rem 0.55rem',
+                    maxWidth: '100%',
+                    padding: '0.18rem 0.5rem',
                     borderRadius: '12px',
                     backgroundColor: cfg.bg,
                     color: cfg.color,
-                    fontSize: '0.68rem',
+                    fontSize: '0.63rem',
                     fontWeight: '800',
                     border: `1px solid ${cfg.color}`,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
                     {ordem.status}
                   </span>
                 </div>
 
-                <div style={{ fontWeight: '800', color: ordem.valor_servico ? '#FBBF24' : 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: '800', color: ordem.valor_servico ? '#FBBF24' : 'var(--text-muted)', fontSize: '0.83rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {ordem.valor_servico ? `R$ ${parseFloat(ordem.valor_servico).toFixed(2)}` : '—'}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.3rem', alignItems: 'center' }}>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setDocModalOrdem(ordem) }}
                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
                     title="Ficha / Comprovante"
                   >
-                    <Printer size={15} />
+                    <Printer size={14} />
                   </button>
                   <ChevronDown
-                    size={16}
+                    size={15}
                     color="var(--text-muted)"
-                    style={{ transform: expandida ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                    style={{ transform: expandida ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
                   />
                 </div>
               </div>

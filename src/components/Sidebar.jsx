@@ -67,8 +67,9 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justify: 'space-between',
-                  padding: '0.75rem 0.9rem',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  padding: '0.7rem 0.9rem',
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: isActive ? 'rgba(139, 38, 42, 0.18)' : 'transparent',
@@ -76,22 +77,25 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
                   borderLeft: isActive ? '3px solid var(--red-light)' : '3px solid transparent',
                   fontWeight: isActive ? '600' : '400',
                   cursor: 'pointer',
-                  fontSize: '0.92rem',
-                  transition: 'all 0.15s ease'
+                  fontSize: '0.88rem',
+                  transition: 'all 0.15s ease',
+                  gap: '0.5rem'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Icon size={18} color={isActive ? '#F87171' : '#8E96A0'} />
-                  <span>{item.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  <Icon size={17} color={isActive ? '#F87171' : '#8E96A0'} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                 </div>
                 {item.badgeCount && (
                   <span style={{
-                    fontSize: '0.7rem',
-                    padding: '0.15rem 0.45rem',
+                    flexShrink: 0,
+                    fontSize: '0.68rem',
+                    padding: '0.12rem 0.42rem',
                     borderRadius: '10px',
                     backgroundColor: isActive ? 'var(--red-tactical)' : 'var(--border-color)',
                     color: '#FFFFFF',
-                    fontWeight: '700'
+                    fontWeight: '700',
+                    lineHeight: '1.4'
                   }}>
                     {item.badgeCount}
                   </span>

@@ -46,21 +46,22 @@ export default function Navbar({
       padding: '0 1.5rem',
       display: 'flex',
       alignItems: 'center',
-      justify: 'space-between',
+      justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 100
     }}>
+      {/* LADO ESQUERDO: LOGO & TÍTULO DA ABA */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
         {/* Logo Oficial Pró Guns Armeria */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img
             src="/logo.png"
             alt="Pró Guns Armeria Logo"
-            style={{ height: '48px', objectFit: 'contain' }}
+            style={{ height: '44px', objectFit: 'contain' }}
           />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <span className="brand-font" style={{ fontSize: '1.1rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px' }}>
                 PRÓ
               </span>
@@ -68,7 +69,7 @@ export default function Navbar({
                 GUNS
               </span>
             </div>
-            <span style={{ fontSize: '0.68rem', letterSpacing: '1px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.65rem', letterSpacing: '2.5px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
               ARMERIA
             </span>
           </div>
@@ -76,63 +77,67 @@ export default function Navbar({
 
         <div style={{ height: '28px', width: '1px', backgroundColor: 'var(--border-color)' }}></div>
 
-        <h2 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-main)' }}>
+        <h2 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>
           {titles[activeTab] || 'Gestão G-CAC'}
         </h2>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      {/* LADO DIREITO: OPERADOR, LOGOFF, MODO BANCO E SININHO */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
         {/* CRACHÁ DO OPERADOR AUTENTICADO */}
         {usuarioLogado && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <div
-              onClick={() => setModalLoginAberto(true)}
-              title="Clique para trocar de usuário"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                backgroundColor: 'var(--bg-input)',
-                borderRadius: '20px',
-                border: '1px solid var(--border-color)',
-                padding: '0.35rem 0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              <UserCheck size={16} color={badge.color} />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
-                  {usuarioLogado.nome_completo.split(' ')[0]}
-                </span>
-                <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
-                  {badge.label}
-                </span>
-              </div>
+          <div
+            onClick={() => setModalLoginAberto(true)}
+            title="Clique para alternar operador"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.55rem',
+              backgroundColor: 'var(--bg-input)',
+              borderRadius: '20px',
+              border: '1px solid var(--border-color)',
+              padding: '0.35rem 0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <UserCheck size={16} color={badge.color} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
+                {usuarioLogado.nome_completo.split(' ')[0]}
+              </span>
+              <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
+                {badge.label}
+              </span>
             </div>
-
-            <button
-              onClick={handleLogoff}
-              title="Sair / Bloquear Tela de Login"
-              style={{
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '50%',
-                width: '34px',
-                height: '34px',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center',
-                cursor: 'pointer',
-                color: '#F87171'
-              }}
-            >
-              <LogOut size={16} />
-            </button>
+            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.2rem' }} />
           </div>
         )}
 
-        {/* Supabase Status Badge */}
+        {/* BOTÃO DE SAIR / LOGOFF */}
+        {usuarioLogado && (
+          <button
+            onClick={handleLogoff}
+            title="Sair / Bloquear Tela de Login"
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              cursor: 'pointer',
+              color: '#F87171',
+              transition: 'all 0.2s'
+            }}
+          >
+            <LogOut size={16} />
+          </button>
+        )}
+
+        {/* SUPABASE STATUS BADGE */}
         <div style={{
           display: 'flex',
           alignItems: 'center',

@@ -87,9 +87,10 @@ export default function ModalNovaOS({
       return
     }
 
+    const maxOS = (ordens || []).reduce((max, o) => Math.max(max, Number(o.numero_os) || 1000), 1000)
     const novaOSObj = {
       id: `o_${Date.now()}`,
-      numero_os: 1000 + ordens.length + 1,
+      numero_os: maxOS + 1,
       cliente_id: clienteAtual.id,
       cliente_nome: clienteAtual.nome_completo,
       tipo_servico: servicosSelecionados.map(s => s.nome).join(' + '),

@@ -68,6 +68,32 @@ export default function App() {
     setUsuarioLogado(null)
   }
 
+  // Helper de Fusão Inteligente: une os dados do Supabase com os salvos localmente
+  const mesclarDados = (remotos, locais, tabela) => {
+    if (remotos === null) return locais // Se erro de rede, mantém os locais
+    const remotosList = Array.isArray(remotos) ? remotos : []
+    const locaisList = Array.isArray(locais) ? locais : []
+    const mapa = new Map()
+
+    locaisList.forEach(item => {
+      if (item?.id) mapa.set(String(item.id), item)
+    })
+
+    remotosList.forEach(item => {
+      if (item?.id) mapa.set(String(item.id), item)
+    })
+
+    const mesclado = Array.from(mapa.values())
+
+    // Envia para o Supabase qualquer item local que ainda não estava na nuvem
+    const faltantesNoSupabase = mesclado.filter(m => !remotosList.some(r => String(r.id) === String(m.id)))
+    if (faltantesNoSupabase.length > 0) {
+      dbUpsertAll(tabela, faltantesNoSupabase)
+    }
+
+    return mesclado
+  }
+
   // ─── CARREGAR DADOS DO SUPABASE (ao iniciar) ────────────────────────────────
   const carregarDoSupabase = useCallback(async (silencioso = false) => {
     if (!isSupabaseConfigured()) return
@@ -80,11 +106,25 @@ export default function App() {
         dbLoad('financeiro'),
         dbLoad('usuarios'),
       ])
-      if (dbClientes   !== null && dbClientes.length   > 0) { setClientes(dbClientes);     ls.set('PROGUNS_CLIENTES',   dbClientes)   }
-      if (dbOrdens     !== null && dbOrdens.length     > 0) { setOrdens(dbOrdens);         ls.set('PROGUNS_ORDENS',     dbOrdens)     }
-      if (dbOrcamentos !== null && dbOrcamentos.length > 0) { setOrcamentos(dbOrcamentos); ls.set('PROGUNS_ORCAMENTOS', dbOrcamentos) }
-      if (dbFinanceiro !== null && dbFinanceiro.length > 0) { setFinanceiro(dbFinanceiro); ls.set('PROGUNS_FINANCEIRO', dbFinanceiro) }
-      if (dbUsuarios   !== null && dbUsuarios.length   > 0) { setUsuarios(dbUsuarios);     ls.set('PROGUNS_USUARIOS',   dbUsuarios)   }
+
+      const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
+      const localOrdens     = ls.get('PROGUNS_ORDENS', INITIAL_ORDENS)
+      const localOrcamentos = ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS)
+      const localFinanceiro = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
+      const localUsuarios   = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
+
+      const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
+      const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')
+      const finalOrcamentos = mesclarDados(dbOrcamentos, localOrcamentos, 'orcamentos')
+      const finalFinanceiro = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
+      const finalUsuarios   = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
+
+      setClientes(finalClientes);     ls.set('PROGUNS_CLIENTES',   finalClientes)
+      setOrdens(finalOrdens);         ls.set('PROGUNS_ORDENS',     finalOrdens)
+      setOrcamentos(finalOrcamentos); ls.set('PROGUNS_ORCAMENTOS', finalOrcamentos)
+      setFinanceiro(finalFinanceiro); ls.set('PROGUNS_FINANCEIRO', finalFinanceiro)
+      setUsuarios(finalUsuarios);     ls.set('PROGUNS_USUARIOS',   finalUsuarios)
+
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)
     } catch (e) {

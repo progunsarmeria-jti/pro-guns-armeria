@@ -45,7 +45,7 @@ export const clearSupabaseKeys = () => {
 export async function dbLoad(tabela) {
   if (!isSupabaseConfigured()) return null
   const client = getSupabaseClient()
-  const { data, error } = await client.from(tabela).select('*').order('created_at', { ascending: false })
+  const { data, error } = await client.from(tabela).select('*')
   if (error) { console.error(`[Supabase] Erro ao carregar ${tabela}:`, error); return null }
   return data
 }

@@ -75,9 +75,10 @@ export default function ModalNovaOSArmeria({
       acessoriosAdicionais ? `Outros: ${acessoriosAdicionais}` : null
     ].filter(Boolean).join(' | ')
 
+    const maxOS = (ordens || []).reduce((max, o) => Math.max(max, Number(o.numero_os) || 1000), 1000)
     const novaOSObj = {
-      id: `o_${Date.now()}`,
-      numero_os: 1000 + ordens.length + 1,
+      id: `os_${Date.now()}`,
+      numero_os: maxOS + 1,
       cliente_id: clienteAtual.id,
       cliente_nome: clienteAtual.nome_completo,
       categoria_arma: categoriaArma,

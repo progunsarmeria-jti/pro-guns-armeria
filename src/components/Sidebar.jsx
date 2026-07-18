@@ -6,7 +6,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
 
   const menuItems = [
     { id: 'clientes', label: 'Clientes', icon: Users, badgeCount: null, reqPerm: 'ver_clientes' },
-    { id: 'ordens', label: 'Ordens', icon: FileText, badgeCount: '3', reqPerm: 'ver_ordens' },
+    { id: 'ordens', label: 'Ordem de Serviço', icon: FileText, badgeCount: '3', reqPerm: 'ver_ordens' },
     { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, badgeCount: '2', reqPerm: 'ver_orcamentos' },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign, badgeCount: null, reqPerm: 'ver_financeiro' },
     { id: 'usuarios', label: 'Usuários', icon: UserCheck, badgeCount: null, reqPerm: 'gerenciar_usuarios' },

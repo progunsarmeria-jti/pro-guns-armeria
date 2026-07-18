@@ -1,7 +1,7 @@
 import React from 'react'
-import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield } from 'lucide-react'
+import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X } from 'lucide-react'
 
-export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config }) {
+export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config, mobileOpen, setMobileOpen }) {
   const permissoes = usuarioLogado?.permissoes || {}
 
   const menuItems = [
@@ -19,25 +19,41 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
     return permissoes[item.reqPerm] === true
   })
 
-  return (
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId)
+    if (setMobileOpen) setMobileOpen(false)
+  }
+
+  const sidebarContent = (
     <aside style={{
       width: '240px',
       backgroundColor: 'var(--bg-card)',
       borderRight: '1px solid var(--border-color)',
       display: 'flex',
       flexDirection: 'column',
-      minHeight: 'calc(100vh - 70px)'
+      height: '100%'
     }}>
-      <div style={{ padding: '1.5rem 1.25rem 1rem 1.25rem' }}>
-        <div style={{
-          fontSize: '0.72rem',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          color: 'var(--text-muted)',
-          fontWeight: '600',
-          marginBottom: '0.85rem'
-        }}>
-          Pró Guns Gestão
+      <div style={{ padding: '1.25rem 1rem 1rem 1rem' }}>
+        {/* Mobile Header com Botão Fechar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{
+            fontSize: '0.72rem',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            color: 'var(--text-muted)',
+            fontWeight: '600'
+          }}>
+            Pró Guns Gestão
+          </div>
+          {setMobileOpen && (
+            <button
+              className="mobile-only"
+              onClick={() => setMobileOpen(false)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -47,7 +63,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleSelectTab(item.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -110,5 +126,36 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
         </div>
       </div>
     </aside>
+  )
+
+  return (
+    <>
+      {/* Sidebar Desktop padrão */}
+      <div className="desktop-only" style={{ height: 'calc(100vh - 70px)', sticky: 'top' }}>
+        {sidebarContent}
+      </div>
+
+      {/* Drawer Mobile Flutuante com Overlay */}
+      {mobileOpen && (
+        <div
+          className="mobile-only"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999
+          }}
+          onClick={() => setMobileOpen(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ height: '100%', width: '260px', backgroundColor: 'var(--bg-card)' }}
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

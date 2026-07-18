@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Bell, Database, Shield, Wrench, Check, X, MessageCircle, UserCheck, LogOut, Key } from 'lucide-react'
+import { Bell, Database, Shield, Wrench, Check, X, MessageCircle, UserCheck, LogOut, Key, Menu } from 'lucide-react'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 export default function Navbar({
@@ -10,17 +10,18 @@ export default function Navbar({
   notificacoes,
   setNotificacoes,
   setActiveTab,
-  config
+  config,
+  setMobileSidebarOpen
 }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false)
 
   const titles = {
     clientes: 'Clientes (CACs & Acervo)',
-    ordens: 'Ordens de Serviço (Armeria & Manutenção)',
+    ordens: 'Ordens de Serviço (Armeria)',
     orcamentos: 'Orçamentos & Propostas',
     financeiro: 'Financeiro & Fluxo de Caixa',
-    usuarios: 'Gestão de Usuários & Permissões',
-    configuracoes: 'Configurações do Sistema'
+    usuarios: 'Gestão de Usuários',
+    configuracoes: 'Configurações'
   }
 
   const naoLidas = notificacoes.filter(n => !n.lida).length
@@ -31,9 +32,9 @@ export default function Navbar({
 
   const getPerfilBadge = () => {
     if (!usuarioLogado) return { label: 'Visitante', color: '#8E96A0' }
-    if (usuarioLogado.perfil === 'master') return { label: '👑 Master (Diretor)', color: '#FBBF24' }
+    if (usuarioLogado.perfil === 'master') return { label: '👑 Master', color: '#FBBF24' }
     if (usuarioLogado.perfil === 'recepcao') return { label: '🏢 Recepção', color: '#F87171' }
-    return { label: '🛠️ Armeiro (Oficina)', color: '#34D399' }
+    return { label: '🛠️ Armeiro', color: '#34D399' }
   }
 
   const badge = getPerfilBadge()
@@ -43,47 +44,65 @@ export default function Navbar({
       height: '70px',
       backgroundColor: 'var(--bg-card)',
       borderBottom: '1px solid var(--border-color)',
-      padding: '0 1.5rem',
-      display: 'grid',
-      gridTemplateColumns: '1fr auto 1fr',
+      padding: '0 1.25rem',
+      display: 'flex',
       alignItems: 'center',
+      justify: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 100
     }}>
-      {/* 1. ESQUERDA: LOGO + TÍTULO DA ABA */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+      {/* 1. ESQUERDA: BOTÃO HAMBURGUER (MOBILE) + LOGO + TÍTULO */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Ícone Hamburguer no Mobile */}
+        <button
+          className="mobile-only"
+          onClick={() => setMobileSidebarOpen(true)}
+          style={{
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-main)',
+            borderRadius: '6px',
+            padding: '0.45rem',
+            cursor: 'pointer',
+            alignItems: 'center',
+            justify: 'center'
+          }}
+        >
+          <Menu size={20} />
+        </button>
+
         {/* Logo Oficial Pró Guns Armeria */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <img
             src="/logo.png"
             alt="Pró Guns Armeria Logo"
-            style={{ height: '44px', objectFit: 'contain' }}
+            style={{ height: '40px', objectFit: 'contain' }}
           />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span className="brand-font" style={{ fontSize: '1.1rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span className="brand-font" style={{ fontSize: '1rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px' }}>
                 PRÓ
               </span>
-              <span className="brand-font" style={{ fontSize: '1.1rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.5px' }}>
+              <span className="brand-font" style={{ fontSize: '1rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.5px' }}>
                 GUNS
               </span>
             </div>
-            <span style={{ fontSize: '0.65rem', letterSpacing: '2.5px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
+            <span style={{ fontSize: '0.6rem', letterSpacing: '2px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
               ARMERIA
             </span>
           </div>
         </div>
 
-        <div style={{ height: '28px', width: '1px', backgroundColor: 'var(--border-color)' }}></div>
+        <div className="desktop-only" style={{ height: '24px', width: '1px', backgroundColor: 'var(--border-color)' }}></div>
 
-        <h2 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-main)' }}>
+        <h2 className="desktop-only" style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-main)' }}>
           {titles[activeTab] || 'Gestão G-CAC'}
         </h2>
       </div>
 
       {/* 2. CENTRO DA TELA: CRACHÁ / NOME DO USUÁRIO OPERADOR */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div className="desktop-only" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {usuarioLogado && (
           <div
             onClick={() => setModalLoginAberto(true)}
@@ -95,35 +114,35 @@ export default function Navbar({
               backgroundColor: 'var(--bg-input)',
               borderRadius: '20px',
               border: '1px solid var(--border-color)',
-              padding: '0.4rem 1.1rem',
+              padding: '0.35rem 1rem',
               cursor: 'pointer',
               boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
               transition: 'all 0.2s'
             }}
           >
-            <UserCheck size={17} color={badge.color} />
+            <UserCheck size={16} color={badge.color} />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.2' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.2' }}>
                 {usuarioLogado.nome_completo.toUpperCase()}
               </span>
-              <span style={{ fontSize: '0.68rem', color: badge.color, fontWeight: '700' }}>
+              <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
                 {badge.label}
               </span>
             </div>
-            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.3rem' }} />
+            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.2rem' }} />
           </div>
         )}
       </div>
 
       {/* 3. LADO DIREITO: 1° NOTIFICAÇÃO ➔ 2° INFORMATIVO LOCAL ➔ 3° BOTÃO DE SAIR */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', justifyContent: 'flex-end' }}>
         {/* 1°: BOTÃO DE NOTIFICAÇÕES (SININHO) */}
         <div style={{ position: 'relative' }}>
           <div
             onClick={() => setShowNotifDropdown(!showNotifDropdown)}
             style={{
-              width: '38px',
-              height: '38px',
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               backgroundColor: 'var(--bg-input)',
               border: '1px solid var(--border-color)',
@@ -134,18 +153,18 @@ export default function Navbar({
               position: 'relative'
             }}
           >
-            <Bell size={18} color={naoLidas > 0 ? '#F87171' : 'var(--text-muted)'} />
+            <Bell size={17} color={naoLidas > 0 ? '#F87171' : 'var(--text-muted)'} />
             {naoLidas > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-2px',
                 right: '-2px',
-                width: '18px',
-                height: '18px',
+                width: '16px',
+                height: '16px',
                 borderRadius: '50%',
                 backgroundColor: '#F87171',
                 color: '#FFFFFF',
-                fontSize: '0.68rem',
+                fontSize: '0.65rem',
                 fontWeight: '800',
                 display: 'flex',
                 alignItems: 'center',
@@ -162,13 +181,13 @@ export default function Navbar({
               position: 'absolute',
               top: '120%',
               right: 0,
-              width: '340px',
+              width: '300px',
               backgroundColor: '#161920',
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
               boxShadow: '0 10px 30px rgba(0,0,0,0.7)',
               zIndex: 200,
-              padding: '1rem'
+              padding: '0.85rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)' }}>Central de Alertas</span>
@@ -219,15 +238,15 @@ export default function Navbar({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.75rem',
-          padding: '0.35rem 0.75rem',
+          gap: '0.3rem',
+          fontSize: '0.72rem',
+          padding: '0.3rem 0.65rem',
           borderRadius: '20px',
           backgroundColor: isSupabaseConfigured ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
           border: `1px solid ${isSupabaseConfigured ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
           color: isSupabaseConfigured ? '#34D399' : '#FBBF24'
         }}>
-          <Database size={13} />
+          <Database size={12} />
           <span>{isSupabaseConfigured ? 'Supabase' : 'Local'}</span>
         </div>
 
@@ -240,8 +259,8 @@ export default function Navbar({
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: '50%',
-              width: '36px',
-              height: '36px',
+              width: '34px',
+              height: '34px',
               display: 'flex',
               alignItems: 'center',
               justify: 'center',
@@ -250,7 +269,7 @@ export default function Navbar({
               transition: 'all 0.2s'
             }}
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
           </button>
         )}
       </div>

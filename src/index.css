@@ -204,3 +204,42 @@ h1, h2, h3, .brand-font {
     padding: 2cm;
   }
 }
+
+/* ==========================================
+   RESPONSIVIDADE MOBILE & TABLET
+========================================== */
+.mobile-only {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  /* Ajustes Gerais de Container */
+  main {
+    padding: 0.75rem !important;
+  }
+
+  /* Header Navbar Mobile */
+  header {
+    padding: 0 0.75rem !important;
+    grid-template-columns: auto 1fr auto !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Oculta textos secundários no mobile para economizar espaço */
+  .mobile-hide-text {
+    display: none !important;
+  }
+
+  /* Força Grids a ficarem em coluna única no celular */
+  .grid-mobile-1 {
+    grid-template-columns: 1fr !important;
+  }
+}

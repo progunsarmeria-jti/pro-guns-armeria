@@ -21,6 +21,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Lista de Usuários e Usuário Logado Autenticado
   const [usuarios, setUsuarios] = useState(INITIAL_USUARIOS)
@@ -117,14 +118,17 @@ export default function App() {
         setNotificacoes={setNotificacoes}
         setActiveTab={setActiveTab}
         config={config}
+        setMobileSidebarOpen={setMobileSidebarOpen}
       />
 
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           usuarioLogado={usuarioLogado}
           config={config}
+          mobileOpen={mobileSidebarOpen}
+          setMobileOpen={setMobileSidebarOpen}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>

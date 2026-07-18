@@ -44,14 +44,14 @@ export default function Navbar({
       backgroundColor: 'var(--bg-card)',
       borderBottom: '1px solid var(--border-color)',
       padding: '0 1.5rem',
-      display: 'flex',
+      display: 'grid',
+      gridTemplateColumns: '1fr auto 1fr',
       alignItems: 'center',
-      justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 100
     }}>
-      {/* LADO ESQUERDO: LOGO & TÍTULO DA ABA */}
+      {/* 1. ESQUERDA: LOGO + TÍTULO DA ABA */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
         {/* Logo Oficial Pró Guns Armeria */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -82,9 +82,8 @@ export default function Navbar({
         </h2>
       </div>
 
-      {/* LADO DIREITO: OPERADOR, LOGOFF, MODO BANCO E SININHO */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginLeft: 'auto' }}>
-        {/* CRACHÁ DO OPERADOR AUTENTICADO */}
+      {/* 2. CENTRO DA TELA: CRACHÁ / NOME DO USUÁRIO OPERADOR */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         {usuarioLogado && (
           <div
             onClick={() => setModalLoginAberto(true)}
@@ -96,64 +95,29 @@ export default function Navbar({
               backgroundColor: 'var(--bg-input)',
               borderRadius: '20px',
               border: '1px solid var(--border-color)',
-              padding: '0.35rem 0.85rem',
+              padding: '0.4rem 1.1rem',
               cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
               transition: 'all 0.2s'
             }}
           >
-            <UserCheck size={16} color={badge.color} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
-                {usuarioLogado.nome_completo.split(' ')[0]}
+            <UserCheck size={17} color={badge.color} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: '1.2' }}>
+                {usuarioLogado.nome_completo.toUpperCase()}
               </span>
-              <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
+              <span style={{ fontSize: '0.68rem', color: badge.color, fontWeight: '700' }}>
                 {badge.label}
               </span>
             </div>
-            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.2rem' }} />
+            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.3rem' }} />
           </div>
         )}
+      </div>
 
-        {/* BOTÃO DE SAIR / LOGOFF */}
-        {usuarioLogado && (
-          <button
-            onClick={handleLogoff}
-            title="Sair / Bloquear Tela de Login"
-            style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '50%',
-              width: '36px',
-              height: '36px',
-              display: 'flex',
-              alignItems: 'center',
-              justify: 'center',
-              cursor: 'pointer',
-              color: '#F87171',
-              transition: 'all 0.2s'
-            }}
-          >
-            <LogOut size={16} />
-          </button>
-        )}
-
-        {/* SUPABASE STATUS BADGE */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.75rem',
-          padding: '0.35rem 0.75rem',
-          borderRadius: '20px',
-          backgroundColor: isSupabaseConfigured ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-          border: `1px solid ${isSupabaseConfigured ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-          color: isSupabaseConfigured ? '#34D399' : '#FBBF24'
-        }}>
-          <Database size={13} />
-          <span>{isSupabaseConfigured ? 'Supabase' : 'Local'}</span>
-        </div>
-
-        {/* SININHO DE NOTIFICAÇÕES EM TEMPO REAL */}
+      {/* 3. LADO DIREITO: 1° NOTIFICAÇÃO ➔ 2° INFORMATIVO LOCAL ➔ 3° BOTÃO DE SAIR */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', justifyContent: 'flex-end' }}>
+        {/* 1°: BOTÃO DE NOTIFICAÇÕES (SININHO) */}
         <div style={{ position: 'relative' }}>
           <div
             onClick={() => setShowNotifDropdown(!showNotifDropdown)}
@@ -250,6 +214,45 @@ export default function Navbar({
             </div>
           )}
         </div>
+
+        {/* 2°: INFORMATIVO ESCRITO LOCAL / SUPABASE */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          fontSize: '0.75rem',
+          padding: '0.35rem 0.75rem',
+          borderRadius: '20px',
+          backgroundColor: isSupabaseConfigured ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+          border: `1px solid ${isSupabaseConfigured ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+          color: isSupabaseConfigured ? '#34D399' : '#FBBF24'
+        }}>
+          <Database size={13} />
+          <span>{isSupabaseConfigured ? 'Supabase' : 'Local'}</span>
+        </div>
+
+        {/* 3°: BOTÃO DE SAIR (LOGOFF) */}
+        {usuarioLogado && (
+          <button
+            onClick={handleLogoff}
+            title="Sair / Bloquear Tela de Login"
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              cursor: 'pointer',
+              color: '#F87171',
+              transition: 'all 0.2s'
+            }}
+          >
+            <LogOut size={16} />
+          </button>
+        )}
       </div>
     </header>
   )

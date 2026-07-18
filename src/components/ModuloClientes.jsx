@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
-  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X
+  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 
@@ -162,10 +162,10 @@ export default function ModuloClientes({
     const ordensExibidas = mostrarHistoricoOS ? ordensHistorico : ordensEmAberto
 
     return (
-      <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {/* Top Header Perfil */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
               onClick={() => setSelectedCliente(null)}
               style={{
@@ -184,14 +184,14 @@ export default function ModuloClientes({
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-main)' }}>
                 {selectedCliente.nome_completo.toUpperCase()}
               </h1>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Perfil do Cliente — {config?.nome_fantasia || 'Pró Guns Armeria'}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Perfil do Cliente — {config?.nome_fantasia || 'Pró Guns Armeria'}</div>
             </div>
           </div>
 
-          {/* Botões Superiores de Ação do Perfil */}
+          {/* Botões Superiores de Ação do Perfil (Editar / Excluir) */}
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
             <button
               className="btn-secondary"
@@ -210,8 +210,8 @@ export default function ModuloClientes({
           </div>
         </div>
 
-        {/* Grid Principal do Perfil */}
-        <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        {/* Grid Principal do Perfil Adaptável Mobile */}
+        <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.25rem', alignItems: 'start' }}>
           {/* Coluna Esquerda: Informações Pessoais & Dados de CR */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="card">
@@ -301,7 +301,7 @@ export default function ModuloClientes({
           {/* Coluna Direita: Balões de Ações Rápidas & Histórico de O.S. */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Grid dos Balões de Ações Rápidas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
               {/* Balão 1: GERAR O.S. DE ARMERIA */}
               <button
                 onClick={() => setShowModalGerarOS(true)}
@@ -309,18 +309,18 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
                   borderRadius: '10px',
-                  padding: '1.2rem 0.8rem',
+                  padding: '1rem 0.6rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.4rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FileText size={26} color="#F87171" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.5px' }}>
-                  DAR ENTRADA NA O.S.
+                <FileText size={24} color="#F87171" />
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.5px', textAlign: 'center' }}>
+                  DAR ENTRADA O.S.
                 </span>
               </button>
 
@@ -331,17 +331,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(245, 158, 11, 0.12)',
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                   borderRadius: '10px',
-                  padding: '1.2rem 0.8rem',
+                  padding: '1rem 0.6rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.4rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <DollarSign size={26} color="#FBBF24" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#FBBF24', letterSpacing: '0.5px' }}>
+                <DollarSign size={24} color="#FBBF24" />
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#FBBF24', letterSpacing: '0.5px', textAlign: 'center' }}>
                   GERAR ORÇAMENTO
                 </span>
               </button>
@@ -353,17 +353,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(16, 185, 129, 0.12)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderRadius: '10px',
-                  padding: '1.2rem 0.8rem',
+                  padding: '1rem 0.6rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.4rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Receipt size={26} color="#34D399" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px' }}>
+                <Receipt size={24} color="#34D399" />
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px', textAlign: 'center' }}>
                   GERAR RECIBO
                 </span>
               </button>
@@ -375,18 +375,18 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(34, 197, 94, 0.18)',
                   border: '1px solid rgba(34, 197, 94, 0.4)',
                   borderRadius: '10px',
-                  padding: '1.2rem 0.8rem',
+                  padding: '1rem 0.6rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.4rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <MessageCircle size={28} color="#25D366" fill="#25D366" />
-                <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#25D366', letterSpacing: '0.5px' }}>
-                  INICIAR CONVERSA
+                <MessageCircle size={26} color="#25D366" fill="#25D366" />
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#25D366', letterSpacing: '0.5px', textAlign: 'center' }}>
+                  WHATSAPP
                 </span>
               </button>
             </div>
@@ -400,7 +400,7 @@ export default function ModuloClientes({
                 overflowX: 'auto'
               }}>
                 {[
-                  { id: 'os', label: 'O.S. DE ARMERIA', count: ordensDoCliente.length },
+                  { id: 'os', label: 'O.S. ARMERIA', count: ordensDoCliente.length },
                   { id: 'orcamentos', label: 'ORÇAMENTOS', count: orcamentosDoCliente.length },
                   { id: 'recibos', label: 'RECIBOS', count: 0 },
                   { id: 'haver', label: 'HAVER', count: 0 }
@@ -409,7 +409,7 @@ export default function ModuloClientes({
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id)}
                     style={{
-                      padding: '0.85rem 1.3rem',
+                      padding: '0.85rem 1rem',
                       border: 'none',
                       backgroundColor: activeSubTab === tab.id ? 'var(--bg-card)' : 'transparent',
                       color: activeSubTab === tab.id ? '#F87171' : 'var(--text-muted)',
@@ -465,7 +465,7 @@ export default function ModuloClientes({
                         onClick={() => setMostrarHistoricoOS(!mostrarHistoricoOS)}
                       >
                         <History size={14} />
-                        <span>{mostrarHistoricoOS ? 'Ver Ordens em Aberto' : `Histórico de O.S. (${ordensHistorico.length})`}</span>
+                        <span>{mostrarHistoricoOS ? 'Em Aberto' : `Histórico (${ordensHistorico.length})`}</span>
                       </button>
                     </div>
 
@@ -492,8 +492,6 @@ export default function ModuloClientes({
                               cursor: 'pointer',
                               transition: 'all 0.15s ease'
                             }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor = '#F87171'}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
                           >
                             <div>
                               <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.85rem' }}>
@@ -502,18 +500,10 @@ export default function ModuloClientes({
                               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                                 N° Série: {o.numero_serie_arma || o.numero_serie} — Categoria: {o.categoria_arma || 'Arma de Fogo'}
                               </div>
-                              {o.problema_relatado && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--gold-accent)', fontStyle: 'italic', marginTop: '0.2rem' }}>
-                                  "{o.problema_relatado}"
-                                </div>
-                              )}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <span className={`badge ${o.status === 'CONCLUÍDO' ? 'badge-green' : 'badge-yellow'}`}>
-                                {o.status}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', color: '#60A5FA', textDecoration: 'underline' }}>Abrir O.S.</span>
-                            </div>
+                            <span className={`badge ${o.status === 'CONCLUÍDO' ? 'badge-green' : 'badge-yellow'}`}>
+                              {o.status}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -691,7 +681,6 @@ export default function ModuloClientes({
               padding: '2rem',
               margin: 'auto 0'
             }}>
-              {/* Botão Fechar 'X' no canto superior */}
               <button
                 onClick={() => setModalVerOSDetalhes(null)}
                 style={{
@@ -734,13 +723,6 @@ export default function ModuloClientes({
                     <strong style={{ color: '#92400E' }}>Problema Relatado pelo Cliente:</strong>
                     <div style={{ marginTop: '0.2rem', fontStyle: 'italic', color: '#111827' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
                   </div>
-
-                  {modalVerOSDetalhes.gt_protocolo && modalVerOSDetalhes.gt_protocolo !== 'N/A (Ar Comprimido)' && (
-                    <div style={{ backgroundColor: '#EFF6FF', padding: '0.85rem', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
-                      <div style={{ color: '#1E40AF' }}><strong>Protocolo da Guia de Tráfego:</strong> {modalVerOSDetalhes.gt_protocolo}</div>
-                      {modalVerOSDetalhes.gt_data_vencimento && <div style={{ color: '#1E40AF' }}><strong>Vencimento da Guia:</strong> {modalVerOSDetalhes.gt_data_vencimento}</div>}
-                    </div>
-                  )}
                 </div>
 
                 <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.8rem' }}>
@@ -759,7 +741,6 @@ export default function ModuloClientes({
                 </div>
               </div>
 
-              {/* Botões do Rodapé */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
                 <button
                   onClick={() => setModalVerOSDetalhes(null)}
@@ -819,18 +800,18 @@ export default function ModuloClientes({
   }
 
   // ==========================================
-  // 2. TELA: LISTA DE CLIENTES
+  // 2. TELA: LISTA DE CLIENTES (OTIMIZADA PARA CELULAR E DESKTOP)
   // ==========================================
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ padding: '1.25rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-primary)' }}>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--gold-accent)' }}>
             Clientes (CACs & Acervo)
           </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Gestão de clientes, dados pessoais, acervo de armas e ordens de serviço.
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Toque no cliente para visualizar o perfil completo, emitir O.S. ou editar cadastro.
           </p>
         </div>
 
@@ -854,17 +835,18 @@ export default function ModuloClientes({
         </div>
       </div>
 
-      {/* Tabela de Clientes */}
-      <div className="card" style={{ overflowX: 'auto', padding: 0 }}>
+      {/* Tabela Limpa de Clientes (Sem rolagem lateral no Celular) */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
               <th style={{ padding: '0.85rem 1rem' }}>NOME DO CLIENTE</th>
               <th style={{ padding: '0.85rem 1rem' }}>CPF</th>
-              <th style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
-              <th style={{ padding: '0.85rem 1rem' }}>N° DO CR</th>
-              <th style={{ padding: '0.85rem 1rem' }}>VALIDADE CR</th>
-              <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+              <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
+              <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>N° DO CR</th>
+              <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>VALIDADE CR</th>
+              <th className="desktop-only" style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+              <th className="mobile-only" style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -878,14 +860,14 @@ export default function ModuloClientes({
                   {cliente.nome_completo.toUpperCase()}
                 </td>
                 <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.cpf}</td>
-                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.telefone}</td>
-                <td style={{ padding: '0.85rem 1rem', fontWeight: '600', color: '#FBBF24' }}>
+                <td className="desktop-only" style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.telefone}</td>
+                <td className="desktop-only" style={{ padding: '0.85rem 1rem', fontWeight: '600', color: '#FBBF24' }}>
                   {cliente.numero_cr || 'Sem CR'}
                 </td>
-                <td style={{ padding: '0.85rem 1rem' }}>
+                <td className="desktop-only" style={{ padding: '0.85rem 1rem' }}>
                   <span className="badge badge-green">{cliente.validade_cr || 'N/A'}</span>
                 </td>
-                <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                <td className="desktop-only" style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                   <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                     <button
                       className="btn-secondary"
@@ -894,14 +876,10 @@ export default function ModuloClientes({
                     >
                       <Eye size={14} /> <span>Acessar Perfil</span>
                     </button>
-                    <button
-                      className="btn-secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                      onClick={(e) => handleExcluirCliente(cliente.id, e)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
+                </td>
+                <td className="mobile-only" style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}>
+                  <ChevronRight size={18} color="var(--red-light)" />
                 </td>
               </tr>
             ))}
@@ -913,7 +891,7 @@ export default function ModuloClientes({
       {showModalNovoCliente && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>Cadastrar Novo Cliente CAC</h3>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-accent)', marginBottom: '1rem' }}>Cadastrar Novo Cliente CAC</h3>
             <form onSubmit={handleSalvarNovoCliente} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Completo *</label>

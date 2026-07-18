@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { Bell, Database, Shield, Wrench, Check, X, MessageCircle } from 'lucide-react'
+import { Bell, Database, Shield, Wrench, Check, X, MessageCircle, UserCheck, LogOut, Key } from 'lucide-react'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 export default function Navbar({
   activeTab,
-  perfilOperador,
-  setPerfilOperador,
+  usuarioLogado,
+  setModalLoginAberto,
   notificacoes,
   setNotificacoes,
   setActiveTab
@@ -17,6 +17,7 @@ export default function Navbar({
     ordens: 'Ordens de Serviço (Armeria & Manutenção)',
     orcamentos: 'Orçamentos & Propostas',
     financeiro: 'Financeiro & Fluxo de Caixa',
+    usuarios: 'Gestão de Usuários & Permissões',
     configuracoes: 'Configurações do Sistema'
   }
 
@@ -25,6 +26,15 @@ export default function Navbar({
   const handleMarcarTodasLidas = () => {
     setNotificacoes(notificacoes.map(n => ({ ...n, lida: true })))
   }
+
+  const getPerfilBadge = () => {
+    if (!usuarioLogado) return { label: 'Visitante', color: '#8E96A0' }
+    if (usuarioLogado.perfil === 'master') return { label: '👑 Master (Diretor)', color: '#FBBF24' }
+    if (usuarioLogado.perfil === 'recepcao') return { label: '🏢 Recepção', color: '#F87171' }
+    return { label: '🛠️ Armeiro (Oficina)', color: '#34D399' }
+  }
+
+  const badge = getPerfilBadge()
 
   return (
     <header style={{
@@ -70,56 +80,35 @@ export default function Navbar({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        {/* SELETOR DE PERFIL MULTIUSUÁRIO (RECEPÇÃO VS ARMEIRO) */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'var(--bg-input)',
-          borderRadius: '20px',
-          border: '1px solid var(--border-color)',
-          padding: '2px'
-        }}>
-          <button
-            onClick={() => setPerfilOperador('recepcao')}
+        {/* CRACHÁ DO OPERADOR AUTENTICADO */}
+        {usuarioLogado && (
+          <div
+            onClick={() => setModalLoginAberto(true)}
+            title="Clique para trocar de usuário"
             style={{
-              padding: '0.35rem 0.85rem',
-              borderRadius: '16px',
-              border: 'none',
-              backgroundColor: perfilOperador === 'recepcao' ? 'var(--red-tactical)' : 'transparent',
-              color: perfilOperador === 'recepcao' ? '#FFFFFF' : 'var(--text-muted)',
-              fontSize: '0.78rem',
-              fontWeight: '700',
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              gap: '0.6rem',
+              backgroundColor: 'var(--bg-input)',
+              borderRadius: '20px',
+              border: '1px solid var(--border-color)',
+              padding: '0.35rem 0.85rem',
+              cursor: 'pointer',
               transition: 'all 0.2s'
             }}
           >
-            <Shield size={14} />
-            <span>🏢 RECEPÇÃO</span>
-          </button>
-
-          <button
-            onClick={() => setPerfilOperador('armeiro')}
-            style={{
-              padding: '0.35rem 0.85rem',
-              borderRadius: '16px',
-              border: 'none',
-              backgroundColor: perfilOperador === 'armeiro' ? 'var(--green-tactical)' : 'transparent',
-              color: perfilOperador === 'armeiro' ? '#FFFFFF' : 'var(--text-muted)',
-              fontSize: '0.78rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Wrench size={14} />
-            <span>🛠️ ARMEIRO</span>
-          </button>
-        </div>
+            <UserCheck size={16} color={badge.color} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
+                {usuarioLogado.nome_completo.split(' ')[0]}
+              </span>
+              <span style={{ fontSize: '0.65rem', color: badge.color, fontWeight: '700' }}>
+                {badge.label}
+              </span>
+            </div>
+            <Key size={12} color="var(--text-muted)" style={{ marginLeft: '0.2rem' }} />
+          </div>
+        )}
 
         {/* Supabase Status Badge */}
         <div style={{

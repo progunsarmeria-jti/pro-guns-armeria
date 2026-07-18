@@ -6,8 +6,11 @@ import ModuloOrdens from './components/ModuloOrdens'
 import ModuloOrcamentos from './components/ModuloOrcamentos'
 import ModuloFinanceiro from './components/ModuloFinanceiro'
 import ModuloConfiguracoes from './components/ModuloConfiguracoes'
+import ModuloUsuarios from './components/ModuloUsuarios'
+import ModalLogin from './components/ModalLogin'
 
 import {
+  INITIAL_USUARIOS,
   INITIAL_CLIENTES,
   INITIAL_ARMAS,
   INITIAL_ORDENS,
@@ -19,8 +22,10 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('clientes')
 
-  // Perfil de Acesso Ativo ('recepcao' | 'armeiro')
-  const [perfilOperador, setPerfilOperador] = useState('recepcao')
+  // Lista de Usuários e Usuário Logado
+  const [usuarios, setUsuarios] = useState(INITIAL_USUARIOS)
+  const [usuarioLogado, setUsuarioLogado] = useState(INITIAL_USUARIOS[0]) // Admin Master por padrão
+  const [modalLoginAberto, setModalLoginAberto] = useState(false)
 
   // Central de Notificações / Alertas da Recepção
   const [notificacoes, setNotificacoes] = useState([
@@ -47,15 +52,19 @@ export default function App() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-dark)' }}>
       <Navbar
         activeTab={activeTab}
-        perfilOperador={perfilOperador}
-        setPerfilOperador={setPerfilOperador}
+        usuarioLogado={usuarioLogado}
+        setModalLoginAberto={setModalLoginAberto}
         notificacoes={notificacoes}
         setNotificacoes={setNotificacoes}
         setActiveTab={setActiveTab}
       />
 
       <div style={{ display: 'flex', flex: 1 }}>
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          usuarioLogado={usuarioLogado}
+        />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
           {activeTab === 'clientes' && (
@@ -71,7 +80,8 @@ export default function App() {
               financeiro={financeiro}
               setFinanceiro={setFinanceiro}
               setActiveTab={setActiveTab}
-              perfilOperador={perfilOperador}
+              perfilOperador={usuarioLogado?.perfil || 'recepcao'}
+              usuarioLogado={usuarioLogado}
             />
           )}
 
@@ -82,7 +92,8 @@ export default function App() {
               clientes={clientes}
               financeiro={financeiro}
               setFinanceiro={setFinanceiro}
-              perfilOperador={perfilOperador}
+              perfilOperador={usuarioLogado?.perfil || 'recepcao'}
+              usuarioLogado={usuarioLogado}
               notificacoes={notificacoes}
               setNotificacoes={setNotificacoes}
             />
@@ -107,6 +118,14 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'usuarios' && (
+            <ModuloUsuarios
+              usuarios={usuarios}
+              setUsuarios={setUsuarios}
+              usuarioLogado={usuarioLogado}
+            />
+          )}
+
           {activeTab === 'configuracoes' && (
             <ModuloConfiguracoes
               config={config}
@@ -115,6 +134,16 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Modal de Autenticação / Troca de Operador */}
+      {modalLoginAberto && (
+        <ModalLogin
+          usuarios={usuarios}
+          usuarioLogado={usuarioLogado}
+          setUsuarioLogado={setUsuarioLogado}
+          onClose={() => setModalLoginAberto(false)}
+        />
+      )}
     </div>
   )
 }

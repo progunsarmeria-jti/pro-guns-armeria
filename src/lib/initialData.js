@@ -1,5 +1,133 @@
 // Dados Iniciais demonstrativos Pró Guns Armeria
 
+export const INITIAL_USUARIOS = [
+  {
+    id: "u1",
+    nome_completo: "GUILHERME GOMES (ADMIN)",
+    email: "admin@proguns.com.br",
+    senha_pessoal: "admin123",
+    cargo: "Diretor Master",
+    perfil: "master", // 'master' | 'recepcao' | 'armeiro'
+    status: "Ativo",
+    permissoes: {
+      ver_clientes: true,
+      criar_clientes: true,
+      editar_clientes: true,
+      excluir_clientes: true,
+      ver_ordens: true,
+      dar_entrada_os: true,
+      preencher_laudo_armeiro: true,
+      aprovar_os: true,
+      concluir_retirada: true,
+      ver_orcamentos: true,
+      criar_orcamentos: true,
+      ver_financeiro: true,
+      lancar_financeiro: true,
+      gerenciar_usuarios: true
+    }
+  },
+  {
+    id: "u2",
+    nome_completo: "JOÃO SILVA",
+    email: "joao.recepcao@proguns.com.br",
+    senha_pessoal: "rec123",
+    cargo: "Atendente de Recepção",
+    perfil: "recepcao",
+    status: "Ativo",
+    permissoes: {
+      ver_clientes: true,
+      criar_clientes: true,
+      editar_clientes: true,
+      excluir_clientes: false,
+      ver_ordens: true,
+      dar_entrada_os: true,
+      preencher_laudo_armeiro: false,
+      aprovar_os: true,
+      concluir_retirada: true,
+      ver_orcamentos: true,
+      criar_orcamentos: true,
+      ver_financeiro: false,
+      lancar_financeiro: true,
+      gerenciar_usuarios: false
+    }
+  },
+  {
+    id: "u3",
+    nome_completo: "MARIA SANTOS",
+    email: "maria.recepcao@proguns.com.br",
+    senha_pessoal: "rec123",
+    cargo: "Atendente de Recepção",
+    perfil: "recepcao",
+    status: "Ativo",
+    permissoes: {
+      ver_clientes: true,
+      criar_clientes: true,
+      editar_clientes: true,
+      excluir_clientes: false,
+      ver_ordens: true,
+      dar_entrada_os: true,
+      preencher_laudo_armeiro: false,
+      aprovar_os: true,
+      concluir_retirada: true,
+      ver_orcamentos: true,
+      criar_orcamentos: true,
+      ver_financeiro: false,
+      lancar_financeiro: true,
+      gerenciar_usuarios: false
+    }
+  },
+  {
+    id: "u4",
+    nome_completo: "PAULO ARMEIRO",
+    email: "paulo.armeiro@proguns.com.br",
+    senha_pessoal: "arm123",
+    cargo: "Armeiro Responsável Técnico",
+    perfil: "armeiro",
+    status: "Ativo",
+    permissoes: {
+      ver_clientes: true,
+      criar_clientes: false,
+      editar_clientes: false,
+      excluir_clientes: false,
+      ver_ordens: true,
+      dar_entrada_os: false,
+      preencher_laudo_armeiro: true,
+      aprovar_os: false,
+      concluir_retirada: false,
+      ver_orcamentos: false,
+      criar_orcamentos: false,
+      ver_financeiro: false,
+      lancar_financeiro: false,
+      gerenciar_usuarios: false
+    }
+  },
+  {
+    id: "u5",
+    nome_completo: "OSMAIR ARMEIRO",
+    email: "osmair.armeiro@proguns.com.br",
+    senha_pessoal: "arm123",
+    cargo: "Armeiro Assistente",
+    perfil: "armeiro",
+    status: "Ativo",
+    permissoes: {
+      ver_clientes: true,
+      criar_clientes: false,
+      editar_clientes: false,
+      excluir_clientes: false,
+      ver_ordens: true,
+      dar_entrada_os: false,
+      preencher_laudo_armeiro: true,
+      aprovar_os: false,
+      concluir_retirada: false,
+      ver_orcamentos: false,
+      criar_orcamentos: false,
+      ver_financeiro: false,
+      lancar_financeiro: false,
+      gerenciar_usuarios: false
+    }
+  }
+];
+
 export const INITIAL_CLIENTES = [
   {
     id: "c1",
@@ -118,6 +246,7 @@ export const INITIAL_ORDENS = [
     calibre_arma: "9mm",
     numero_serie_arma: "AB123456",
     problema_relatado: "Arma apresentando falha de ejeção (stovepipe) a cada 50 disparos. Cliente solicita revisão do extrator e alívio de gatilho.",
+    acessorios_acompanhantes: "2 carregadores | Maleta Rígida Glock",
     gt_protocolo: "GT-2026.07.12.9982",
     gt_data_emissao: "2026-07-10",
     gt_data_vencimento: "2026-08-10",
@@ -138,6 +267,7 @@ export const INITIAL_ORDENS = [
     calibre_arma: "5.5mm",
     numero_serie_arma: "AIR-776655",
     problema_relatado: "Perda de pressão no disparo. Necessita troca do retentor do êmbolo e lubrificação técnica.",
+    acessorios_acompanhantes: "Capo impermeável | Luneta Rossi 4x32",
     gt_protocolo: "N/A (Ar Comprimido)",
     gt_data_emissao: null,
     gt_data_vencimento: null,
@@ -158,12 +288,13 @@ export const INITIAL_ORDENS = [
     calibre_arma: ".38 SPL",
     numero_serie_arma: "RT-998811",
     problema_relatado: "Revisão geral de segurança e polimento de tambor.",
+    acessorios_acompanhantes: "1 speedloader | Case veludo",
     gt_protocolo: "GT-2026.07.01.5543",
     gt_data_emissao: "2026-07-01",
     gt_data_vencimento: "2026-08-01",
     valor_servico: 350.00,
     valor_taxamento: 0,
-    status: "EM EXECUÇÃO DO SERVIÇO",
+    status: "EM MANUTENÇÃO",
     created_at: "2026-07-14"
   }
 ];

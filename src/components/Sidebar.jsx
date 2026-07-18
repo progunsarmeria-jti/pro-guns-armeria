@@ -1,14 +1,23 @@
 import React from 'react'
-import { Users, FileText, Calculator, DollarSign, Settings } from 'lucide-react'
+import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield } from 'lucide-react'
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, usuarioLogado }) {
+  const permissoes = usuarioLogado?.permissoes || {}
+
   const menuItems = [
-    { id: 'clientes', label: 'Clientes', icon: Users, badgeCount: null },
-    { id: 'ordens', label: 'Ordens', icon: FileText, badgeCount: '3' },
-    { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, badgeCount: '2' },
-    { id: 'financeiro', label: 'Financeiro', icon: DollarSign, badgeCount: null },
-    { id: 'configuracoes', label: 'Configurações', icon: Settings, badgeCount: null },
+    { id: 'clientes', label: 'Clientes', icon: Users, badgeCount: null, reqPerm: 'ver_clientes' },
+    { id: 'ordens', label: 'Ordens', icon: FileText, badgeCount: '3', reqPerm: 'ver_ordens' },
+    { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, badgeCount: '2', reqPerm: 'ver_orcamentos' },
+    { id: 'financeiro', label: 'Financeiro', icon: DollarSign, badgeCount: null, reqPerm: 'ver_financeiro' },
+    { id: 'usuarios', label: 'Usuários', icon: UserCheck, badgeCount: null, reqPerm: 'gerenciar_usuarios' },
+    { id: 'configuracoes', label: 'Configurações', icon: Settings, badgeCount: null, reqPerm: null },
   ]
+
+  const itemsFiltrados = menuItems.filter(item => {
+    if (usuarioLogado?.perfil === 'master') return true
+    if (!item.reqPerm) return true
+    return permissoes[item.reqPerm] === true
+  })
 
   return (
     <aside style={{
@@ -32,7 +41,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          {menuItems.map((item) => {
+          {itemsFiltrados.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
             return (

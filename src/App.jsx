@@ -41,6 +41,13 @@ export default function App() {
               setClientes={setClientes}
               armas={armas}
               setArmas={setArmas}
+              ordens={ordens}
+              setOrdens={setOrdens}
+              orcamentos={orcamentos}
+              setOrcamentos={setOrcamentos}
+              financeiro={financeiro}
+              setFinanceiro={setFinanceiro}
+              setActiveTab={setActiveTab}
             />
           )}
 

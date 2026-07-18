@@ -1,16 +1,20 @@
 import React from 'react'
 import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X } from 'lucide-react'
 
-export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config, mobileOpen, setMobileOpen }) {
+export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config, mobileOpen, setMobileOpen, ordens, orcamentos }) {
   const permissoes = usuarioLogado?.permissoes || {}
 
+  // Contagens dinâmicas dos badges
+  const ordensEmAberto = (ordens || []).filter(o => o.status !== 'CONCLUÍDO').length
+  const orcamentosPendentes = (orcamentos || []).filter(o => o.status === 'Pendente').length
+
   const menuItems = [
-    { id: 'clientes', label: 'Clientes', icon: Users, badgeCount: null, reqPerm: 'ver_clientes' },
-    { id: 'ordens', label: 'Ordem de Serviço', icon: FileText, badgeCount: '3', reqPerm: 'ver_ordens' },
-    { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, badgeCount: '2', reqPerm: 'ver_orcamentos' },
-    { id: 'financeiro', label: 'Financeiro', icon: DollarSign, badgeCount: null, reqPerm: 'ver_financeiro' },
-    { id: 'usuarios', label: 'Usuários', icon: UserCheck, badgeCount: null, reqPerm: 'gerenciar_usuarios' },
-    { id: 'configuracoes', label: 'Configurações', icon: Settings, badgeCount: null, reqPerm: 'ver_configuracoes' },
+    { id: 'clientes',      label: 'Clientes',          icon: Users,     badgeCount: null,                                    reqPerm: 'ver_clientes' },
+    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,  badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
+    { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator, badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
+    { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign, badgeCount: null,                                  reqPerm: 'ver_financeiro' },
+    { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,  badgeCount: null,                                  reqPerm: 'gerenciar_usuarios' },
+    { id: 'configuracoes', label: 'Configurações',      icon: Settings,   badgeCount: null,                                  reqPerm: 'ver_configuracoes' },
   ]
 
   const itemsFiltrados = menuItems.filter(item => {

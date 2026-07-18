@@ -288,6 +288,8 @@ export default function App() {
           config={config}
           mobileOpen={mobileSidebarOpen}
           setMobileOpen={setMobileSidebarOpen}
+          ordens={ordens}
+          orcamentos={orcamentos}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>

@@ -147,13 +147,13 @@ export default function ModuloOrdens({ ordens, setOrdens, clientes, financeiro, 
       {docModalOrdem && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
+          backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '650px', backgroundColor: '#fff', color: '#000' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#fff', color: '#000', padding: '1.5rem', borderRadius: '10px' }}>
             <div className="print-area">
               <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
-                <div style={{ fontSize: '0.85rem', fontWeight: '700' }}>COMPROVANTE DE ENTRADA DE EQUIPAMENTO — OS #{docModalOrdem.numero_os}</div>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000' }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
+                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#333' }}>COMPROVANTE DE ENTRADA DE EQUIPAMENTO — OS #{docModalOrdem.numero_os}</div>
                 <div style={{ fontSize: '0.75rem', color: '#555' }}>CR Armeria N° 998877/2ª RM — São Paulo/SP</div>
               </div>
 
@@ -185,7 +185,7 @@ export default function ModuloOrdens({ ordens, setOrdens, clientes, financeiro, 
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-              <button className="btn-secondary" onClick={() => setDocModalOrdem(null)}>Fechar</button>
+              <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setDocModalOrdem(null)}>Fechar</button>
               <button className="btn-gold" onClick={() => window.print()}>Imprimir Comprovante</button>
             </div>
           </div>

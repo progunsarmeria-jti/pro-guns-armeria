@@ -665,18 +665,18 @@ export default function ModuloClientes({
           />
         )}
 
-        {/* Modal Visualizar Ficha/Detalhes da O.S. (ao clicar na Ordem de Manutenção) */}
+        {/* Modal Visualizar Ficha/Detalhes da O.S. (Layout Ajustado com scroll e sem cortes) */}
         {modalVerOSDetalhes && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div className="card" style={{ width: '100%', maxWidth: '650px', backgroundColor: '#fff', color: '#000' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#fff', color: '#000', padding: '1.5rem', borderRadius: '10px' }}>
               <div className="print-area">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem', gap: '1rem' }}>
                   <div>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
-                    <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>ORDEM DE SERVIÇO #{modalVerOSDetalhes.numero_os} — MANUTENÇÃO</div>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000', margin: 0 }}>PRÓ GUNS ARMERIA & DESPACHANTARIA</h2>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#333', marginTop: '0.2rem' }}>ORDEM DE SERVIÇO #{modalVerOSDetalhes.numero_os} — MANUTENÇÃO</div>
                   </div>
-                  <span style={{ padding: '0.3rem 0.7rem', backgroundColor: '#000', color: '#fff', fontSize: '0.75rem', fontWeight: '800', borderRadius: '4px' }}>
-                    STATUS: {modalVerOSDetalhes.status}
+                  <span style={{ padding: '0.35rem 0.75rem', backgroundColor: '#000', color: '#fff', fontSize: '0.75rem', fontWeight: '800', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                    {modalVerOSDetalhes.status}
                   </span>
                 </div>
 
@@ -693,7 +693,7 @@ export default function ModuloClientes({
 
                   <div style={{ backgroundColor: '#fff8e6', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ffe58f' }}>
                     <strong>Problema Relatado pelo Cliente:</strong>
-                    <div style={{ marginTop: '0.2rem', fontStyle: 'italic' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
+                    <div style={{ marginTop: '0.2rem', fontStyle: 'italic', color: '#333' }}>"{modalVerOSDetalhes.problema_relatado || 'Revisão e manutenção técnica solicitada.'}"</div>
                   </div>
 
                   {modalVerOSDetalhes.gt_protocolo && modalVerOSDetalhes.gt_protocolo !== 'N/A (Ar Comprimido)' && (
@@ -721,7 +721,7 @@ export default function ModuloClientes({
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                <button className="btn-secondary" onClick={() => setModalVerOSDetalhes(null)}>Fechar</button>
+                <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setModalVerOSDetalhes(null)}>Fechar</button>
                 <button className="btn-gold" onClick={() => window.print()}>Imprimir Ficha da O.S.</button>
               </div>
             </div>
@@ -730,8 +730,8 @@ export default function ModuloClientes({
 
         {/* Modal Recibo Impressão */}
         {showModalRecibo && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div className="card" style={{ width: '100%', maxWidth: '550px', backgroundColor: '#fff', color: '#000' }}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#fff', color: '#000', padding: '1.5rem' }}>
               <div className="print-area">
                 <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1rem' }}>
                   <h2 style={{ fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>PRÓ GUNS ARMERIA</h2>
@@ -747,7 +747,7 @@ export default function ModuloClientes({
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.2rem' }}>
-                <button className="btn-secondary" onClick={() => setShowModalRecibo(null)}>Fechar</button>
+                <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setShowModalRecibo(null)}>Fechar</button>
                 <button className="btn-gold" onClick={() => window.print()}>Imprimir Recibo</button>
               </div>
             </div>

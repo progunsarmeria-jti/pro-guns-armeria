@@ -325,7 +325,7 @@ export default function ModuloCaixa({
     return {
       vendasCount: vnds.length,
       totalVendas: Number(totalVendas) || 0,
-      totalPagos: Number(totalPagos) || 0,
+      totalPagos: Number(totPagos) || 0,
       saldoFinalDin: Number(saldoFinalDin) || 0,
       saldoIni: Number(saldoIni) || 0,
       totSangrias: Number(totSangrias) || 0,

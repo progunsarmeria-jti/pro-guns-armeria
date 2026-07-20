@@ -222,13 +222,13 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   ]).map(c => c.toUpperCase())
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '960px' }}>
+    <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', maxWidth: '1000px' }}>
       <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <Settings size={28} color="var(--red-light)" />
+        <h1 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Settings size={22} color="var(--red-light)" />
           <span>Configurações & Gestão de Categorias</span>
         </h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           Cadastre e edite categorias de serviços, gerencie a tabela de preços e dados institucionais.
         </p>
       </div>
@@ -240,7 +240,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
         <div
           onClick={() => toggleSection('dados')}
           style={{
-            padding: '1.2rem 1.5rem',
+            padding: '0.75rem 1rem',
             backgroundColor: 'var(--bg-input)',
             borderBottom: openSections.dados ? '1px solid var(--border-color)' : 'none',
             display: 'flex',
@@ -249,32 +249,32 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             cursor: 'pointer'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Building size={22} color="var(--gold-accent)" />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Building size={18} color="var(--gold-accent)" />
+            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700' }}>
               Dados Institucionais da Armeria
             </h3>
           </div>
-          {openSections.dados ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+          {openSections.dados ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
         </div>
 
         {openSections.dados && (
-          <div style={{ padding: '1.5rem' }}>
-            <form onSubmit={handleSalvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div style={{ padding: '1rem' }}>
+            <form onSubmit={handleSalvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Nome Fantasia *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nome Fantasia *</label>
                   <input className="input-field" value={formData.nome_fantasia || ''} onChange={e => setFormData({...formData, nome_fantasia: e.target.value})} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Razão Social *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Razão Social *</label>
                   <input className="input-field" value={formData.razao_social || ''} onChange={e => setFormData({...formData, razao_social: e.target.value})} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CNPJ * (Máscara Automática)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CNPJ * (Máscara Automática)</label>
                   <input
                     className="input-field"
                     placeholder="00.000.000/0000-00"
@@ -283,18 +283,18 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N° CR da Armeria *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>N° CR da Armeria *</label>
                   <input className="input-field" value={formData.cr_armeria || ''} onChange={e => setFormData({...formData, cr_armeria: e.target.value})} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Região Militar *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Região Militar *</label>
                   <input className="input-field" value={formData.rm_armeria || ''} onChange={e => setFormData({...formData, rm_armeria: e.target.value})} />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp *</label>
                   <input
                     className="input-field"
                     placeholder="(00) 00000-0000"
@@ -303,24 +303,24 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>E-mail Oficial *</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>E-mail Oficial *</label>
                   <input className="input-field" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Endereço Completo *</label>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Endereço Completo *</label>
                 <input className="input-field" value={formData.endereco || ''} onChange={e => setFormData({...formData, endereco: e.target.value})} />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
                 {salvoFeedback && (
-                  <span style={{ fontSize: '0.85rem', color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <CheckCircle2 size={16} /> Dados institucional salvos!
+                  <span style={{ fontSize: '0.78rem', color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <CheckCircle2 size={14} /> Dados institucionais salvos!
                   </span>
                 )}
-                <button type="submit" className="btn-gold">
-                  <Save size={16} />
+                <button type="submit" className="btn-gold" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
+                  <Save size={15} />
                   <span>Salvar Dados da Armeria</span>
                 </button>
               </div>
@@ -336,31 +336,28 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
         <div
           onClick={() => toggleSection('categorias')}
           style={{
-            padding: '1.2rem 1.5rem',
+            padding: '0.75rem 1rem',
             backgroundColor: 'var(--bg-input)',
             borderBottom: openSections.categorias ? '1px solid var(--border-color)' : 'none',
             display: 'flex',
-            justifyContent: 'space-between',
+            justify: 'space-between',
             alignItems: 'center',
             cursor: 'pointer'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Tag size={22} color="#FBBF24" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Tag size={18} color="#FBBF24" />
             <div>
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+              <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
                 Cadastro & Gestão de Categorias por Módulo
               </h3>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Organize e edite as opções de categorias especificadas para cada campo do sistema.
-              </div>
             </div>
           </div>
-          {openSections.categorias ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+          {openSections.categorias ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
         </div>
 
         {openSections.categorias && (
-          <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {/* ABAS DE NAVEGAÇÃO DE CATEGORIAS POR MÓDULO */}
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.5rem' }}>
               {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
@@ -489,7 +486,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
         <div
           onClick={() => toggleSection('servicos')}
           style={{
-            padding: '1.2rem 1.5rem',
+            padding: '0.75rem 1rem',
             backgroundColor: 'var(--bg-input)',
             borderBottom: openSections.servicos ? '1px solid var(--border-color)' : 'none',
             display: 'flex',
@@ -498,20 +495,20 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             cursor: 'pointer'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Wrench size={22} color="#F87171" />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Wrench size={18} color="#F87171" />
+            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700' }}>
               Catálogo de Serviços & Tabela de Valores
             </h3>
-            <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', fontWeight: '800' }}>
+            <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.45rem', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', fontWeight: '800' }}>
               {(formData.catalogo_servicos || []).length} Serviços Cadastrados
             </span>
           </div>
-          {openSections.servicos ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+          {openSections.servicos ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
         </div>
 
         {openSections.servicos && (
-          <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {/* Formulário de Cadastro de Novo Serviço em CAIXA ALTA */}
             <form onSubmit={handleAdicionarServico} style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

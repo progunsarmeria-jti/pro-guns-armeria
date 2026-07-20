@@ -1,11 +1,15 @@
 import React, { useState } from 'react'
-import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign, Edit } from 'lucide-react'
+import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign, Edit, Shield, X } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { isSupabaseConfigured, dbDelete } from '../lib/supabase'
 
-export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro, config }) {
+export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro, config, usuarioLogado, usuarios = [] }) {
   const [showModalOrcamento, setShowModalOrcamento] = useState(false)
   const [modalVerOrcamento, setModalVerOrcamento] = useState(null)
   const [orcamentoParaEditar, setOrcamentoParaEditar] = useState(null)
+  const [modalExcluirOrcamento, setModalExcluirOrcamento] = useState(null)
+  const [senhaMasterInput, setSenhaMasterInput] = useState('')
+  const [erroSenhaMaster, setErroSenhaMaster] = useState('')
 
   const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '')
   const [formaPagamento, setFormaPagamento] = useState('PIX (À Vista com Desconto)')
@@ -43,9 +47,35 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
   }
 
   const handleExcluirOrcamento = (orcamento) => {
-    if (window.confirm(`Tem certeza que deseja excluir o Orçamento #${orcamento.numero_orcamento} (${orcamento.cliente_nome})?`)) {
-      setOrcamentos(orcamentos.filter(o => o.id !== orcamento.id))
+    setModalExcluirOrcamento(orcamento)
+    setSenhaMasterInput('')
+    setErroSenhaMaster('')
+  }
+
+  const handleConfirmarExclusaoOrcamento = (e) => {
+    if (e) e.preventDefault()
+    if (!modalExcluirOrcamento) return
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMaster('Senha Master incorreta! Operação não autorizada.')
+      return
     }
+
+    const orcParaDeletar = modalExcluirOrcamento
+    setOrcamentos(prev => prev.filter(o => String(o.id) !== String(orcParaDeletar.id) && String(o.numero_orcamento) !== String(orcParaDeletar.numero_orcamento)))
+
+    if (isSupabaseConfigured()) {
+      dbDelete('orcamentos', orcParaDeletar.id)
+    }
+
+    setModalExcluirOrcamento(null)
+    setSenhaMasterInput('')
+    setErroSenhaMaster('')
+    alert(`Orçamento #${orcParaDeletar.numero_orcamento} excluído com sucesso!`)
   }
 
   const handleAdicionarItem = () => {
@@ -370,6 +400,56 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
               <button className="btn-secondary" onClick={() => setModalVerOrcamento(null)}>Fechar</button>
               <button className="btn-gold" onClick={() => window.print()}>Imprimir / Exportar PDF</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (REQUER SENHA MASTER) */}
+      {modalExcluirOrcamento && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', borderLeft: '4px solid #F87171' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', color: '#F87171', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Shield size={20} /> Excluir Orçamento #{modalExcluirOrcamento.numero_orcamento}
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalExcluirOrcamento(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              Você está prestes a excluir o Orçamento <strong>#{modalExcluirOrcamento.numero_orcamento}</strong> ({modalExcluirOrcamento.cliente_nome}). Esta ação é irreversível.
+            </p>
+
+            <form onSubmit={handleConfirmarExclusaoOrcamento} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  DIGITE A SENHA DO USUÁRIO MASTER *
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  className="input-field"
+                  placeholder="Senha Master do Usuário..."
+                  value={senhaMasterInput}
+                  onChange={e => { setSenhaMasterInput(e.target.value); setErroSenhaMaster('') }}
+                />
+                {erroSenhaMaster && (
+                  <div style={{ color: '#F87171', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: '700' }}>
+                    {erroSenhaMaster}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalExcluirOrcamento(null)}>Cancelar</button>
+                <button type="submit" className="btn-red" style={{ backgroundColor: '#DC2626' }}>
+                  <Trash2 size={16} />
+                  <span>Confirmar Exclusão</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

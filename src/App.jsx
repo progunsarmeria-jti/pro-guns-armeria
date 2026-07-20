@@ -476,6 +476,8 @@ export default function App() {
               ordens={ordens} setOrdens={setOrdens}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
               config={config}
+              usuarioLogado={usuarioLogado}
+              usuarios={usuarios}
             />
           )}
 

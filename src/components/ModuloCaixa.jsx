@@ -86,41 +86,41 @@ export default function ModuloCaixa({
   const [obsFechamento, setObsFechamento] = useState('')
 
   // ─── Cálculos e Métricas Padrão Tiro Digital ─────────────────────────────────
-  const movimentacoes = caixaAtual?.movimentacoes || []
+  const movimentacoes = Array.isArray(caixaAtual?.movimentacoes) ? caixaAtual.movimentacoes : []
   
   // 1. Vendas / OS Geradas no Caixa
-  const vendasGeradasList = movimentacoes.filter(m => m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO')
+  const vendasGeradasList = movimentacoes.filter(m => m && (m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO'))
   const qtdVendasGeradas = vendasGeradasList.length
-  const valorTotalVendasGeradas = vendasGeradasList.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const valorTotalVendasGeradas = vendasGeradasList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
   // 2. Pagamentos Recebidos por Modalidade (Valor e Qtd de Transações)
-  const pagamentosDinheiro = movimentacoes.filter(m => m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
-  const totalDinheiro      = pagamentosDinheiro.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const pagamentosDinheiro = movimentacoes.filter(m => m && m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
+  const totalDinheiro      = pagamentosDinheiro.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
   const qtdDinheiro        = pagamentosDinheiro.length
 
-  const pagamentosPix      = movimentacoes.filter(m => m.forma_pagamento === 'PIX')
-  const totalPix           = pagamentosPix.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const pagamentosPix      = movimentacoes.filter(m => m && m.forma_pagamento === 'PIX')
+  const totalPix           = pagamentosPix.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
   const qtdPix             = pagamentosPix.length
 
-  const pagamentosCredito  = movimentacoes.filter(m => m.forma_pagamento?.includes('Crédito'))
-  const totalCredito       = pagamentosCredito.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const pagamentosCredito  = movimentacoes.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
+  const totalCredito       = pagamentosCredito.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
   const qtdCredito         = pagamentosCredito.length
 
-  const pagamentosDebito   = movimentacoes.filter(m => m.forma_pagamento?.includes('Débito'))
-  const totalDebito        = pagamentosDebito.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const pagamentosDebito   = movimentacoes.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
+  const totalDebito        = pagamentosDebito.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
   const qtdDebito          = pagamentosDebito.length
 
   const totalPagosRecebidos = totalDinheiro + totalPix + totalCredito + totalDebito
   const qtdTotalPagamentos  = qtdDinheiro + qtdPix + qtdCredito + qtdDebito
 
   // 3. Sangrias e Reforços
-  const sangriasList = movimentacoes.filter(m => m.tipo === 'SANGRIA')
-  const totalSangrias = sangriasList.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const sangriasList = movimentacoes.filter(m => m && m.tipo === 'SANGRIA')
+  const totalSangrias = sangriasList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const reforcosList = movimentacoes.filter(m => m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO')
-  const totalReforcos = reforcosList.reduce((acc, m) => acc + (m.valor || 0), 0)
+  const reforcosList = movimentacoes.filter(m => m && (m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO'))
+  const totalReforcos = reforcosList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const saldoInicial = caixaAtual?.saldo_inicial || 0
+  const saldoInicial = parseFloat(caixaAtual?.saldo_inicial) || 0
   const saldoFinalDinheiroGaveta = saldoInicial + totalDinheiro + totalReforcos - totalSangrias
 
   // ─── Handler Abertura de Caixa ───────────────────────────────────────────────
@@ -246,7 +246,7 @@ export default function ModuloCaixa({
 
   // ─── Handler Fechamento de Caixa ─────────────────────────────────────────────
   const handleFecharCaixa = (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     if (!caixaAtual) return
 
     const dinInf = parseFloat(dinheiroInformado) || 0
@@ -272,15 +272,23 @@ export default function ModuloCaixa({
       }
     }
 
-    const caixasAtualizados = caixas.map(c => {
-      if (c.id === caixaAtual.id) {
+    const caixasAtualizados = (caixas || []).map(c => {
+      if (c && c.id === caixaAtual.id) {
         return caixaAtualizadoItem
       }
       return c
     })
 
-    setCaixas(caixasAtualizados)
+    if (typeof setCaixas === 'function') {
+      setCaixas(caixasAtualizados)
+    }
+
     setModalFecharCaixa(false)
+    setDinheiroInformado('')
+    setPixInformado('')
+    setCreditoInformado('')
+    setDebitoInformado('')
+    setObsFechamento('')
     setModalRelatorioIntegra(caixaAtualizadoItem)
   }
 
@@ -289,27 +297,27 @@ export default function ModuloCaixa({
   // Helper de Cálculo de Dados do Relatório na Íntegra (Modelo Tiro Digital)
   const getRelatorioData = (targetCaixa) => {
     if (!targetCaixa) return null
-    const movs = targetCaixa.movimentacoes || []
+    const movs = Array.isArray(targetCaixa.movimentacoes) ? targetCaixa.movimentacoes : []
     
-    const vnds = movs.filter(m => m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO')
-    const totalVendas = vnds.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const vnds = movs.filter(m => m && (m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO'))
+    const totalVendas = vnds.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
     
-    const din = movs.filter(m => m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
-    const pix = movs.filter(m => m.forma_pagamento === 'PIX')
-    const cred = movs.filter(m => m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
-    const deb = movs.filter(m => m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
+    const din = movs.filter(m => m && m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
+    const pix = movs.filter(m => m && m.forma_pagamento === 'PIX')
+    const cred = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
+    const deb = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
     
-    const totDin = din.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
-    const totPix = pix.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
-    const totCred = cred.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
-    const totDeb = deb.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const totDin = din.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
+    const totPix = pix.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
+    const totCred = cred.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
+    const totDeb = deb.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
     const totPagos = totDin + totPix + totCred + totDeb
 
-    const sangrias = movs.filter(m => m.tipo === 'SANGRIA')
-    const totSangrias = sangrias.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const sangrias = movs.filter(m => m && m.tipo === 'SANGRIA')
+    const totSangrias = sangrias.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
 
-    const reforcos = movs.filter(m => m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO')
-    const totReforcos = reforcos.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const reforcos = movs.filter(m => m && (m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO'))
+    const totReforcos = reforcos.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
 
     const saldoIni = parseFloat(targetCaixa.saldo_inicial) || 0
     const saldoFinalDin = saldoIni + totDin + totReforcos - totSangrias

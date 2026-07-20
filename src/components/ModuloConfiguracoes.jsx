@@ -18,9 +18,48 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     supabase: false
   })
 
-  // Estado para Cadastro de Nova Categoria
-  const [novaCategoriaNome, setNovaCategoriaNome] = useState('')
-  const [categoriaParaEditar, setCategoriaParaEditar] = useState(null) // { original, editado }
+  // Estado para Cadastro de Categorias por Módulo
+  const [abaCategoriaAtiva, setAbaCategoriaAtiva] = useState('servicos') // 'servicos' | 'estoque' | 'financeiro' | 'equipamento'
+  const [inputNovaCategoria, setInputNovaCategoria] = useState('')
+  const [modalEditarCategoria, setModalEditarCategoria] = useState(null) // { modulo, chave, original, editado }
+
+  const CONFIG_CATEGORIAS_MAP = {
+    servicos: {
+      id: 'servicos',
+      rotulo: '🛠️ Serviços (O.S. / Orçamentos)',
+      campoDestino: 'Usado em: Categoria de Serviço em O.S., Laudos Técnicos e Tabela de Valores',
+      chave: 'categorias_servicos',
+      padrao: ['MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO', 'LIMPEZA & CONSERVAÇÃO', 'CUSTOMIZAÇÃO', 'PINTURA & CERAKOTE'],
+      cor: '#FBBF24'
+    },
+    estoque: {
+      id: 'estoque',
+      rotulo: '📦 Peças & Produtos (Estoque)',
+      campoDestino: 'Usado em: Categoria no cadastro de peças, produtos e filtro de estoque',
+      chave: 'categorias_estoque',
+      padrao: ['COMPONENTES & PEÇAS', 'LIMPEZA & CONSERVAÇÃO', 'MIRAS & ÓPTICAS', 'ACESSÓRIOS & CARREGADORES', 'INSUMOS'],
+      cor: '#60A5FA'
+    },
+    financeiro: {
+      id: 'financeiro',
+      rotulo: '💰 Financeiro (Receitas & Despesas)',
+      campoDestino: 'Usado em: Categoria dos lançamentos do Financeiro e Livro Caixa',
+      chave: 'categorias_financeiro',
+      padrao: ['SERVIÇO ARMERIA', 'VENDA DE BALCÃO', 'SANGRIA DE CAIXA', 'REFORÇO / APORTE', 'PEÇAS & INSUMOS', 'DESPESAS OPERACIONAIS', 'IMPOSTOS & TAXAS'],
+      cor: '#34D399'
+    },
+    equipamento: {
+      id: 'equipamento',
+      rotulo: '🔫 Equipamentos / Armas',
+      campoDestino: 'Usado em: Categoria / Tipo de Arma no Acervo do Cliente e Entrada de O.S.',
+      chave: 'categorias_equipamento',
+      padrao: ['PISTOLA', 'REVÓLVER', 'CARABINA', 'FUZIL', 'ESPINGARDA', 'ARMA DE AR COMPRIMIDO', 'ACESSÓRIO / SUPORTE'],
+      cor: '#A78BFA'
+    }
+  }
+
+  const catConfigAtual = CONFIG_CATEGORIAS_MAP[abaCategoriaAtiva] || CONFIG_CATEGORIAS_MAP.servicos
+  const listaCategoriasAtivas = formData[catConfigAtual.chave] || catConfigAtual.padrao
 
   // Estado para Cadastro e Edição de Serviço
   const [novoServicoNome, setNovoServicoNome] = useState('')
@@ -54,65 +93,61 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     saveSupabaseKeys(supaUrl, supaKey)
   }
 
-  // Adicionar Nova Categoria (FORÇA CAIXA ALTA AUTOMÁTICO)
-  const handleAdicionarCategoria = (e) => {
+  // Adicionar Nova Categoria na Aba Ativa
+  const handleAdicionarCategoriaAbas = (e) => {
     e.preventDefault()
-    const nomeLimpo = novaCategoriaNome.trim().toUpperCase()
-    if (!nomeLimpo) return
+    const limpo = inputNovaCategoria.trim().toUpperCase()
+    if (!limpo) return
 
-    const listaAtual = formData.categorias_servicos || [
-      'MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO'
-    ]
-
-    if (listaAtual.map(c => c.toUpperCase()).includes(nomeLimpo)) {
-      alert(`A categoria "${nomeLimpo}" já está cadastrada!`)
+    if (listaCategoriasAtivas.map(c => c.toUpperCase()).includes(limpo)) {
+      alert(`A categoria "${limpo}" já está cadastrada em ${catConfigAtual.rotulo}!`)
       return
     }
 
-    const novaLista = [...listaAtual, nomeLimpo]
-    const updated = { ...formData, categorias_servicos: novaLista }
-
+    const novaLista = [...listaCategoriasAtivas, limpo]
+    const updated = { ...formData, [catConfigAtual.chave]: novaLista }
     setFormData(updated)
     setConfig(updated)
-    setNovaCategoriaNome('')
-    alert(`Categoria "${nomeLimpo}" cadastrada com sucesso!`)
+    setInputNovaCategoria('')
   }
 
-  // Editar Categoria Cadastrada
-  const handleSalvarEdicaoCategoria = (e) => {
+  // Salvar Edição de Categoria
+  const handleSalvarEdicaoCategoriaModal = (e) => {
     e.preventDefault()
-    if (!categoriaParaEditar || !categoriaParaEditar.editado) return
-    const original = categoriaParaEditar.original.toUpperCase()
-    const novoNome = categoriaParaEditar.editado.trim().toUpperCase()
-
+    if (!modalEditarCategoria || !modalEditarCategoria.editado) return
+    const { chave, original, modulo } = modalEditarCategoria
+    const origUpper = (original || '').toUpperCase()
+    const novoNome = modalEditarCategoria.editado.trim().toUpperCase()
     if (!novoNome) return
 
-    const listaAtual = formData.categorias_servicos || []
-    const novaLista = listaAtual.map(c => c.toUpperCase() === original ? novoNome : c.toUpperCase())
+    const configModulo = CONFIG_CATEGORIAS_MAP[modulo] || CONFIG_CATEGORIAS_MAP.servicos
+    const lista = formData[chave] || configModulo.padrao
+    const novaLista = lista.map(c => c.toUpperCase() === origUpper ? novoNome : c.toUpperCase())
 
-    // Atualiza também os serviços vinculados a essa categoria antiga
-    const catalogoAtual = formData.catalogo_servicos || []
-    const novoCatalogo = catalogoAtual.map(s => {
-      if ((s.categoria || '').toUpperCase() === original) {
-        return { ...s, categoria: novoNome }
-      }
-      return s
-    })
+    let updated = { ...formData, [chave]: novaLista }
 
-    const updated = { ...formData, categorias_servicos: novaLista, catalogo_servicos: novoCatalogo }
+    // Atualizar também serviços vinculados se for categoria de serviços
+    if (chave === 'categorias_servicos') {
+      const catalogoAtual = formData.catalogo_servicos || []
+      const novoCatalogo = catalogoAtual.map(s => {
+        if ((s.categoria || '').toUpperCase() === origUpper) {
+          return { ...s, categoria: novoNome }
+        }
+        return s
+      })
+      updated.catalogo_servicos = novoCatalogo
+    }
+
     setFormData(updated)
     setConfig(updated)
-    setCategoriaParaEditar(null)
-    alert(`Categoria atualizada para "${novoNome}"!`)
+    setModalEditarCategoria(null)
   }
 
-  // Remover Categoria
-  const handleRemoverCategoria = (catNome) => {
-    if (window.confirm(`Deseja remover a categoria "${catNome}"?`)) {
-      const listaAtual = formData.categorias_servicos || []
-      const novaLista = listaAtual.filter(c => c.toUpperCase() !== catNome.toUpperCase())
-
-      const updated = { ...formData, categorias_servicos: novaLista }
+  // Remover Categoria da Aba Ativa
+  const handleRemoverCategoriaAbas = (catNome) => {
+    if (window.confirm(`Deseja remover a categoria "${catNome}" de ${catConfigAtual.rotulo}?`)) {
+      const novaLista = listaCategoriasAtivas.filter(c => c.toUpperCase() !== catNome.toUpperCase())
+      const updated = { ...formData, [catConfigAtual.chave]: novaLista }
       setFormData(updated)
       setConfig(updated)
     }
@@ -292,7 +327,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       </div>
 
       {/* ==========================================
-          2. SEÇÃO SUSPENSA: CADASTRO E EDIÇÃO DE CATEGORIAS
+          2. SEÇÃO SUSPENSA: GESTÃO & CADASTRO DE CATEGORIAS DO SISTEMA
       ========================================== */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div
@@ -302,54 +337,98 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             backgroundColor: 'var(--bg-input)',
             borderBottom: openSections.categorias ? '1px solid var(--border-color)' : 'none',
             display: 'flex',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             alignItems: 'center',
             cursor: 'pointer'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Tag size={22} color="#FBBF24" />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              Cadastro & Edição de Categorias
-            </h3>
-            <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24', fontWeight: '800' }}>
-              {categoriasDisponiveis.length} Categorias
-            </span>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+                Cadastro & Gestão de Categorias por Módulo
+              </h3>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Organize e edite as opções de categorias especificadas para cada campo do sistema.
+              </div>
+            </div>
           </div>
           {openSections.categorias ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
         </div>
 
         {openSections.categorias && (
           <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Formulário de Cadastro de Categoria */}
-            <form onSubmit={handleAdicionarCategoria} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+            {/* ABAS DE NAVEGAÇÃO DE CATEGORIAS POR MÓDULO */}
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.5rem' }}>
+              {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
+                const ativa = abaCategoriaAtiva === mod.id
+                const qtd = (formData[mod.chave] || mod.padrao).length
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    onClick={() => { setAbaCategoriaAtiva(mod.id); setInputNovaCategoria('') }}
+                    style={{
+                      backgroundColor: ativa ? 'rgba(245,158,11,0.15)' : 'var(--bg-input)',
+                      border: ativa ? `1px solid ${mod.cor}` : '1px solid var(--border-color)',
+                      color: ativa ? mod.cor : 'var(--text-muted)',
+                      padding: '0.5rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{mod.rotulo}</span>
+                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                      {qtd}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* BANNER INFORMATIVO DO CAMPO DESTINO DA CATEGORIA SELECIONADA */}
+            <div style={{ backgroundColor: 'rgba(96,165,250,0.08)', padding: '0.75rem 1rem', borderRadius: '8px', border: `1px solid ${catConfigAtual.cor}40`, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-main)' }}>
+              <Tag size={16} color={catConfigAtual.cor} />
+              <div>
+                <strong>{catConfigAtual.rotulo}:</strong> <span style={{ color: 'var(--text-muted)' }}>{catConfigAtual.campoDestino}</span>
+              </div>
+            </div>
+
+            {/* Formulário de Cadastro de Categoria para a Aba Ativa */}
+            <form onSubmit={handleAdicionarCategoriaAbas} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                  NOME DA NOVA CATEGORIA * (CAIXA ALTA AUTOMÁTICO)
+                  NOVA CATEGORIA PARA {catConfigAtual.rotulo.toUpperCase()} * (CAIXA ALTA AUTOMÁTICO)
                 </label>
                 <input
                   required
                   className="input-field"
-                  placeholder="EX: LIMPEZA & CONSERVAÇÃO, CERAKOTE, CUSTOMIZAÇÃO..."
-                  value={novaCategoriaNome}
-                  onChange={e => setNovaCategoriaNome(e.target.value.toUpperCase())}
+                  placeholder={`Ex: Nova Categoria para ${catConfigAtual.rotulo}...`}
+                  value={inputNovaCategoria}
+                  onChange={e => setInputNovaCategoria(e.target.value.toUpperCase())}
                   style={{ textTransform: 'uppercase' }}
                 />
               </div>
 
               <button type="submit" className="btn-gold" style={{ padding: '0.65rem 1.2rem' }}>
                 <Plus size={16} />
-                <span>Cadastrar Categoria</span>
+                <span>Adicionar Categoria</span>
               </button>
             </form>
 
             {/* Grid de Categorias Cadastradas com Botões de EDITAR e EXCLUIR */}
             <div>
               <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                CATEGORIAS CADASTRADAS (CLIQUE NO LÁPIS PARA EDITAR):
+                CATEGORIAS REGISTRADAS ({listaCategoriasAtivas.length}):
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {categoriasDisponiveis.map(cat => (
+                {listaCategoriasAtivas.map(cat => (
                   <div
                     key={cat}
                     style={{
@@ -365,13 +444,18 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                       fontWeight: '700'
                     }}
                   >
-                    <Tag size={14} color="#FBBF24" />
+                    <Tag size={14} color={catConfigAtual.cor} />
                     <span>{cat.toUpperCase()}</span>
 
                     {/* BOTÃO EDITAR CATEGORIA */}
                     <button
                       type="button"
-                      onClick={() => setCategoriaParaEditar({ original: cat, editado: cat })}
+                      onClick={() => setModalEditarCategoria({
+                        modulo: abaCategoriaAtiva,
+                        chave: catConfigAtual.chave,
+                        original: cat,
+                        editado: cat
+                      })}
                       style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       title="Editar Nome da Categoria"
                     >
@@ -381,7 +465,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                     {/* BOTÃO EXCLUIR CATEGORIA */}
                     <button
                       type="button"
-                      onClick={() => handleRemoverCategoria(cat)}
+                      onClick={() => handleRemoverCategoriaAbas(cat)}
                       style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                       title="Excluir Categoria"
                     >
@@ -732,6 +816,43 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           </div>
         )}
       </div>
+
+      {/* MODAL PARA EDITAR NOME DE CATEGORIA */}
+      {modalEditarCategoria && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', borderLeft: '4px solid var(--gold-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--gold-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit size={18} /> Editar Categoria
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarCategoria(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicaoCategoriaModal} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700' }}>
+                  NOME DA CATEGORIA (CAIXA ALTA AUTOMÁTICO)
+                </label>
+                <input
+                  required
+                  autoFocus
+                  className="input-field"
+                  value={modalEditarCategoria.editado}
+                  onChange={e => setModalEditarCategoria({ ...modalEditarCategoria, editado: e.target.value.toUpperCase() })}
+                  style={{ textTransform: 'uppercase' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalEditarCategoria(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold">Salvar Alterações</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

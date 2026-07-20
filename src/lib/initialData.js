@@ -397,6 +397,31 @@ export const INITIAL_CONFIG = {
     "CUSTOMIZAÇÃO",
     "PINTURA & CERAKOTE"
   ],
+  categorias_estoque: [
+    "COMPONENTES & PEÇAS",
+    "LIMPEZA & CONSERVAÇÃO",
+    "MIRAS & ÓPTICAS",
+    "ACESSÓRIOS & CARREGADORES",
+    "INSUMOS"
+  ],
+  categorias_financeiro: [
+    "SERVIÇO ARMERIA",
+    "VENDA DE BALCÃO",
+    "SANGRIA DE CAIXA",
+    "REFORÇO / APORTE",
+    "PEÇAS & INSUMOS",
+    "DESPESAS OPERACIONAIS",
+    "IMPOSTOS & TAXAS"
+  ],
+  categorias_equipamento: [
+    "PISTOLA",
+    "REVÓLVER",
+    "CARABINA",
+    "FUZIL",
+    "ESPINGARDA",
+    "ARMA DE AR COMPRIMIDO",
+    "ACESSÓRIO / SUPORTE"
+  ],
   catalogo_servicos: [
     { id: "s1", nome: "MANUTENÇÃO GERAL & LIMPEZA ULTRASSÔNICA", valor: 250.00, categoria: "MANUTENÇÃO" },
     { id: "s2", nome: "REVISÃO DE EXTRATOR E MOLA RECUPERADORA", valor: 180.00, categoria: "REPARO" },

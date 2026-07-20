@@ -17,7 +17,7 @@ import {
 import CustomSelect from './CustomSelect'
 import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
 
-export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado }) {
+export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado, config }) {
   const [busca, setBusca] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('Todas')
   const [modalItem, setModalItem] = useState(false)
@@ -28,26 +28,27 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado 
   const [qtdAjuste, setQtdAjuste] = useState('')
   const [tipoAjuste, setTipoAjuste] = useState('ENTRADA') // 'ENTRADA' | 'SAIDA'
 
+  // Categorias Dinâmicas do Config
+  const listaCategoriasConfig = config?.categorias_estoque || [
+    'COMPONENTES & PEÇAS',
+    'LIMPEZA & CONSERVAÇÃO',
+    'MIRAS & ÓPTICAS',
+    'ACESSÓRIOS & CARREGADORES',
+    'INSUMOS'
+  ]
+  const categoriasDisponiveis = ['Todas', ...listaCategoriasConfig]
+
   // Form State Item
   const [formItem, setFormItem] = useState({
     codigo_sku: '',
     nome: '',
-    categoria: 'Componentes & Peças',
+    categoria: listaCategoriasConfig[0] || 'COMPONENTES & PEÇAS',
     preco_custo: '',
     preco_venda: '',
     quantidade: '0',
     estoque_minimo: '2',
     localizacao: 'Armeria - Prateleira A'
   })
-
-  const categoriasDisponiveis = [
-    'Todas',
-    'Componentes & Peças',
-    'Limpeza & Conservação',
-    'Miras & Ópticas',
-    'Acessórios & Carregadores',
-    'Insumos'
-  ]
 
   // Métricas do Estoque
   const totalItens = estoque.length
@@ -348,9 +349,9 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado 
                 label="Categoria *"
                 value={formItem.categoria}
                 onChange={val => setFormItem({...formItem, categoria: val})}
-                options={['Componentes & Peças', 'Limpeza & Conservação', 'Miras & Ópticas', 'Acessórios & Carregadores', 'Insumos']}
+                options={listaCategoriasConfig}
                 placeholder="Selecione a categoria..."
-                allowCustom={false}
+                allowCustom={true}
               />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

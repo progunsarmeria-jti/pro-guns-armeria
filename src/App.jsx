@@ -483,6 +483,7 @@ export default function App() {
             <ModuloEstoque
               estoque={estoque} setEstoque={setEstoque}
               usuarioLogado={usuarioLogado}
+              config={config}
             />
           )}
 

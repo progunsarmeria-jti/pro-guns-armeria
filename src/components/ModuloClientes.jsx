@@ -7,6 +7,7 @@ import {
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import { maskCPF, maskRG, maskTelefone } from '../lib/masks'
 import { dbUpsert, dbDelete } from '../lib/supabase'
+import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
 export default function ModuloClientes({
   clientes,
@@ -34,16 +35,28 @@ export default function ModuloClientes({
   const [showModalRecibo, setShowModalRecibo] = useState(null)
   const [modalVerOSDetalhes, setModalVerOSDetalhes] = useState(null)
 
+  // Listas Dinâmicas de Opções (Portal G-CAC)
+  const [listMarcas, setListMarcas] = useState(FABRICANTES_BASE)
+  const [listModelos, setListModelos] = useState(MODELOS_BASE)
+  const [listCalibres, setListCalibres] = useState(CALIBRES_BASE)
+
   // Estados do Acervo de Armas do Cliente
   const [showModalNovaArma, setShowModalNovaArma] = useState(false)
   const [armaParaEditar, setArmaParaEditar] = useState(null)
   const [modalHistoricoArma, setModalHistoricoArma] = useState(null)
+  const [avisoDuplicidadeAcervo, setAvisoDuplicidadeAcervo] = useState('')
+
+  const [customTipoAcervo, setCustomTipoAcervo] = useState('')
+  const [customMarcaAcervoInput, setCustomMarcaAcervoInput] = useState('')
+  const [customModeloAcervoInput, setCustomModeloAcervoInput] = useState('')
+  const [customCalibreAcervoInput, setCustomCalibreAcervoInput] = useState('')
+
   const [armaForm, setArmaForm] = useState({
     categoria: 'Arma de Fogo',
     tipo: 'Pistola',
-    marca: '',
-    modelo: '',
-    calibre: '',
+    marca: 'GLOCK',
+    modelo: 'G17 Gen5',
+    calibre: '9mm LUGER',
     numero_serie: '',
     orgao_registro: 'SIGMA',
     numero_sigma_sinarm: '',
@@ -51,6 +64,58 @@ export default function ModuloClientes({
     validade_craf: '',
     status: 'Regular'
   })
+
+  // Verificadores de Duplicidade para Acervo
+  const handleAddMarcaAcervo = () => {
+    const val = customMarcaAcervoInput.trim().toUpperCase()
+    if (!val) return
+    const jaExiste = listMarcas.find(m => m.toUpperCase() === val)
+    if (jaExiste) {
+      setAvisoDuplicidadeAcervo(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
+      setArmaForm(prev => ({ ...prev, marca: jaExiste }))
+      setCustomMarcaAcervoInput('')
+    } else {
+      setListMarcas(prev => [...prev, val])
+      setArmaForm(prev => ({ ...prev, marca: val }))
+      setCustomMarcaAcervoInput('')
+      setAvisoDuplicidadeAcervo(`✅ Nova marca "${val}" adicionada à lista!`)
+    }
+    setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+  }
+
+  const handleAddModeloAcervo = () => {
+    const val = customModeloAcervoInput.trim().toUpperCase()
+    if (!val) return
+    const jaExiste = listModelos.find(m => m.toUpperCase() === val)
+    if (jaExiste) {
+      setAvisoDuplicidadeAcervo(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
+      setArmaForm(prev => ({ ...prev, modelo: jaExiste }))
+      setCustomModeloAcervoInput('')
+    } else {
+      setListModelos(prev => [...prev, val])
+      setArmaForm(prev => ({ ...prev, modelo: val }))
+      setCustomModeloAcervoInput('')
+      setAvisoDuplicidadeAcervo(`✅ Novo modelo "${val}" adicionado à lista!`)
+    }
+    setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+  }
+
+  const handleAddCalibreAcervo = () => {
+    const val = customCalibreAcervoInput.trim()
+    if (!val) return
+    const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
+    if (jaExiste) {
+      setAvisoDuplicidadeAcervo(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)
+      setArmaForm(prev => ({ ...prev, calibre: jaExiste }))
+      setCustomCalibreAcervoInput('')
+    } else {
+      setListCalibres(prev => [...prev, val])
+      setArmaForm(prev => ({ ...prev, calibre: val }))
+      setCustomCalibreAcervoInput('')
+      setAvisoDuplicidadeAcervo(`✅ Novo calibre "${val}" adicionado à lista!`)
+    }
+    setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+  }
 
   const handleSalvarArmaAcervo = (e) => {
     e.preventDefault()
@@ -1037,7 +1102,14 @@ export default function ModuloClientes({
                 </button>
               </div>
 
+              {avisoDuplicidadeAcervo && (
+                <div style={{ padding: '0.65rem 0.85rem', borderRadius: '8px', backgroundColor: avisoDuplicidadeAcervo.includes('⚠️') ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)', border: avisoDuplicidadeAcervo.includes('⚠️') ? '1px solid #FBBF24' : '1px solid #34D399', color: '#FFF', fontWeight: '700', fontSize: '0.82rem', marginBottom: '0.9rem' }}>
+                  {avisoDuplicidadeAcervo}
+                </div>
+              )}
+
               <form onSubmit={handleSalvarArmaAcervo} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                {/* CATEGORIA */}
                 <div>
                   <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CATEGORIA *</label>
                   <select
@@ -1045,56 +1117,115 @@ export default function ModuloClientes({
                     value={armaForm.categoria}
                     onChange={e => setArmaForm({...armaForm, categoria: e.target.value})}
                   >
-                    <option value="Arma de Fogo">Arma de Fogo</option>
-                    <option value="Arma de Ar Comprimido">Arma de Ar Comprimido / PCP</option>
+                    {CATEGORIAS_BASE.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
 
+                {/* TIPO E MARCA */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>TIPO *</label>
-                    <input
-                      required
+                    <select
                       className="input-field"
-                      placeholder="Ex: Pistola, Revólver, Fuzil..."
                       value={armaForm.tipo}
                       onChange={e => setArmaForm({...armaForm, tipo: e.target.value})}
-                    />
+                    >
+                      {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {armaForm.tipo === 'Outros' && (
+                      <input
+                        required
+                        className="input-field"
+                        style={{ marginTop: '0.4rem' }}
+                        placeholder="Especifique o tipo..."
+                        value={customTipoAcervo}
+                        onChange={e => {
+                          setCustomTipoAcervo(e.target.value)
+                          setArmaForm(prev => ({ ...prev, tipo: e.target.value || 'Outros' }))
+                        }}
+                      />
+                    )}
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MARCA / FABRICANTE *</label>
-                    <input
-                      required
+                    <select
                       className="input-field"
-                      placeholder="Ex: Glock, Taurus, Imbel..."
                       value={armaForm.marca}
                       onChange={e => setArmaForm({...armaForm, marca: e.target.value})}
-                    />
+                    >
+                      {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
+                      <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
+                    </select>
+                    {armaForm.marca === '__NOVA__' && (
+                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                        <input
+                          required
+                          className="input-field"
+                          placeholder="Digite a marca..."
+                          value={customMarcaAcervoInput}
+                          onChange={e => setCustomMarcaAcervoInput(e.target.value)}
+                        />
+                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddMarcaAcervo}>
+                          Adicionar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
+                {/* MODELO E CALIBRE */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MODELO *</label>
-                    <input
-                      required
+                    <select
                       className="input-field"
-                      placeholder="Ex: G17 Gen5, RT 857, T4..."
                       value={armaForm.modelo}
                       onChange={e => setArmaForm({...armaForm, modelo: e.target.value})}
-                    />
+                    >
+                      {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
+                      <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
+                    </select>
+                    {armaForm.modelo === '__NOVO__' && (
+                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                        <input
+                          required
+                          className="input-field"
+                          placeholder="Digite o modelo..."
+                          value={customModeloAcervoInput}
+                          onChange={e => setCustomModeloAcervoInput(e.target.value)}
+                        />
+                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddModeloAcervo}>
+                          Adicionar
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CALIBRE *</label>
-                    <input
-                      required
+                    <select
                       className="input-field"
-                      placeholder="Ex: 9mm, .38 SPL, 5.56..."
                       value={armaForm.calibre}
                       onChange={e => setArmaForm({...armaForm, calibre: e.target.value})}
-                    />
+                    >
+                      {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
+                    </select>
+                    {armaForm.calibre === '__NOVO__' && (
+                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                        <input
+                          required
+                          className="input-field"
+                          placeholder="Digite o calibre..."
+                          value={customCalibreAcervoInput}
+                          onChange={e => setCustomCalibreAcervoInput(e.target.value)}
+                        />
+                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddCalibreAcervo}>
+                          Adicionar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1118,9 +1249,7 @@ export default function ModuloClientes({
                       value={armaForm.orgao_registro}
                       onChange={e => setArmaForm({...armaForm, orgao_registro: e.target.value})}
                     >
-                      <option value="SIGMA">SIGMA (Exército)</option>
-                      <option value="SINARM">SINARM (Polícia Federal)</option>
-                      <option value="Livre">Livre / Não Requer Registro</option>
+                      {ORGAOS_REGISTRO_BASE.map(org => <option key={org} value={org}>{org}</option>)}
                     </select>
                   </div>
 

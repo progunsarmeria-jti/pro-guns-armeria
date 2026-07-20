@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus } from 'lucide-react'
+import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
+import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
 export default function ModalNovaOSArmeria({
   clienteInicial,
@@ -26,20 +27,43 @@ export default function ModalNovaOSArmeria({
   const [armaSelecionadaId, setArmaSelecionadaId] = useState('')
   const [salvarNoAcervo, setSalvarNoAcervo] = useState(true)
 
-  // Categoria da Arma
+  // Listas Dinâmicas de Opções (com opções base importadas do Portal G-CAC)
+  const [listMarcas, setListMarcas] = useState(FABRICANTES_BASE)
+  const [listModelos, setListModelos] = useState(MODELOS_BASE)
+  const [listCalibres, setListCalibres] = useState(CALIBRES_BASE)
+
+  // Categoria da Arma ('Arma de Fogo' | 'Arma de Ar Comprimido' | 'Outros')
   const [categoriaArma, setCategoriaArma] = useState('Arma de Fogo')
 
-  // Dados da Arma
+  // Tipo ('Pistola' | 'Carabina/Fuzil' | 'Espingarda' | 'Revólver' | 'Outros')
   const [tipoArma, setTipoArma] = useState('Pistola')
-  const [marcaArma, setMarcaArma] = useState('Glock')
+  const [customTipo, setCustomTipo] = useState('')
+
+  // Marca / Fabricante
+  const [marcaArma, setMarcaArma] = useState('GLOCK')
+  const [customMarcaInput, setCustomMarcaInput] = useState('')
+
+  // Modelo
   const [modeloArma, setModeloArma] = useState('G17 Gen5')
-  const [calibreArma, setCalibreArma] = useState('9mm')
+  const [customModeloInput, setCustomModeloInput] = useState('')
+
+  // Calibre
+  const [calibreArma, setCalibreArma] = useState('9mm LUGER')
+  const [customCalibreInput, setCustomCalibreInput] = useState('')
+
+  // Órgão de Registro ('SINARM' | 'SIGMA' | 'Não requer registro')
+  const [orgaoRegistro, setOrgaoRegistro] = useState('SIGMA')
+
+  // Avisos de Duplicidade
+  const [avisoDuplicidade, setAvisoDuplicidade] = useState('')
+
+  // Número de Série
   const [numeroSerieArma, setNumeroSerieArma] = useState('')
 
   // Problema Relatado
   const [problemaRelatado, setProblemaRelatado] = useState('')
 
-  // ACESSÓRIOS ACOMPANHANTES (Checklist de Entrada da Recepção)
+  // ACESSÓRIOS ACOMPANHANTES
   const [qtdCarregadores, setQtdCarregadores] = useState(1)
   const [temCaseRigido, setTemCaseRigido] = useState(false)
   const [temLunetaRedDot, setTemLunetaRedDot] = useState(false)
@@ -58,30 +82,75 @@ export default function ModalNovaOSArmeria({
 
     const arma = armasDoCliente.find(a => a.id === armaId)
     if (arma) {
-      setCategoriaArma(arma.categoria || (arma.tipo?.toLowerCase().includes('ar comprimido') ? 'Arma de Ar Comprimido' : 'Arma de Fogo'))
+      setCategoriaArma(arma.categoria || 'Arma de Fogo')
       setTipoArma(arma.tipo || 'Pistola')
-      setMarcaArma(arma.marca || '')
-      setModeloArma(arma.modelo || '')
-      setCalibreArma(arma.calibre || '')
+      setMarcaArma(arma.marca ? arma.marca.toUpperCase() : 'GLOCK')
+      setModeloArma(arma.modelo || 'G17 Gen5')
+      setCalibreArma(arma.calibre || '9mm LUGER')
       setNumeroSerieArma(arma.numero_serie || '')
+      if (arma.orgao_registro) setOrgaoRegistro(arma.orgao_registro)
     }
   }
 
-  // Ajusta tipo padrão quando troca categoria
-  const handleTrocarCategoria = (novaCat) => {
-    setCategoriaArma(novaCat)
-    setArmaSelecionadaId('')
-    if (novaCat === 'Arma de Fogo') {
-      setTipoArma('Pistola')
-      setCalibreArma('9mm')
+  // --- VERIFICADOR DE DUPLICIDADE E CADASTRO DE NOVOS ITENS ---
+  const handleAddMarcaCustom = () => {
+    const val = customMarcaInput.trim().toUpperCase()
+    if (!val) return
+    const jaExiste = listMarcas.find(m => m.toUpperCase() === val)
+    if (jaExiste) {
+      setAvisoDuplicidade(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
+      setMarcaArma(jaExiste)
+      setCustomMarcaInput('')
     } else {
-      setTipoArma('Carabina de Ar Comprimido')
-      setCalibreArma('5.5mm (.22)')
+      setListMarcas(prev => [...prev, val])
+      setMarcaArma(val)
+      setCustomMarcaInput('')
+      setAvisoDuplicidade(`✅ Nova marca "${val}" adicionada à lista com sucesso!`)
     }
+    setTimeout(() => setAvisoDuplicidade(''), 4000)
+  }
+
+  const handleAddModeloCustom = () => {
+    const val = customModeloInput.trim().toUpperCase()
+    if (!val) return
+    const jaExiste = listModelos.find(m => m.toUpperCase() === val)
+    if (jaExiste) {
+      setAvisoDuplicidade(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
+      setModeloArma(jaExiste)
+      setCustomModeloInput('')
+    } else {
+      setListModelos(prev => [...prev, val])
+      setModeloArma(val)
+      setCustomModeloInput('')
+      setAvisoDuplicidade(`✅ Novo modelo "${val}" adicionado à lista com sucesso!`)
+    }
+    setTimeout(() => setAvisoDuplicidade(''), 4000)
+  }
+
+  const handleAddCalibreCustom = () => {
+    const val = customCalibreInput.trim()
+    if (!val) return
+    const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
+    if (jaExiste) {
+      setAvisoDuplicidade(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)
+      setCalibreArma(jaExiste)
+      setCustomCalibreInput('')
+    } else {
+      setListCalibres(prev => [...prev, val])
+      setCalibreArma(val)
+      setCustomCalibreInput('')
+      setAvisoDuplicidade(`✅ Novo calibre "${val}" adicionado à lista com sucesso!`)
+    }
+    setTimeout(() => setAvisoDuplicidade(''), 4000)
   }
 
   const handleSalvarEntradaOS = (e) => {
     e.preventDefault()
+
+    const marcaFinal = marcaArma === '__NOVA__' ? (customMarcaInput.trim().toUpperCase() || 'DESCONHECIDA') : marcaArma
+    const modeloFinal = modeloArma === '__NOVO__' ? (customModeloInput.trim().toUpperCase() || 'DESCONHECIDO') : modeloArma
+    const calibreFinal = calibreArma === '__NOVO__' ? (customCalibreInput.trim() || 'DESCONHECIDO') : calibreArma
+    const tipoFinal = tipoArma === 'Outros' ? (customTipo.trim() || 'Outros') : tipoArma
 
     if (!numeroSerieArma) {
       alert('Por favor, preencha o número de série da arma!')
@@ -108,17 +177,17 @@ export default function ModalNovaOSArmeria({
       cliente_id: clienteAtual.id,
       cliente_nome: clienteAtual.nome_completo,
       categoria_arma: categoriaArma,
-      tipo_arma: tipoArma,
-      marca_arma: marcaArma,
-      modelo_arma: modeloArma,
-      calibre_arma: calibreArma,
+      tipo_arma: tipoFinal,
+      marca_arma: marcaFinal,
+      modelo_arma: modeloFinal,
+      calibre_arma: calibreFinal,
       numero_serie_arma: numeroSerieArma,
       problema_relatado: problemaRelatado || 'Manutenção geral solicitada.',
       acessorios_acompanhantes: acessoriosFormatados,
       gt_protocolo: categoriaArma === 'Arma de Fogo' ? gtProtocolo : 'N/A (Ar Comprimido)',
       gt_data_emissao: categoriaArma === 'Arma de Fogo' ? gtDataEmissao : null,
       gt_data_vencimento: categoriaArma === 'Arma de Fogo' ? gtDataVencimento : null,
-      tipo_servico: `Manutenção ${tipoArma} ${marcaArma}`,
+      tipo_servico: `Manutenção ${tipoFinal} ${marcaFinal}`,
       valor_servico: 0,
       valor_taxamento: 0,
       status: 'NÃO INICIADO',
@@ -132,13 +201,13 @@ export default function ModalNovaOSArmeria({
         id: `a_${Date.now()}`,
         cliente_id: clienteAtual.id,
         categoria: categoriaArma,
-        tipo: tipoArma,
-        marca: marcaArma,
-        modelo: modeloArma,
-        calibre: calibreArma,
+        tipo: tipoFinal,
+        marca: marcaFinal,
+        modelo: modeloFinal,
+        calibre: calibreFinal,
         numero_serie: numeroSerieArma,
-        numero_sigma_sinarm: categoriaArma === 'Arma de Fogo' ? 'SIGMA' : 'N/A (Ar Comprimido)',
-        orgao_registro: categoriaArma === 'Arma de Fogo' ? 'SIGMA' : 'Livre',
+        numero_sigma_sinarm: categoriaArma === 'Arma de Fogo' ? (orgaoRegistro === 'SIGMA' ? 'SIGMA' : 'SINARM') : 'N/A',
+        orgao_registro: orgaoRegistro,
         numero_craf: 'N/A',
         validade_craf: 'N/A',
         status: 'Regular',
@@ -167,12 +236,18 @@ export default function ModalNovaOSArmeria({
               <Crosshair size={22} color="var(--red-light)" />
               <span>Entrada de Equipamento (O.S.)</span>
             </h2>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Check-in de Entrada com Seleção ou Cadastro no Acervo</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Check-in de Entrada com Listas do Portal G-CAC e Verificador de Duplicidade</div>
           </div>
           <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={onClose}>
             <X size={22} />
           </button>
         </div>
+
+        {avisoDuplicidade && (
+          <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', backgroundColor: avisoDuplicidade.includes('⚠️') ? 'rgba(245,158,11,0.2)' : 'rgba(34,197,94,0.2)', border: avisoDuplicidade.includes('⚠️') ? '1px solid #FBBF24' : '1px solid #34D399', color: '#FFF', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            {avisoDuplicidade}
+          </div>
+        )}
 
         <form onSubmit={handleSalvarEntradaOS} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           {/* DADOS DO CLIENTE */}
@@ -212,7 +287,7 @@ export default function ModalNovaOSArmeria({
                 onChange={e => handleSelecionarArmaAcervo(e.target.value)}
                 style={{ fontWeight: '700', color: '#FFFFFF', backgroundColor: '#181A20' }}
               >
-                <option value="">-- PREENCHER NOVA ARMA / MANUALLMENTE --</option>
+                <option value="">-- SELECIONAR ARMA DO ACERVO OU PREENCHER MANUALMENTE --</option>
                 {armasDoCliente.map(a => (
                   <option key={a.id} value={a.id}>
                     🎯 {a.marca} {a.modelo} {a.calibre} — (N° Série: {a.numero_serie})
@@ -224,130 +299,149 @@ export default function ModalNovaOSArmeria({
 
           {/* 1. SELEÇÃO DA CATEGORIA DA ARMA */}
           <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.4rem' }}>
-              CATEGORIA DO EQUIPAMENTO *
+            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+              CATEGORIA *
             </label>
-            <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={() => handleTrocarCategoria('Arma de Fogo')}
-                style={{
-                  padding: '0.8rem',
-                  borderRadius: '8px',
-                  border: categoriaArma === 'Arma de Fogo' ? '2px solid var(--red-light)' : '1px solid var(--border-color)',
-                  backgroundColor: categoriaArma === 'Arma de Fogo' ? 'rgba(139, 38, 42, 0.25)' : 'var(--bg-input)',
-                  color: categoriaArma === 'Arma de Fogo' ? '#FFFFFF' : 'var(--text-muted)',
-                  fontWeight: '700',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justify: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <Shield size={18} color={categoriaArma === 'Arma de Fogo' ? '#F87171' : '#8E96A0'} />
-                <span>Arma de Fogo</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleTrocarCategoria('Arma de Ar Comprimido')}
-                style={{
-                  padding: '0.8rem',
-                  borderRadius: '8px',
-                  border: categoriaArma === 'Arma de Ar Comprimido' ? '2px solid #34D399' : '1px solid var(--border-color)',
-                  backgroundColor: categoriaArma === 'Arma de Ar Comprimido' ? 'rgba(19, 70, 51, 0.3)' : 'var(--bg-input)',
-                  color: categoriaArma === 'Arma de Ar Comprimido' ? '#FFFFFF' : 'var(--text-muted)',
-                  fontWeight: '700',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justify: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <Crosshair size={18} color={categoriaArma === 'Arma de Ar Comprimido' ? '#34D399' : '#8E96A0'} />
-                <span>Arma de Ar Comprimido</span>
-              </button>
-            </div>
+            <select
+              className="input-field"
+              value={categoriaArma}
+              onChange={e => setCategoriaArma(e.target.value)}
+              style={{ fontWeight: '700' }}
+            >
+              {CATEGORIAS_BASE.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
 
-          {/* 2. DADOS DA ARMA (4 CAMPOS EM GRID) */}
+          {/* 2. DADOS DA ARMA (GRID COM SELEÇÃO DE MARCA, MODELO, CALIBRE E TIPO) */}
           <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            {/* TIPO */}
             <div>
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 TIPO *
               </label>
-              {categoriaArma === 'Arma de Fogo' ? (
-                <select className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
-                  <option value="Pistola">Pistola</option>
-                  <option value="Revólver">Revólver</option>
-                  <option value="Carabina/Fuzil">Carabina / Fuzil</option>
-                  <option value="Espingarda">Espingarda</option>
-                </select>
-              ) : (
-                <select className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
-                  <option value="Carabina de Ar Comprimido">Carabina de Ar Comprimido</option>
-                  <option value="Pistola de Ar Comprimido">Pistola de Ar Comprimido / PCP</option>
-                </select>
+              <select className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
+                {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {tipoArma === 'Outros' && (
+                <input
+                  required
+                  className="input-field"
+                  style={{ marginTop: '0.4rem' }}
+                  placeholder="Especifique o tipo..."
+                  value={customTipo}
+                  onChange={e => setCustomTipo(e.target.value)}
+                />
               )}
             </div>
 
+            {/* MARCA / FABRICANTE (LISTA DO PORTAL G-CAC) */}
             <div>
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 MARCA / FABRICANTE *
               </label>
-              <input
-                required
-                className="input-field"
-                placeholder="Ex: Glock, Taurus, Rossi..."
-                value={marcaArma}
-                onChange={e => setMarcaArma(e.target.value)}
-              />
+              <select className="input-field" value={marcaArma} onChange={e => setMarcaArma(e.target.value)}>
+                {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
+              </select>
+              {marcaArma === '__NOVA__' && (
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="Digite a nova marca..."
+                    value={customMarcaInput}
+                    onChange={e => setCustomMarcaInput(e.target.value)}
+                  />
+                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddMarcaCustom}>
+                    Adicionar
+                  </button>
+                </div>
+              )}
             </div>
 
+            {/* MODELO (LISTA DO PORTAL G-CAC) */}
             <div>
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 MODELO *
               </label>
+              <select className="input-field" value={modeloArma} onChange={e => setModeloArma(e.target.value)}>
+                {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
+                <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
+              </select>
+              {modeloArma === '__NOVO__' && (
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="Digite o novo modelo..."
+                    value={customModeloInput}
+                    onChange={e => setCustomModeloInput(e.target.value)}
+                  />
+                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddModeloCustom}>
+                    Adicionar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* CALIBRE (LISTA DO PORTAL G-CAC) */}
+            <div>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                CALIBRE *
+              </label>
+              <select className="input-field" value={calibreArma} onChange={e => setCalibreArma(e.target.value)}>
+                {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
+              </select>
+              {calibreArma === '__NOVO__' && (
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="Digite o novo calibre..."
+                    value={customCalibreInput}
+                    onChange={e => setCustomCalibreInput(e.target.value)}
+                  />
+                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddCalibreCustom}>
+                    Adicionar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* NÚMERO DE SÉRIE E ÓRGÃO DE REGISTRO */}
+          <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                NÚMERO DE SÉRIE DA ARMA *
+              </label>
               <input
                 required
                 className="input-field"
-                placeholder="Ex: G17 Gen5, RT 857, T4..."
-                value={modeloArma}
-                onChange={e => setModeloArma(e.target.value)}
+                placeholder="Digite o N° de Série impresso na arma..."
+                value={numeroSerieArma}
+                onChange={e => setNumeroSerieArma(e.target.value)}
+                style={{ fontWeight: '700', letterSpacing: '0.5px' }}
               />
             </div>
 
             <div>
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                CALIBRE *
+                ÓRGÃO DE REGISTRO
               </label>
-              <input
-                required
+              <select
                 className="input-field"
-                placeholder={categoriaArma === 'Arma de Fogo' ? "Ex: 9mm, .38 SPL, 5.56" : "Ex: 5.5mm (.22), 4.5mm"}
-                value={calibreArma}
-                onChange={e => setCalibreArma(e.target.value)}
-              />
+                value={orgaoRegistro}
+                onChange={e => setOrgaoRegistro(e.target.value)}
+              >
+                {ORGAOS_REGISTRO_BASE.map(org => (
+                  <option key={org} value={org}>{org}</option>
+                ))}
+              </select>
             </div>
-          </div>
-
-          {/* NÚMERO DE SÉRIE */}
-          <div>
-            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-              NÚMERO DE SÉRIE DA ARMA *
-            </label>
-            <input
-              required
-              className="input-field"
-              placeholder="Digite o N° de Série exato impresso na arma..."
-              value={numeroSerieArma}
-              onChange={e => setNumeroSerieArma(e.target.value)}
-              style={{ fontWeight: '700', letterSpacing: '0.5px' }}
-            />
           </div>
 
           {/* CHECKBOX PARA REGISTRAR NO ACERVO DO CLIENTE */}

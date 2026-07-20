@@ -405,3 +405,55 @@ export const INITIAL_CONFIG = {
     { id: "s5", nome: "POLIMENTO DE RAMPA DE ALIMENTAÇÃO E TAMBOR", valor: 200.00, categoria: "ACABAMENTO" }
   ]
 };
+
+// Base de Armas e Metadados Padrão (Importados do Portal G-CAC)
+export const CATEGORIAS_BASE = [
+  "Arma de Fogo",
+  "Arma de Ar Comprimido",
+  "Outros"
+];
+
+export const TIPOS_BASE = [
+  "Pistola",
+  "Carabina/Fuzil",
+  "Espingarda",
+  "Revólver",
+  "Outros"
+];
+
+export const ORGAOS_REGISTRO_BASE = [
+  "SINARM",
+  "SIGMA",
+  "Não requer registro"
+];
+
+export const CALIBRES_BASE = [
+  ".22 LR", ".22 WMR", ".223 REM / 5.56 NATO", ".30-06 SPRG", ".308 WIN / 7.62 NATO", 
+  ".357 MAG", ".38 SPL", ".380 ACP", "9mm LUGER", ".40 S&W", ".44 MAG", 
+  ".45 ACP", ".454 CASULL", "12 GA", "20 GA", "28 GA", "36 GA",
+  "4.5mm (.177)", "5.5mm (.22)", "6.35mm (.25)"
+];
+
+export const FABRICANTES_BASE = [
+  "BENELLI", "BERETTA", "BOITO", "BROWNING", "CANIK", "CBC", "COLT", "CZ", 
+  "GLOCK", "IMBEL", "REMINGTON", "ROSSI", "RUGER", "SIG SAUER", 
+  "SMITH & WESSON", "SPRINGFIELD ARMORY", "STOEGER", "TANFOGLIO", 
+  "TAURUS", "WALTHER", "WINCHESTER"
+];
+
+export const MODELOS_BASE = [
+  // Taurus
+  "G2C", "G3", "G3C", "G3 TORO", "GX4", "TH9", "TH380", "TH40", "TS9",
+  "PT 92", "PT 100", "PT 838", "PT 1911", "RT 85", "RT 88", "RT 856", "RT 608", "RT 817", "T4", "CTT40",
+  // Glock
+  "G17", "G19", "G19X", "G20", "G21", "G22", "G25", "G43", "G43X", "G44", "G45", "G17 Gen5",
+  // Outros Nacionais
+  "MD1", "MD2", "MD6", "MD7", "M1911 A1", "PUMP MILITARY 3.0", "7022", "8122", "PUMP", "ERA 2001", "MIURA I", "MIURA II", "PUMA", "RT 718",
+  // Internacionais Populares
+  "APX", "92FS", "M9", "P-10 C", "P-10 F", "CZ 75", "SHADOW 2", "TS 2", "SCORPION",
+  "P320", "P365", "M17", "M18", "P226", "M&P 9", "M&P 15", "SHIELD", "MODEL 686",
+  "TP9", "TP9SF", "TP9 ELITE", "RIVAL", "1911", "M4", "PYTHON", "HELLCAT", "XD", "M1A",
+  "PPQ", "PDP", "P22", "10/22", "MARK IV", "LCP", "SECURITY-9", "870", "700", "STR-9", "M3000",
+  "SUPERNOVA", "STOCK II", "STOCK III", "DEFORCE", "HI-POWER", "BUCK MARK", "SXP", "MODEL 70"
+];
+

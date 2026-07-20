@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
+import CustomSelect from './CustomSelect'
 import { dbUpsert } from '../lib/supabase'
 
 const STATUS_CONFIG = {
@@ -166,37 +167,35 @@ export default function ModuloOrdens({
         </button>
       </div>
 
-      {/* ── FILTRO DE STATUS EM LISTA ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border-color)', width: 'fit-content', flexWrap: 'wrap' }}>
-        <label htmlFor="filtro-status-os" style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-          <Filter size={16} />
-          <span>Filtrar por Status:</span>
-        </label>
-        <select
-          id="filtro-status-os"
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
-          className="input-field"
-          style={{
-            minWidth: '240px',
-            padding: '0.45rem 0.8rem',
-            fontSize: '0.82rem',
-            fontWeight: '700',
-            color: 'var(--text-main)',
-            backgroundColor: 'var(--bg-input)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            cursor: 'pointer'
+      {/* ── FILTRO DE STATUS EM LISTA (CUSTOM SELECT ESCURO SEM FLASH BRANCO) ── */}
+      <div style={{ width: '100%', maxWidth: '360px' }}>
+        <CustomSelect
+          label="FILTRAR O.S. POR STATUS"
+          value={
+            filtroStatus === 'TODAS'
+              ? `📋 TODAS AS O.S. (${ordens.length})`
+              : filtroStatus === 'EM ABERTO'
+              ? `⚡ EM ABERTO (${ordens.filter(o => o.status !== 'CONCLUÍDO').length})`
+              : `• ${filtroStatus} (${ordensPorStatus[filtroStatus] || 0})`
+          }
+          onChange={val => {
+            if (val.includes('TODAS AS O.S.')) {
+              setFiltroStatus('TODAS')
+            } else if (val.includes('EM ABERTO')) {
+              setFiltroStatus('EM ABERTO')
+            } else {
+              const st = STATUS_LISTA.find(s => val.includes(s))
+              if (st) setFiltroStatus(st)
+            }
           }}
-        >
-          <option value="TODAS">📋 TODAS AS O.S. ({ordens.length})</option>
-          <option value="EM ABERTO">⚡ EM ABERTO ({ordens.filter(o => o.status !== 'CONCLUÍDO').length})</option>
-          {STATUS_LISTA.map(s => (
-            <option key={s} value={s}>
-              • {s} ({ordensPorStatus[s]})
-            </option>
-          ))}
-        </select>
+          options={[
+            `📋 TODAS AS O.S. (${ordens.length})`,
+            `⚡ EM ABERTO (${ordens.filter(o => o.status !== 'CONCLUÍDO').length})`,
+            ...STATUS_LISTA.map(s => `• ${s} (${ordensPorStatus[s] || 0})`)
+          ]}
+          placeholder="Selecione o filtro..."
+          allowCustom={false}
+        />
       </div>
 
       {/* ── LISTA DE ORDENS ── */}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign } from 'lucide-react'
+import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign, Edit } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 
 export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro, config }) {
   const [showModalOrcamento, setShowModalOrcamento] = useState(false)
   const [modalVerOrcamento, setModalVerOrcamento] = useState(null)
+  const [orcamentoParaEditar, setOrcamentoParaEditar] = useState(null)
 
   const [novoClienteId, setNovoClienteId] = useState(clientes[0]?.id || '')
   const [formaPagamento, setFormaPagamento] = useState('PIX (À Vista com Desconto)')
@@ -13,6 +14,39 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
     { descricao: 'Manutenção Preventiva Tática', quantidade: 1, valor_unitario: '350.00' },
     { descricao: 'Troca de Mola e Extrator', quantidade: 1, valor_unitario: '150.00' }
   ])
+
+  const handleAbrirNovo = () => {
+    setOrcamentoParaEditar(null)
+    setNovoClienteId(clientes[0]?.id || '')
+    setFormaPagamento('PIX (À Vista com Desconto)')
+    setDesconto('0')
+    setItens([
+      { descricao: 'Manutenção Preventiva Tática', quantidade: 1, valor_unitario: '350.00' },
+      { descricao: 'Troca de Mola e Extrator', quantidade: 1, valor_unitario: '150.00' }
+    ])
+    setShowModalOrcamento(true)
+  }
+
+  const handleAbrirEdicao = (orcamento) => {
+    setOrcamentoParaEditar(orcamento)
+    setNovoClienteId(orcamento.cliente_id || clientes[0]?.id || '')
+    setFormaPagamento(orcamento.forma_pagamento || 'PIX')
+    setDesconto((orcamento.desconto || 0).toString())
+    setItens(
+      (orcamento.itens || []).map(i => ({
+        descricao: i.descricao || '',
+        quantidade: i.quantidade || 1,
+        valor_unitario: (i.valor_unitario || 0).toString()
+      }))
+    )
+    setShowModalOrcamento(true)
+  }
+
+  const handleExcluirOrcamento = (orcamento) => {
+    if (window.confirm(`Tem certeza que deseja excluir o Orçamento #${orcamento.numero_orcamento} (${orcamento.cliente_nome})?`)) {
+      setOrcamentos(orcamentos.filter(o => o.id !== orcamento.id))
+    }
+  }
 
   const handleAdicionarItem = () => {
     setItens([...itens, { descricao: '', quantidade: 1, valor_unitario: '0.00' }])
@@ -34,24 +68,44 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
   const handleSalvarOrcamento = (e) => {
     e.preventDefault()
     const clienteObj = clientes.find(c => c.id === novoClienteId)
-    const created = {
-      id: `orc_${Date.now()}`,
-      numero_orcamento: 500 + orcamentos.length + 1,
-      cliente_id: novoClienteId,
-      cliente_nome: clienteObj ? clienteObj.nome_completo : 'Cliente',
-      valor_total: valorTotalBruto,
-      desconto: parseFloat(desconto) || 0,
-      valor_final: valorFinal,
-      forma_pagamento: formaPagamento,
-      validade_dias: 15,
-      status: 'Pendente',
-      itens: itens.map(i => ({
-        descricao: i.descricao,
-        quantidade: parseInt(i.quantidade) || 1,
-        valor_unitario: parseFloat(i.valor_unitario) || 0
-      }))
+
+    if (orcamentoParaEditar) {
+      const atualizado = {
+        ...orcamentoParaEditar,
+        cliente_id: novoClienteId,
+        cliente_nome: clienteObj ? clienteObj.nome_completo : orcamentoParaEditar.cliente_nome || 'Cliente',
+        valor_total: valorTotalBruto,
+        desconto: parseFloat(desconto) || 0,
+        valor_final: valorFinal,
+        forma_pagamento: formaPagamento,
+        itens: itens.map(i => ({
+          descricao: i.descricao,
+          quantidade: parseInt(i.quantidade) || 1,
+          valor_unitario: parseFloat(i.valor_unitario) || 0
+        }))
+      }
+      setOrcamentos(orcamentos.map(o => o.id === orcamentoParaEditar.id ? atualizado : o))
+      setOrcamentoParaEditar(null)
+    } else {
+      const created = {
+        id: `orc_${Date.now()}`,
+        numero_orcamento: 500 + orcamentos.length + 1,
+        cliente_id: novoClienteId,
+        cliente_nome: clienteObj ? clienteObj.nome_completo : 'Cliente',
+        valor_total: valorTotalBruto,
+        desconto: parseFloat(desconto) || 0,
+        valor_final: valorFinal,
+        forma_pagamento: formaPagamento,
+        validade_dias: 15,
+        status: 'Pendente',
+        itens: itens.map(i => ({
+          descricao: i.descricao,
+          quantidade: parseInt(i.quantidade) || 1,
+          valor_unitario: parseFloat(i.valor_unitario) || 0
+        }))
+      }
+      setOrcamentos([created, ...orcamentos])
     }
-    setOrcamentos([created, ...orcamentos])
     setShowModalOrcamento(false)
   }
 
@@ -103,7 +157,7 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
           </p>
         </div>
 
-        <button className="btn-gold" onClick={() => setShowModalOrcamento(true)}>
+        <button className="btn-gold" onClick={handleAbrirNovo}>
           <Plus size={18} />
           <span>Novo Orçamento</span>
         </button>
@@ -139,18 +193,32 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
                   </span>
                 </td>
                 <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                    <button className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }} onClick={() => setModalVerOrcamento(orc)}>
+                  <div style={{ display: 'inline-flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <button className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }} onClick={() => setModalVerOrcamento(orc)} title="Ver / PDF">
                       <Printer size={14} />
                       <span>Ver / PDF</span>
                     </button>
 
+                    <button className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }} onClick={() => handleAbrirEdicao(orc)} title="Editar Orçamento">
+                      <Edit size={14} />
+                      <span>Editar</span>
+                    </button>
+
                     {orc.status !== 'Aprovado' && (
-                      <button className="btn-gold" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }} onClick={() => handleAprovarEConvert(orc)}>
+                      <button className="btn-gold" style={{ padding: '0.35rem 0.6rem', fontSize: '0.78rem' }} onClick={() => handleAprovarEConvert(orc)} title="Aprovar & Gerar OS">
                         <CheckCircle size={14} />
-                        <span>Aprovar & Gerar OS</span>
+                        <span>Aprovar</span>
                       </button>
                     )}
+
+                    <button
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.5rem', fontSize: '0.78rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.4)' }}
+                      onClick={() => handleExcluirOrcamento(orc)}
+                      title="Excluir Orçamento"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -159,14 +227,16 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
         </table>
       </div>
 
-      {/* Modal Criar Orçamento */}
+      {/* Modal Criar / Editar Orçamento */}
       {showModalOrcamento && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
         }}>
           <div className="card" style={{ width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>Novo Orçamento / Proposta</h3>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>
+              {orcamentoParaEditar ? `Editar Orçamento #${orcamentoParaEditar.numero_orcamento}` : 'Novo Orçamento / Proposta'}
+            </h3>
             <form onSubmit={handleSalvarOrcamento} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <CustomSelect
@@ -232,7 +302,9 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowModalOrcamento(false)}>Cancelar</button>
-                <button type="submit" className="btn-gold">Gerar Orçamento</button>
+                <button type="submit" className="btn-gold">
+                  {orcamentoParaEditar ? 'Salvar Alterações' : 'Gerar Orçamento'}
+                </button>
               </div>
             </form>
           </div>

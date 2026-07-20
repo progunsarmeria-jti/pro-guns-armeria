@@ -388,6 +388,7 @@ export default function App() {
             <ModuloOrdens
               ordens={ordens} setOrdens={setOrdens}
               clientes={clientes}
+              armas={armas} setArmas={setArmas}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}

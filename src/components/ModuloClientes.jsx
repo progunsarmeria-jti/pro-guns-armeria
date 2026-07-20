@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
-  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight
+  FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight,
+  Crosshair, BookmarkCheck
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import { maskCPF, maskRG, maskTelefone } from '../lib/masks'
+import { dbUpsert, dbDelete } from '../lib/supabase'
 
 export default function ModuloClientes({
   clientes,
@@ -31,6 +33,62 @@ export default function ModuloClientes({
   const [showModalGerarOrcamento, setShowModalGerarOrcamento] = useState(false)
   const [showModalRecibo, setShowModalRecibo] = useState(null)
   const [modalVerOSDetalhes, setModalVerOSDetalhes] = useState(null)
+
+  // Estados do Acervo de Armas do Cliente
+  const [showModalNovaArma, setShowModalNovaArma] = useState(false)
+  const [armaParaEditar, setArmaParaEditar] = useState(null)
+  const [modalHistoricoArma, setModalHistoricoArma] = useState(null)
+  const [armaForm, setArmaForm] = useState({
+    categoria: 'Arma de Fogo',
+    tipo: 'Pistola',
+    marca: '',
+    modelo: '',
+    calibre: '',
+    numero_serie: '',
+    orgao_registro: 'SIGMA',
+    numero_sigma_sinarm: '',
+    numero_craf: '',
+    validade_craf: '',
+    status: 'Regular'
+  })
+
+  const handleSalvarArmaAcervo = (e) => {
+    e.preventDefault()
+    if (!selectedCliente || !armaForm.marca || !armaForm.numero_serie) {
+      alert('Preencha os campos obrigatórios da arma (Marca, Modelo e N° de Série)!')
+      return
+    }
+
+    if (armaParaEditar) {
+      const atualizada = {
+        ...armaParaEditar,
+        ...armaForm
+      }
+      setArmas(armas.map(a => a.id === armaParaEditar.id ? atualizada : a))
+      dbUpsert('armas', atualizada)
+      alert('Equipamento atualizado no acervo do cliente!')
+    } else {
+      const novaArma = {
+        ...armaForm,
+        id: `a_${Date.now()}`,
+        cliente_id: selectedCliente.id,
+        created_at: new Date().toISOString().split('T')[0]
+      }
+      setArmas([novaArma, ...armas])
+      dbUpsert('armas', novaArma)
+      alert('Equipamento cadastrado com sucesso no acervo do cliente!')
+    }
+
+    setShowModalNovaArma(false)
+    setArmaParaEditar(null)
+  }
+
+  const handleExcluirArma = (armaId) => {
+    if (window.confirm('Deseja realmente remover esta arma do acervo do cliente?')) {
+      setArmas(armas.filter(a => a.id !== armaId))
+      dbDelete('armas', armaId)
+    }
+  }
 
   // Lista de Opções de Atividades Apostiladas (Sem Recarga de Munição)
   const OPCOES_ATIVIDADES = [
@@ -155,6 +213,7 @@ export default function ModuloClientes({
   if (selectedCliente) {
     const ordensDoCliente = ordens.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
     const orcamentosDoCliente = orcamentos.filter(o => o.cliente_id === selectedCliente.id || o.cliente_nome === selectedCliente.nome_completo)
+    const armasDoCliente = (armas || []).filter(a => a.cliente_id === selectedCliente.id)
 
     // Filtros de O.S. Em Aberto vs Histórico (Concluídos)
     const ordensEmAberto = ordensDoCliente.filter(o => o.status !== 'CONCLUÍDO')
@@ -402,6 +461,7 @@ export default function ModuloClientes({
               }}>
                 {[
                   { id: 'os', label: 'O.S. ARMERIA', count: ordensDoCliente.length },
+                  { id: 'acervo', label: 'ACERVO DE ARMAS', count: armasDoCliente.length },
                   { id: 'orcamentos', label: 'ORÇAMENTOS', count: orcamentosDoCliente.length },
                   { id: 'recibos', label: 'RECIBOS', count: 0 },
                   { id: 'haver', label: 'HAVER', count: 0 }
@@ -507,6 +567,127 @@ export default function ModuloClientes({
                             </span>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeSubTab === 'acervo' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Crosshair size={16} />
+                        <span>EQUIPAMENTOS DO CLIENTE ({armasDoCliente.length})</span>
+                      </span>
+                      <button
+                        className="btn-gold"
+                        style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                        onClick={() => {
+                          setArmaForm({
+                            categoria: 'Arma de Fogo', tipo: 'Pistola', marca: '', modelo: '', calibre: '',
+                            numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
+                          })
+                          setArmaParaEditar(null)
+                          setShowModalNovaArma(true)
+                        }}
+                      >
+                        <Plus size={14} />
+                        <span>CADASTRAR ARMA NO ACERVO</span>
+                      </button>
+                    </div>
+
+                    {armasDoCliente.length === 0 ? (
+                      <div style={{ padding: '2.5rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)', borderRadius: '8px', border: '1px border-color' }}>
+                        Nenhuma arma ou equipamento cadastrado no acervo deste cliente. Clique no botão acima para adicionar a primeira arma.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.9rem' }}>
+                        {armasDoCliente.map(arma => {
+                          const ordensDaArma = ordens.filter(o =>
+                            (o.numero_serie_arma || o.numero_serie || '').trim().toLowerCase() === (arma.numero_serie || '').trim().toLowerCase()
+                          )
+                          return (
+                            <div
+                              key={arma.id}
+                              style={{
+                                backgroundColor: 'var(--bg-input)',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                padding: '0.9rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.6rem'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)' }}>
+                                    {arma.marca} {arma.modelo}
+                                  </div>
+                                  <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--gold-accent)', marginTop: '0.1rem' }}>
+                                    {arma.tipo} · {arma.calibre}
+                                  </div>
+                                </div>
+                                <span className="badge badge-green" style={{ fontSize: '0.68rem' }}>
+                                  {arma.status || 'Regular'}
+                                </span>
+                              </div>
+
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.2rem', backgroundColor: 'var(--bg-dark)', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                                <div><strong>N° Série:</strong> <span style={{ color: '#FFF', fontWeight: '700' }}>{arma.numero_serie}</span></div>
+                                <div><strong>Órgão/Registro:</strong> {arma.orgao_registro || 'SIGMA'} ({arma.numero_sigma_sinarm || 'N/A'})</div>
+                                <div><strong>CRAF:</strong> {arma.numero_craf || 'N/A'} (Val: {arma.validade_craf || 'N/A'})</div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.3rem', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  style={{ background: 'none', border: 'none', color: '#60A5FA', fontSize: '0.74rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                  onClick={() => setModalHistoricoArma(arma)}
+                                >
+                                  <History size={13} />
+                                  <span>Histórico O.S. ({ordensDaArma.length})</span>
+                                </button>
+
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  <button
+                                    type="button"
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
+                                    title="Editar Arma"
+                                    onClick={() => {
+                                      setArmaParaEditar(arma)
+                                      setArmaForm({
+                                        categoria: arma.categoria || 'Arma de Fogo',
+                                        tipo: arma.tipo || 'Pistola',
+                                        marca: arma.marca || '',
+                                        modelo: arma.modelo || '',
+                                        calibre: arma.calibre || '',
+                                        numero_serie: arma.numero_serie || '',
+                                        orgao_registro: arma.orgao_registro || 'SIGMA',
+                                        numero_sigma_sinarm: arma.numero_sigma_sinarm || '',
+                                        numero_craf: arma.numero_craf || '',
+                                        validade_craf: arma.validade_craf || '',
+                                        status: arma.status || 'Regular'
+                                      })
+                                      setShowModalNovaArma(true)
+                                    }}
+                                  >
+                                    <Edit size={14} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
+                                    title="Excluir Arma"
+                                    onClick={() => handleExcluirArma(arma.id)}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -809,6 +990,227 @@ export default function ModuloClientes({
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
                 <button className="btn-secondary" style={{ backgroundColor: '#e5e7eb', color: '#1f2937' }} onClick={() => setShowModalRecibo(null)}>Fechar</button>
                 <button className="btn-gold" onClick={() => window.print()}>Imprimir Recibo</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Cadastrar / Editar Arma no Acervo do Cliente */}
+        {showModalNovaArma && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800' }}>
+                  <Crosshair size={18} />
+                  <span>{armaParaEditar ? 'Editar Equipamento no Acervo' : 'Cadastrar Equipamento no Acervo'}</span>
+                </h3>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setShowModalNovaArma(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSalvarArmaAcervo} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CATEGORIA *</label>
+                  <select
+                    className="input-field"
+                    value={armaForm.categoria}
+                    onChange={e => setArmaForm({...armaForm, categoria: e.target.value})}
+                  >
+                    <option value="Arma de Fogo">Arma de Fogo</option>
+                    <option value="Arma de Ar Comprimido">Arma de Ar Comprimido / PCP</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>TIPO *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="Ex: Pistola, Revólver, Fuzil..."
+                      value={armaForm.tipo}
+                      onChange={e => setArmaForm({...armaForm, tipo: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MARCA / FABRICANTE *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="Ex: Glock, Taurus, Imbel..."
+                      value={armaForm.marca}
+                      onChange={e => setArmaForm({...armaForm, marca: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MODELO *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="Ex: G17 Gen5, RT 857, T4..."
+                      value={armaForm.modelo}
+                      onChange={e => setArmaForm({...armaForm, modelo: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CALIBRE *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="Ex: 9mm, .38 SPL, 5.56..."
+                      value={armaForm.calibre}
+                      onChange={e => setArmaForm({...armaForm, calibre: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>NÚMERO DE SÉRIE *</label>
+                  <input
+                    required
+                    className="input-field"
+                    placeholder="Digite o N° de Série impresso na arma..."
+                    value={armaForm.numero_serie}
+                    onChange={e => setArmaForm({...armaForm, numero_serie: e.target.value})}
+                    style={{ fontWeight: '700' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>ÓRGÃO DE REGISTRO</label>
+                    <select
+                      className="input-field"
+                      value={armaForm.orgao_registro}
+                      onChange={e => setArmaForm({...armaForm, orgao_registro: e.target.value})}
+                    >
+                      <option value="SIGMA">SIGMA (Exército)</option>
+                      <option value="SINARM">SINARM (Polícia Federal)</option>
+                      <option value="Livre">Livre / Não Requer Registro</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>N° REGISTRO SIGMA/SINARM</label>
+                    <input
+                      className="input-field"
+                      placeholder="Ex: SIGMA-123456"
+                      value={armaForm.numero_sigma_sinarm}
+                      onChange={e => setArmaForm({...armaForm, numero_sigma_sinarm: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>N° DO CRAF</label>
+                    <input
+                      className="input-field"
+                      placeholder="Ex: CRAF-998877"
+                      value={armaForm.numero_craf}
+                      onChange={e => setArmaForm({...armaForm, numero_craf: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>VALIDADE DO CRAF</label>
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={armaForm.validade_craf}
+                      onChange={e => setArmaForm({...armaForm, validade_craf: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.8rem' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowModalNovaArma(false)}>Cancelar</button>
+                  <button type="submit" className="btn-gold">Salvar no Acervo</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Histórico de Manutenções da Arma */}
+        {modalHistoricoArma && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+            <div className="card" style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: '#60A5FA', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800' }}>
+                  <History size={18} />
+                  <span>Histórico de Serviços: {modalHistoricoArma.marca} {modalHistoricoArma.modelo} (S/N: {modalHistoricoArma.numero_serie})</span>
+                </h3>
+                <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalHistoricoArma(null)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              {(() => {
+                const historicoOrdens = ordens.filter(o =>
+                  (o.numero_serie_arma || o.numero_serie || '').trim().toLowerCase() === (modalHistoricoArma.numero_serie || '').trim().toLowerCase()
+                )
+
+                if (historicoOrdens.length === 0) {
+                  return (
+                    <div style={{ padding: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      Nenhuma Ordem de Serviço registrada no sistema para o N° de Série <strong>{modalHistoricoArma.numero_serie}</strong>.
+                    </div>
+                  )
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    {historicoOrdens.map(o => (
+                      <div
+                        key={o.id}
+                        onClick={() => setModalVerOSDetalhes(o)}
+                        style={{
+                          padding: '0.85rem 1rem',
+                          backgroundColor: 'var(--bg-input)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.4rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: '800', color: '#FBBF24', fontSize: '0.88rem' }}>
+                            O.S. #{o.numero_os} · {o.created_at || 'Data N/A'}
+                          </span>
+                          <span className={`badge ${o.status === 'CONCLUÍDO' ? 'badge-green' : 'badge-yellow'}`}>
+                            {o.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                          <strong>Queixa/Problema:</strong> "{o.problema_relatado}"
+                        </div>
+                        {o.diagnostico_armeiro && (
+                          <div style={{ fontSize: '0.78rem', color: '#34D399' }}>
+                            <strong>Laudo:</strong> {o.diagnostico_armeiro}
+                          </div>
+                        )}
+                        {o.valor_servico > 0 && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                            Valor: R$ {parseFloat(o.valor_servico).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalHistoricoArma(null)}>Fechar</button>
               </div>
             </div>
           </div>

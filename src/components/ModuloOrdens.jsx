@@ -19,6 +19,8 @@ export default function ModuloOrdens({
   ordens,
   setOrdens,
   clientes,
+  armas,
+  setArmas,
   financeiro,
   setFinanceiro,
   perfilOperador,
@@ -440,6 +442,8 @@ export default function ModuloOrdens({
           clientes={clientes}
           ordens={ordens}
           setOrdens={setOrdens}
+          armas={armas}
+          setArmas={setArmas}
           onClose={() => setShowModalOrdem(false)}
         />
       )}

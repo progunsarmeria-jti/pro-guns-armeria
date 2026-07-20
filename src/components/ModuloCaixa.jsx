@@ -235,35 +235,34 @@ export default function ModuloCaixa({
     const credInf = parseFloat(creditoInformado) || 0
     const debInf = parseFloat(debitoInformado) || 0
 
-    const divDinheiro = dinInf - saldoFinalDinheiroGaveta
-
+    const divDinheiro = dinInf - (saldoFinalDinheiroGaveta || 0)
     const horaFechamentoCompleta = `${hojeStr} ${horaAgoraStr}`
+
+    const caixaAtualizadoItem = {
+      ...caixaAtual,
+      status: 'FECHADO',
+      hora_fechamento: horaFechamentoCompleta,
+      operador_fechamento: usuarioLogado?.nome_completo || 'WELTON PEREIRA LACERDA',
+      conferencia: {
+        dinheiro_informado: dinInf,
+        pix_informado: pixInf,
+        cartao_credito_informado: credInf,
+        cartao_debito_informado: debInf,
+        divergencia_dinheiro: divDinheiro,
+        observacoes: obsFechamento
+      }
+    }
 
     const caixasAtualizados = caixas.map(c => {
       if (c.id === caixaAtual.id) {
-        return {
-          ...c,
-          status: 'FECHADO',
-          hora_fechamento: horaFechamentoCompleta,
-          operador_fechamento: usuarioLogado?.nome_completo || 'WELTON PEREIRA LACERDA',
-          conferencia: {
-            dinheiro_informado: dinInf,
-            pix_informado: pixInf,
-            cartao_credito_informado: credInf,
-            cartao_debito_informado: debInf,
-            divergencia_dinheiro: divDinheiro,
-            observacoes: obsFechamento
-          }
-        }
+        return caixaAtualizadoItem
       }
       return c
     })
 
     setCaixas(caixasAtualizados)
     setModalFecharCaixa(false)
-    
-    const caixaFechado = caixasAtualizados.find(c => c.id === caixaAtual.id)
-    setModalRelatorioIntegra(caixaFechado)
+    setModalRelatorioIntegra(caixaAtualizadoItem)
   }
 
   const trocoCalculado = Math.max(0, (parseFloat(valorPagoCliente) || 0) - (parseFloat(valorLancamento) || 0))
@@ -274,40 +273,40 @@ export default function ModuloCaixa({
     const movs = targetCaixa.movimentacoes || []
     
     const vnds = movs.filter(m => m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO')
-    const totalVendas = vnds.reduce((a, b) => a + (b.valor || 0), 0)
+    const totalVendas = vnds.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
     
     const din = movs.filter(m => m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
     const pix = movs.filter(m => m.forma_pagamento === 'PIX')
-    const cred = movs.filter(m => m.forma_pagamento?.includes('Crédito'))
-    const deb = movs.filter(m => m.forma_pagamento?.includes('Débito'))
+    const cred = movs.filter(m => m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
+    const deb = movs.filter(m => m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
     
-    const totDin = din.reduce((a, b) => a + (b.valor || 0), 0)
-    const totPix = pix.reduce((a, b) => a + (b.valor || 0), 0)
-    const totCred = cred.reduce((a, b) => a + (b.valor || 0), 0)
-    const totDeb = deb.reduce((a, b) => a + (b.valor || 0), 0)
+    const totDin = din.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const totPix = pix.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const totCred = cred.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
+    const totDeb = deb.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
     const totPagos = totDin + totPix + totCred + totDeb
 
     const sangrias = movs.filter(m => m.tipo === 'SANGRIA')
-    const totSangrias = sangrias.reduce((a, b) => a + (b.valor || 0), 0)
+    const totSangrias = sangrias.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
 
     const reforcos = movs.filter(m => m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO')
-    const totReforcos = reforcos.reduce((a, b) => a + (b.valor || 0), 0)
+    const totReforcos = reforcos.reduce((a, b) => a + (parseFloat(b.valor) || 0), 0)
 
-    const saldoIni = targetCaixa.saldo_inicial || 0
+    const saldoIni = parseFloat(targetCaixa.saldo_inicial) || 0
     const saldoFinalDin = saldoIni + totDin + totReforcos - totSangrias
 
     return {
       vendasCount: vnds.length,
-      totalVendas,
-      totalPagos,
-      saldoFinalDin,
-      saldoIni,
-      totSangrias,
-      totReforcos,
-      totDin, qtdDin: din.length,
-      totPix, qtdPix: pix.length,
-      totCred, qtdCred: cred.length,
-      totDeb, qtdDeb: deb.length,
+      totalVendas: Number(totalVendas) || 0,
+      totalPagos: Number(totalPagos) || 0,
+      saldoFinalDin: Number(saldoFinalDin) || 0,
+      saldoIni: Number(saldoIni) || 0,
+      totSangrias: Number(totSangrias) || 0,
+      totReforcos: Number(totReforcos) || 0,
+      totDin: Number(totDin) || 0, qtdDin: din.length,
+      totPix: Number(totPix) || 0, qtdPix: pix.length,
+      totCred: Number(totCred) || 0, qtdCred: cred.length,
+      totDeb: Number(totDeb) || 0, qtdDeb: deb.length,
       sangrias,
       reforcos
     }
@@ -747,7 +746,7 @@ export default function ModuloCaixa({
       {/* ── MODAL RELATÓRIO "ÍNTEGRA DO CAIXA" (MODELO EXATO TIRO DIGITAL) ──────── */}
       {modalRelatorioIntegra && relData && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1050, padding: '1rem' }}>
-          <div className="card" style={{
+          <div className="card print-area" style={{
             width: '100%',
             maxWidth: '800px',
             maxHeight: '92vh',
@@ -944,7 +943,7 @@ export default function ModuloCaixa({
             </div>
 
             {/* Ações do Modal */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '2rem' }}>
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '2rem' }}>
               <button className="btn-secondary" style={{ color: '#374151', borderColor: '#D1D5DB' }} onClick={() => setModalRelatorioIntegra(null)}>
                 Fechar
               </button>

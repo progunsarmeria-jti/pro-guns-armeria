@@ -67,14 +67,16 @@ export default function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [syncStatus, setSyncStatus] = useState('idle')
 
-  // Helper para obter dados iniciais fundidos com o localStorage local
+  // Helper para obter dados iniciais respeitando o localStorage local e registros deletados
   const getInitial = (key, fallback) => {
     const saved = ls.get(key, null)
-    if (!saved || !Array.isArray(saved)) return fallback
-    const mapa = new Map()
-    fallback.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
-    saved.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
-    return Array.from(mapa.values())
+    const deletedKey = key.replace('PROGUNS_', 'PROGUNS_DELETED_')
+    const deletedIds = ls.get(deletedKey, [])
+
+    if (saved !== null && Array.isArray(saved)) {
+      return saved.filter(item => item?.id && !deletedIds.includes(String(item.id)))
+    }
+    return fallback.filter(item => item?.id && !deletedIds.includes(String(item.id)))
   }
 
   // ── Estados com fallback localStorage ─────────────────────────────────────
@@ -150,11 +152,18 @@ export default function App() {
     if (remotos === null) return locais
     const remotosList = Array.isArray(remotos) ? remotos : []
     const locaisList = Array.isArray(locais) ? locais : []
+    const deletedIds = ls.get(`PROGUNS_DELETED_${tabela.toUpperCase()}`, [])
+
     const mapa = new Map()
 
-    remotosList.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
+    remotosList.forEach(item => {
+      if (item?.id && !deletedIds.includes(String(item.id))) {
+        mapa.set(String(item.id), item)
+      }
+    })
+
     locaisList.forEach(item => {
-      if (item?.id) {
+      if (item?.id && !deletedIds.includes(String(item.id))) {
         const existente = mapa.get(String(item.id)) || {}
         mapa.set(String(item.id), { ...existente, ...item })
       }

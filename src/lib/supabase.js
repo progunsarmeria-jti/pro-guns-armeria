@@ -98,7 +98,19 @@ export async function dbUpsert(tabela, registro) {
 }
 
 export async function dbDelete(tabela, id) {
-  if (!isSupabaseConfigured() || !id) return false
+  if (!id) return false
+
+  // Registra ID deletado no localStorage para que mesclarDados nunca ressuscite o item
+  try {
+    const key = `PROGUNS_DELETED_${tabela.toUpperCase()}`
+    const deleted = JSON.parse(localStorage.getItem(key) || '[]')
+    if (!deleted.includes(String(id))) {
+      deleted.push(String(id))
+      localStorage.setItem(key, JSON.stringify(deleted))
+    }
+  } catch (e) {}
+
+  if (!isSupabaseConfigured()) return true
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {

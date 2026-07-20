@@ -181,25 +181,16 @@ input[type="email"], input[type="password"] {
   text-transform: none !important;
 }
 
-/* Estilização dos Menus Suspensos (Select Dropdowns) — Fundo Escuro Instantâneo */
+/* Estilização dos Menus Suspensos (Select Dropdowns) — Ultra-Rápido & Zero Lag */
 select {
-  background-color: var(--bg-input) !important;
-  color: var(--text-main) !important;
+  background-color: #161920 !important;
+  color: #F0F2F5 !important;
   cursor: pointer;
 }
 
 select option {
   background-color: #161920 !important;
   color: #F0F2F5 !important;
-  padding: 0.6rem 0.8rem !important;
-  font-size: 0.88rem !important;
-}
-
-select option:hover,
-select option:focus,
-select option:checked {
-  background-color: var(--red-tactical) !important;
-  color: #FFFFFF !important;
 }
 
 /* ==========================================

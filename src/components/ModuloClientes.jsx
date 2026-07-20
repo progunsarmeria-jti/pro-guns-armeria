@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
   FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight,

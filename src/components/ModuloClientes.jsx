@@ -335,8 +335,8 @@ export default function ModuloClientes({
           </div>
         </div>
 
-        {/* Grid Principal do Perfil Adaptável Mobile */}
-        <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.25rem', alignItems: 'start' }}>
+        {/* Grid Principal do Perfil Adaptável Mobile & Tablet */}
+        <div className="grid-perfil-cliente">
           {/* Coluna Esquerda: Informações Pessoais & Dados de CR */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="card">
@@ -424,9 +424,9 @@ export default function ModuloClientes({
           </div>
 
           {/* Coluna Direita: Balões de Ações Rápidas & Histórico de O.S. */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', minWidth: 0 }}>
             {/* Grid dos Balões de Ações Rápidas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.6rem' }}>
               {/* Balão 1: GERAR O.S. DE ARMERIA */}
               <button
                 onClick={() => setShowModalGerarOS(true)}
@@ -434,17 +434,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
                   borderRadius: '10px',
-                  padding: '1rem 0.6rem',
+                  padding: '0.85rem 0.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.35rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FileText size={24} color="#F87171" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <FileText size={22} color="#F87171" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#F87171', letterSpacing: '0.3px', textAlign: 'center' }}>
                   DAR ENTRADA O.S.
                 </span>
               </button>
@@ -464,17 +464,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(217, 119, 6, 0.15)',
                   border: '1px solid rgba(217, 119, 6, 0.4)',
                   borderRadius: '10px',
-                  padding: '1rem 0.6rem',
+                  padding: '0.85rem 0.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.35rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Crosshair size={24} color="#F59E0B" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F59E0B', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <Crosshair size={22} color="#F59E0B" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#F59E0B', letterSpacing: '0.3px', textAlign: 'center' }}>
                   ACERVO DE ARMAS
                 </span>
               </button>
@@ -486,17 +486,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(245, 158, 11, 0.12)',
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                   borderRadius: '10px',
-                  padding: '1rem 0.6rem',
+                  padding: '0.85rem 0.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.35rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <DollarSign size={24} color="#FBBF24" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#FBBF24', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <DollarSign size={22} color="#FBBF24" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#FBBF24', letterSpacing: '0.3px', textAlign: 'center' }}>
                   GERAR ORÇAMENTO
                 </span>
               </button>
@@ -508,17 +508,17 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(16, 185, 129, 0.12)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderRadius: '10px',
-                  padding: '1rem 0.6rem',
+                  padding: '0.85rem 0.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.35rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Receipt size={24} color="#34D399" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <Receipt size={22} color="#34D399" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#34D399', letterSpacing: '0.3px', textAlign: 'center' }}>
                   GERAR RECIBO
                 </span>
               </button>
@@ -530,29 +530,30 @@ export default function ModuloClientes({
                   backgroundColor: 'rgba(34, 197, 94, 0.18)',
                   border: '1px solid rgba(34, 197, 94, 0.4)',
                   borderRadius: '10px',
-                  padding: '1rem 0.6rem',
+                  padding: '0.85rem 0.5rem',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '0.4rem',
+                  gap: '0.35rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <MessageCircle size={26} color="#25D366" fill="#25D366" />
-                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#25D366', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <MessageCircle size={24} color="#25D366" fill="#25D366" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#25D366', letterSpacing: '0.3px', textAlign: 'center' }}>
                   WHATSAPP
                 </span>
               </button>
             </div>
 
             {/* Container de Abas (O.S., ACERVO DE ARMAS, ORÇAMENTOS, RECIBOS, HAVER) */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden', width: '100%' }}>
               <div style={{
                 display: 'flex',
                 borderBottom: '1px solid var(--border-color)',
                 backgroundColor: 'var(--bg-input)',
-                overflowX: 'auto'
+                overflowX: 'auto',
+                flexWrap: 'wrap'
               }}>
                 {[
                   { id: 'os', label: 'O.S. ARMERIA', count: ordensDoCliente.length },
@@ -565,17 +566,17 @@ export default function ModuloClientes({
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id)}
                     style={{
-                      padding: '0.85rem 1rem',
+                      padding: '0.75rem 0.85rem',
                       border: 'none',
                       backgroundColor: activeSubTab === tab.id ? 'var(--bg-card)' : 'transparent',
                       color: activeSubTab === tab.id ? '#F87171' : 'var(--text-muted)',
                       borderBottom: activeSubTab === tab.id ? '2px solid #F87171' : '2px solid transparent',
                       fontWeight: activeSubTab === tab.id ? '700' : '500',
-                      fontSize: '0.78rem',
+                      fontSize: '0.76rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      gap: '0.35rem',
                       whiteSpace: 'nowrap'
                     }}
                   >

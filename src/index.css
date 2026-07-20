@@ -247,11 +247,24 @@ aside nav button span {
   vertical-align: middle;
 }
 
-/* ==========================================
-   RESPONSIVIDADE MOBILE & TABLET
-========================================== */
-.mobile-only {
-  display: none !important;
+/* Responsividade Avançada para Tablets e Telas Médias (<= 1150px) */
+.grid-perfil-cliente {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1150px) {
+  .grid-perfil-cliente {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Proteção contra rolagem lateral em qualquer dispositivo */
+html, body, #root, main {
+  max-width: 100%;
+  overflow-x: hidden !important;
 }
 
 @media (max-width: 768px) {

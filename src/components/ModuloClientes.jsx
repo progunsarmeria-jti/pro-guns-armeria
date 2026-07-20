@@ -52,11 +52,11 @@ export default function ModuloClientes({
   const [customCalibreAcervoInput, setCustomCalibreAcervoInput] = useState('')
 
   const [armaForm, setArmaForm] = useState({
-    categoria: 'Arma de Fogo',
-    tipo: 'Pistola',
-    marca: 'GLOCK',
-    modelo: 'G17 Gen5',
-    calibre: '9mm LUGER',
+    categoria: '',
+    tipo: '',
+    marca: '',
+    modelo: '',
+    calibre: '',
     numero_serie: '',
     orgao_registro: 'SIGMA',
     numero_sigma_sinarm: '',
@@ -466,7 +466,7 @@ export default function ModuloClientes({
                 onClick={() => {
                   setActiveSubTab('acervo')
                   setArmaForm({
-                    categoria: 'Arma de Fogo', tipo: 'Pistola', marca: '', modelo: '', calibre: '',
+                    categoria: '', tipo: '', marca: '', modelo: '', calibre: '',
                     numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
                   })
                   setArmaParaEditar(null)
@@ -690,7 +690,7 @@ export default function ModuloClientes({
                         style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                         onClick={() => {
                           setArmaForm({
-                            categoria: 'Arma de Fogo', tipo: 'Pistola', marca: '', modelo: '', calibre: '',
+                            categoria: '', tipo: '', marca: '', modelo: '', calibre: '',
                             numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
                           })
                           setArmaParaEditar(null)
@@ -1126,10 +1126,12 @@ export default function ModuloClientes({
                 <div>
                   <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CATEGORIA *</label>
                   <select
+                    required
                     className="input-field"
                     value={armaForm.categoria}
                     onChange={e => setArmaForm({...armaForm, categoria: e.target.value})}
                   >
+                    <option value="">Selecione a Categoria...</option>
                     {CATEGORIAS_BASE.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
@@ -1139,10 +1141,12 @@ export default function ModuloClientes({
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>TIPO *</label>
                     <select
+                      required
                       className="input-field"
                       value={armaForm.tipo}
                       onChange={e => setArmaForm({...armaForm, tipo: e.target.value})}
                     >
+                      <option value="">Selecione o Tipo...</option>
                       {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     {armaForm.tipo === 'Outros' && (
@@ -1163,10 +1167,12 @@ export default function ModuloClientes({
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MARCA / FABRICANTE *</label>
                     <select
+                      required
                       className="input-field"
                       value={armaForm.marca}
                       onChange={e => setArmaForm({...armaForm, marca: e.target.value})}
                     >
+                      <option value="">Selecione a Marca...</option>
                       {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
                       <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
                     </select>
@@ -1192,10 +1198,12 @@ export default function ModuloClientes({
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MODELO *</label>
                     <select
+                      required
                       className="input-field"
                       value={armaForm.modelo}
                       onChange={e => setArmaForm({...armaForm, modelo: e.target.value})}
                     >
+                      <option value="">Selecione o Modelo...</option>
                       {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
                       <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
                     </select>
@@ -1218,10 +1226,12 @@ export default function ModuloClientes({
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CALIBRE *</label>
                     <select
+                      required
                       className="input-field"
                       value={armaForm.calibre}
                       onChange={e => setArmaForm({...armaForm, calibre: e.target.value})}
                     >
+                      <option value="">Selecione o Calibre...</option>
                       {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
                       <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
                     </select>

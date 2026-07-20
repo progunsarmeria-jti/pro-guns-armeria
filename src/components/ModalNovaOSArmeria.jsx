@@ -33,22 +33,22 @@ export default function ModalNovaOSArmeria({
   const [listCalibres, setListCalibres] = useState(CALIBRES_BASE)
 
   // Categoria da Arma ('Arma de Fogo' | 'Arma de Ar Comprimido' | 'Outros')
-  const [categoriaArma, setCategoriaArma] = useState('Arma de Fogo')
+  const [categoriaArma, setCategoriaArma] = useState('')
 
   // Tipo ('Pistola' | 'Carabina/Fuzil' | 'Espingarda' | 'Revólver' | 'Outros')
-  const [tipoArma, setTipoArma] = useState('Pistola')
+  const [tipoArma, setTipoArma] = useState('')
   const [customTipo, setCustomTipo] = useState('')
 
   // Marca / Fabricante
-  const [marcaArma, setMarcaArma] = useState('GLOCK')
+  const [marcaArma, setMarcaArma] = useState('')
   const [customMarcaInput, setCustomMarcaInput] = useState('')
 
   // Modelo
-  const [modeloArma, setModeloArma] = useState('G17 Gen5')
+  const [modeloArma, setModeloArma] = useState('')
   const [customModeloInput, setCustomModeloInput] = useState('')
 
   // Calibre
-  const [calibreArma, setCalibreArma] = useState('9mm LUGER')
+  const [calibreArma, setCalibreArma] = useState('')
   const [customCalibreInput, setCustomCalibreInput] = useState('')
 
   // Órgão de Registro ('SINARM' | 'SIGMA' | 'Não requer registro')
@@ -303,11 +303,13 @@ export default function ModalNovaOSArmeria({
               CATEGORIA *
             </label>
             <select
+              required
               className="input-field"
               value={categoriaArma}
               onChange={e => setCategoriaArma(e.target.value)}
               style={{ fontWeight: '700' }}
             >
+              <option value="">Selecione a Categoria...</option>
               {CATEGORIAS_BASE.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -321,7 +323,8 @@ export default function ModalNovaOSArmeria({
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 TIPO *
               </label>
-              <select className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
+              <select required className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
+                <option value="">Selecione o Tipo...</option>
                 {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               {tipoArma === 'Outros' && (
@@ -341,7 +344,8 @@ export default function ModalNovaOSArmeria({
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 MARCA / FABRICANTE *
               </label>
-              <select className="input-field" value={marcaArma} onChange={e => setMarcaArma(e.target.value)}>
+              <select required className="input-field" value={marcaArma} onChange={e => setMarcaArma(e.target.value)}>
+                <option value="">Selecione a Marca...</option>
                 {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
                 <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
               </select>
@@ -366,7 +370,8 @@ export default function ModalNovaOSArmeria({
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 MODELO *
               </label>
-              <select className="input-field" value={modeloArma} onChange={e => setModeloArma(e.target.value)}>
+              <select required className="input-field" value={modeloArma} onChange={e => setModeloArma(e.target.value)}>
+                <option value="">Selecione o Modelo...</option>
                 {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
                 <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
               </select>
@@ -391,7 +396,8 @@ export default function ModalNovaOSArmeria({
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
                 CALIBRE *
               </label>
-              <select className="input-field" value={calibreArma} onChange={e => setCalibreArma(e.target.value)}>
+              <select required className="input-field" value={calibreArma} onChange={e => setCalibreArma(e.target.value)}>
+                <option value="">Selecione o Calibre...</option>
                 {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
                 <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
               </select>

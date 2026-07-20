@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { Plus, Users, Shield, Key, Edit, Trash2, Check, X, Lock, Wrench, UserCheck } from 'lucide-react'
+import { Plus, Users, Shield, Key, Edit, Trash2, Check, X, Lock, Wrench, UserCheck, Search } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 
-export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado }) {
+export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, logs = [], setLogs }) {
+  const [abaAtiva, setAbaAtiva] = useState('equipe') // 'equipe' | 'auditoria'
   const [showModalNovoUsuario, setShowModalNovoUsuario] = useState(false)
   const [editingUsuario, setEditingUsuario] = useState(null)
+  const [buscaAudit, setBuscaAudit] = useState('')
 
   const [usuarioForm, setUsuarioForm] = useState({
     nome_completo: '',
@@ -57,16 +59,16 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: false, editar_clientes: false, excluir_clientes: false,
         ver_ordens: true, dar_entrada_os: false, preencher_laudo_armeiro: true, aprovar_os: false, concluir_retirada: false, excluir_os: false,
-        ver_orcamentos: false, criar_orcamentos: false, excluir_orcamentos: false,
+        ver_orcamentos: true, criar_orcamentos: false, excluir_orcamentos: false,
         ver_financeiro: false, lancar_financeiro: false,
         ver_configuracoes: false, gerenciar_usuarios: false
       }
     }
-    setUsuarioForm({
-      ...usuarioForm,
+    setUsuarioForm(prev => ({
+      ...prev,
       perfil: novoPerfil,
       permissoes: permissoesPadrao
-    })
+    }))
   }
 
   const handleTogglePermissao = (key) => {
@@ -81,27 +83,17 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
 
   const handleSalvarUsuario = (e) => {
     e.preventDefault()
-    if (!usuarioForm.nome_completo || !usuarioForm.email || !usuarioForm.senha_pessoal) {
-      alert('Preencha nome, e-mail e senha pessoal!')
-      return
-    }
-
     if (editingUsuario) {
-      const updated = {
-        ...editingUsuario,
+      setUsuarios(usuarios.map(u => u.id === editingUsuario.id ? { ...u, ...usuarioForm } : u))
+      alert(`Permissões do usuário ${usuarioForm.nome_completo} salvas com sucesso!`)
+    } else {
+      const novoUsuario = {
+        id: `u_${Date.now()}`,
         ...usuarioForm
       }
-      setUsuarios(usuarios.map(u => u.id === editingUsuario.id ? updated : u))
-      alert(`Cadastro de ${usuarioForm.nome_completo} atualizado com sucesso!`)
-    } else {
-      const created = {
-        ...usuarioForm,
-        id: `u_${Date.now()}`
-      }
-      setUsuarios([...usuarios, created])
-      alert(`Novo usuário ${usuarioForm.nome_completo} cadastrado com sucesso!`)
+      setUsuarios([...usuarios, novoUsuario])
+      alert(`Novo operador ${usuarioForm.nome_completo} cadastrado com sucesso!`)
     }
-
     setShowModalNovoUsuario(false)
     setEditingUsuario(null)
     resetForm()
@@ -116,7 +108,13 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
       cargo: u.cargo || '',
       perfil: u.perfil || 'recepcao',
       status: u.status || 'Ativo',
-      permissoes: u.permissoes || {}
+      permissoes: u.permissoes || {
+        ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
+        ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
+        ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_financeiro: false, lancar_financeiro: true,
+        ver_configuracoes: false, gerenciar_usuarios: false
+      }
     })
     setShowModalNovoUsuario(true)
   }
@@ -149,6 +147,17 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
     }))
   }
 
+  const logsFiltrados = logs.filter(log => {
+    if (!buscaAudit.trim()) return true
+    const term = buscaAudit.toLowerCase()
+    return (
+      (log.usuario_nome || '').toLowerCase().includes(term) ||
+      (log.descricao || '').toLowerCase().includes(term) ||
+      (log.acao || '').toLowerCase().includes(term) ||
+      String(log.os_numero || '').includes(term)
+    )
+  })
+
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
@@ -156,89 +165,159 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Users size={28} color="var(--red-light)" />
-            <span>Gestão de Usuários & Equipe da Armeria</span>
+            <span>Gestão de Usuários & Trilha de Auditoria</span>
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Cadastre funcionários, senhas pessoais de acesso e controle o nível de acesso (Master, Recepção, Armeiro).
+            Controle de operadores, permissões individuais e registro completo de ações do Gestor.
           </p>
         </div>
-
-        <button className="btn-gold" onClick={() => { resetForm(); setEditingUsuario(null); setShowModalNovoUsuario(true); }}>
-          <Plus size={18} />
-          <span>Cadastrar Novo Usuário</span>
-        </button>
       </div>
 
-      {/* Tabela de Usuários Cadastrados */}
-      <div className="card" style={{ padding: '1.25rem' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-                <th style={{ padding: '0.85rem 1rem' }}>NOME / OPERADOR</th>
-                <th style={{ padding: '0.85rem 1rem' }}>E-MAIL / LOGIN</th>
-                <th style={{ padding: '0.85rem 1rem' }}>SETOR / CARGO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>PERFIL DE ACESSO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>SENHA PESSOAL</th>
-                <th style={{ padding: '0.85rem 1rem' }}>STATUS</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <div style={{ fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <UserCheck size={16} color={u.perfil === 'master' ? '#FBBF24' : u.perfil === 'recepcao' ? '#F87171' : '#34D399'} />
-                      <span>{u.nome_completo.toUpperCase()}</span>
-                    </div>
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                    {u.email}
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', color: 'var(--text-main)', fontWeight: '600' }}>
-                    {u.cargo || 'Funcionário'}
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span className={`badge ${u.perfil === 'master' ? 'badge-yellow' : u.perfil === 'recepcao' ? 'badge-red' : 'badge-green'}`}>
-                      {u.perfil === 'master' ? '👑 Master (Total)' : u.perfil === 'recepcao' ? '🏢 Recepção' : '🛠️ Armeiro'}
-                    </span>
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', fontFamily: 'monospace', color: '#FBBF24' }}>
-                    •••••••• ({u.senha_pessoal})
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <button
-                      onClick={() => handleToggleStatusUsuario(u.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      <span className={`badge ${u.status === 'Ativo' ? 'badge-green' : 'badge-red'}`}>
-                        {u.status}
-                      </span>
-                    </button>
-                  </td>
-
-                  <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                    <button
-                      className="btn-secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                      onClick={() => handleAbrirEditar(u)}
-                    >
-                      <Edit size={14} />
-                      <span>Editar / Permissões</span>
-                    </button>
-                  </td>
+      {/* ABA 1: EQUIPE DE FUNCIONÁRIOS & PERMISSÕES */}
+      {abaAtiva === 'equipe' && (
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
+                  <th style={{ padding: '0.85rem 1rem' }}>NOME / OPERADOR</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>E-MAIL / LOGIN</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>SETOR / CARGO</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>PERFIL</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>SENHA PESSOAL</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>STATUS</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {usuarios.map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      <div style={{ fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <UserCheck size={16} color={u.perfil === 'master' ? '#FBBF24' : u.perfil === 'recepcao' ? '#F87171' : '#34D399'} />
+                        <span>{u.nome_completo.toUpperCase()}</span>
+                      </div>
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
+                      {u.email}
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-main)', fontWeight: '600' }}>
+                      {u.cargo || 'Funcionário'}
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      <span className={`badge ${u.perfil === 'master' ? 'badge-yellow' : u.perfil === 'recepcao' ? 'badge-red' : 'badge-green'}`}>
+                        {u.perfil === 'master' ? '👑 Master (Total)' : u.perfil === 'recepcao' ? '🏢 Recepção' : '🛠️ Armeiro'}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem', fontFamily: 'monospace', color: '#FBBF24' }}>
+                      •••••••• ({u.senha_pessoal})
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      <button
+                        onClick={() => handleToggleStatusUsuario(u.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        <span className={`badge ${u.status === 'Ativo' ? 'badge-green' : 'badge-red'}`}>
+                          {u.status}
+                        </span>
+                      </button>
+                    </td>
+
+                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                      <button
+                        className="btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                        onClick={() => handleAbrirEditar(u)}
+                      >
+                        <Edit size={14} />
+                        <span>Editar / Permissões</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ABA 2: TRILHA DE AUDITORIA DO GESTOR */}
+      {abaAtiva === 'auditoria' && (
+        <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Shield size={20} /> LOGS DE ATIVIDADES & RASTREABILIDADE TOTAL DO GESTOR
+            </div>
+
+            <div style={{ position: 'relative', width: '280px' }}>
+              <Search size={16} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Buscar por operador, O.S., ação..."
+                value={buscaAudit}
+                onChange={e => setBuscaAudit(e.target.value)}
+                style={{ paddingLeft: '2.4rem', fontSize: '0.82rem' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {logsFiltrados.length > 0 ? (
+              logsFiltrados.map(log => (
+                <div
+                  key={log.id}
+                  style={{
+                    backgroundColor: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1.1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#60A5FA', backgroundColor: 'rgba(96,165,250,0.15)', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
+                        {log.usuario_nome?.toUpperCase()}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' }}>
+                        ({log.usuario_perfil})
+                      </span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--gold-accent)', backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                        {log.acao}
+                      </span>
+                      {log.os_numero && (
+                        <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#34D399' }}>
+                          O.S. #{log.os_numero}
+                        </span>
+                      )}
+                    </div>
+
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      🕒 {log.created_at}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text-main)', fontStyle: 'normal', lineHeight: '1.4' }}>
+                    {log.descricao}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                Nenhum registro de auditoria encontrado para a busca informada.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal Novo / Editar Usuário & Permissões */}
       {showModalNovoUsuario && (

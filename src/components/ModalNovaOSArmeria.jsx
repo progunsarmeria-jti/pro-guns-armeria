@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
+import { registrarLog } from '../lib/auditLogger'
 import CustomSelect from './CustomSelect'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
@@ -12,6 +13,8 @@ export default function ModalNovaOSArmeria({
   armas = [],
   setArmas,
   armaInicial = null,
+  setLogs,
+  usuarioLogado,
   onClose
 }) {
   const [clienteId, setClienteId] = useState(clienteInicial?.id || clientes[0]?.id || '')
@@ -227,6 +230,14 @@ export default function ModalNovaOSArmeria({
 
     setOrdens([novaOSObj, ...ordens])
     dbUpsert('ordens', novaOSObj)
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'ENTRADA DE O.S.',
+      descricao: `Entrada da OS #${novaOSObj.numero_os} registrada para o cliente ${novaOSObj.cliente_nome} (${marcaFinal} ${modeloFinal}).`,
+      osId: novaOSObj.id,
+      osNumero: novaOSObj.numero_os,
+      setLogs
+    })
     alert(`Entrada registrada pela Recepção! Ordem de Serviço #${novaOSObj.numero_os} em 'NÃO INICIADO' guardada no armário de entrada.`)
     onClose()
   }

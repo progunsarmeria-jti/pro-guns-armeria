@@ -457,3 +457,26 @@ export const MODELOS_BASE = [
   "SUPERNOVA", "STOCK II", "STOCK III", "DEFORCE", "HI-POWER", "BUCK MARK", "SXP", "MODEL 70"
 ];
 
+export const INITIAL_LOGS = [
+  {
+    id: "log_1001",
+    os_id: "os_1001",
+    os_numero: 1001,
+    usuario_nome: "GUILHERME GOMES (ADMIN)",
+    usuario_perfil: "master",
+    acao: "ENTRADA DE O.S.",
+    descricao: "Entrada da OS #1001 registrada para o cliente GUILHERME GOMES (Glock G17 Gen5).",
+    created_at: "20/07/2026 01:10"
+  },
+  {
+    id: "log_1002",
+    os_id: "os_1001",
+    os_numero: 1001,
+    usuario_nome: "GUILHERME GOMES (ADMIN)",
+    usuario_perfil: "master",
+    acao: "MUDANÇA DE STATUS",
+    descricao: "Status da OS #1001 alterado para 'EM ANÁLISE'.",
+    created_at: "20/07/2026 01:15"
+  }
+];
+

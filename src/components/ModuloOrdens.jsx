@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter } from 'lucide-react'
+import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
 import { dbUpsert } from '../lib/supabase'
+import { registrarLog } from '../lib/auditLogger'
 
 const STATUS_CONFIG = {
   'NÃO INICIADO':        { color: '#9CA3AF', bg: 'rgba(156,163,175,0.15)' },
@@ -24,6 +25,8 @@ export default function ModuloOrdens({
   setArmas,
   financeiro,
   setFinanceiro,
+  logs,
+  setLogs,
   perfilOperador,
   usuarioLogado,
   notificacoes,
@@ -47,6 +50,14 @@ export default function ModuloOrdens({
         if (o.id === ordemId) {
           const atualizada = { ...o, status: novoStatus }
           dbUpsert('ordens', atualizada)
+          registrarLog({
+            usuario: usuarioLogado,
+            acao: 'MUDANÇA DE STATUS',
+            descricao: `Status da OS #${o.numero_os} alterado de '${o.status}' para '${novoStatus}'.`,
+            osId: o.id,
+            osNumero: o.numero_os,
+            setLogs
+          })
           return atualizada
         }
         return o
@@ -59,6 +70,14 @@ export default function ModuloOrdens({
     const atualizada = { ...ordem, status: 'EM ANÁLISE' }
     dbUpsert('ordens', atualizada)
     setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'INÍCIO DE ANÁLISE',
+      descricao: `Armeiro iniciou a análise técnica da OS #${ordem.numero_os} (${ordem.marca_arma} ${ordem.modelo_arma}).`,
+      osId: ordem.id,
+      osNumero: ordem.numero_os,
+      setLogs
+    })
     setDiagnosticoArmeiro(ordem.diagnostico_armeiro || '')
     setSolucaoProposta(ordem.solucao_proposta || '')
     setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '')
@@ -78,6 +97,14 @@ export default function ModuloOrdens({
     }
     dbUpsert('ordens', ordemAtualizada)
     setOrdens(prev => prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'LAUDO E ORÇAMENTO',
+      descricao: `Laudo técnico preenchido e orçamento de R$ ${valorTotal.toFixed(2)} registrado para a OS #${modalLaudoArmeiro.numero_os}.`,
+      osId: modalLaudoArmeiro.id,
+      osNumero: modalLaudoArmeiro.numero_os,
+      setLogs
+    })
     const novaNotificacao = {
       id: `n_${Date.now()}`,
       os_numero: modalLaudoArmeiro.numero_os,
@@ -106,6 +133,14 @@ export default function ModuloOrdens({
       if (o.id === ordemId) {
         const atualizada = { ...o, status: 'APROVADO' }
         dbUpsert('ordens', atualizada)
+        registrarLog({
+          usuario: usuarioLogado,
+          acao: 'APROVAÇÃO DE SERVIÇO',
+          descricao: `Orçamento da OS #${o.numero_os} aprovado pelo cliente/recepção.`,
+          osId: o.id,
+          osNumero: o.numero_os,
+          setLogs
+        })
         return atualizada
       }
       return o
@@ -116,6 +151,14 @@ export default function ModuloOrdens({
     const atualizada = { ...ordem, status: 'CONCLUÍDO' }
     dbUpsert('ordens', atualizada)
     setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'RETIRADA E PAGAMENTO',
+      descricao: `OS #${ordem.numero_os} finalizada. Retirada do equipamento realizada e pagamento de R$ ${(ordem.valor_servico || 350).toFixed(2)} registrado.`,
+      osId: ordem.id,
+      osNumero: ordem.numero_os,
+      setLogs
+    })
     if (setFinanceiro && financeiro) {
       const novoLancamento = {
         id: `f_${Date.now()}`,
@@ -429,6 +472,31 @@ export default function ModuloOrdens({
                         <DollarSign size={13} /> Registrar Retirada & Pagamento
                       </button>
                     )}
+                  </div>
+
+                  {/* Linha 3: Histórico de Auditoria & Trilha do Gestor */}
+                  <div style={{ marginTop: '0.4rem', backgroundColor: '#121418', borderRadius: '8px', padding: '0.75rem', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                      <Shield size={13} /> TRILHA DE AUDITORIA DA O.S. #{ordem.numero_os} (QUEM & QUANDO)
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '140px', overflowY: 'auto' }}>
+                      {logs && logs.filter(l => String(l.os_id) === String(ordem.id) || String(l.os_numero) === String(ordem.numero_os)).length > 0 ? (
+                        logs.filter(l => String(l.os_id) === String(ordem.id) || String(l.os_numero) === String(ordem.numero_os)).map(log => (
+                          <div key={log.id} style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.3rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.2rem' }}>
+                            <div>
+                              <span style={{ color: 'var(--gold-accent)', fontWeight: '700' }}>[{log.created_at}] </span>
+                              <span style={{ color: '#60A5FA', fontWeight: '800' }}>{log.usuario_nome?.toUpperCase()} </span>
+                              <span style={{ color: '#9CA3AF', fontWeight: '600' }}>({log.usuario_perfil?.toUpperCase()}): </span>
+                              <span style={{ color: '#F0F2F5' }}>{log.descricao}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Sem alterações gravadas para esta Ordem de Serviço.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

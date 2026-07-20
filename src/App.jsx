@@ -17,7 +17,8 @@ import {
   INITIAL_ORDENS,
   INITIAL_ORCAMENTOS,
   INITIAL_FINANCEIRO,
-  INITIAL_CONFIG
+  INITIAL_CONFIG,
+  INITIAL_LOGS
 } from './lib/initialData'
 
 import {
@@ -76,6 +77,7 @@ export default function App() {
   const [ordens,     setOrdens]     = useState(() => getInitial('PROGUNS_ORDENS',     INITIAL_ORDENS))
   const [orcamentos, setOrcamentos] = useState(() => getInitial('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS))
   const [financeiro, setFinanceiro] = useState(() => getInitial('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
+  const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
   // Sessão do usuário guardada apenas no sessionStorage para exigir novo login ao fechar aba/GUI
@@ -104,6 +106,7 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])
   useEffect(() => { ls.set('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
   useEffect(() => { ls.set('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
+  useEffect(() => { ls.set('PROGUNS_LOGS', logs) }, [logs])
   useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
 
   // Helper de Fusão Inteligente: une os dados do Supabase com os salvos localmente
@@ -142,13 +145,14 @@ export default function App() {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbLogs] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
         dbLoad('financeiro'),
         dbLoad('usuarios'),
-        dbLoad('armas')
+        dbLoad('armas'),
+        dbLoad('logs')
       ])
 
       const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
@@ -157,6 +161,7 @@ export default function App() {
       const localFinanceiro = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
       const localUsuarios   = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
       const localArmas      = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
+      const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
       const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')
@@ -164,6 +169,7 @@ export default function App() {
       const finalFinanceiro = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
       const finalUsuarios   = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
       const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
+      const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
 
       setClientes(finalClientes);     ls.set('PROGUNS_CLIENTES',   finalClientes)
       setOrdens(finalOrdens);         ls.set('PROGUNS_ORDENS',     finalOrdens)
@@ -171,6 +177,7 @@ export default function App() {
       setFinanceiro(finalFinanceiro); ls.set('PROGUNS_FINANCEIRO', finalFinanceiro)
       setUsuarios(finalUsuarios);     ls.set('PROGUNS_USUARIOS',   finalUsuarios)
       setArmas(finalArmas);           ls.set('PROGUNS_ARMAS',      finalArmas)
+      setLogs(finalLogs);             ls.set('PROGUNS_LOGS',       finalLogs)
 
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)
@@ -389,6 +396,7 @@ export default function App() {
               ordens={ordens} setOrdens={setOrdens}
               orcamentos={orcamentos} setOrcamentos={setOrcamentos}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
+              logs={logs} setLogs={setLogs}
               setActiveTab={setActiveTab}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}
@@ -402,6 +410,7 @@ export default function App() {
               clientes={clientes}
               armas={armas} setArmas={setArmas}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
+              logs={logs} setLogs={setLogs}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}
               notificacoes={notificacoes} setNotificacoes={setNotificacoes}
@@ -429,6 +438,7 @@ export default function App() {
             <ModuloUsuarios
               usuarios={usuarios} setUsuarios={setUsuarios}
               usuarioLogado={usuarioLogado}
+              logs={logs} setLogs={setLogs}
             />
           )}
 

@@ -401,6 +401,7 @@ export default function App() {
               clientes={clientes}
               armas={armas} setArmas={setArmas}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
+              caixas={caixas} setCaixas={setCaixas}
               logs={logs} setLogs={setLogs}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}

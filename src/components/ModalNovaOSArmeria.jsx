@@ -255,7 +255,7 @@ export default function ModalNovaOSArmeria({
               <Crosshair size={22} color="var(--red-light)" />
               <span>Entrada de Equipamento (O.S.)</span>
             </h2>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Check-in de Entrada com Listas do Portal G-CAC e Verificador de Duplicidade</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Check-in de Entrada com Catálogo Oficial da Armeria e Verificador de Duplicidade</div>
           </div>
           <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={onClose}>
             <X size={22} />

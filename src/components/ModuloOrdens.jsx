@@ -25,6 +25,8 @@ export default function ModuloOrdens({
   setArmas,
   financeiro,
   setFinanceiro,
+  caixas,
+  setCaixas,
   logs,
   setLogs,
   perfilOperador,
@@ -37,6 +39,9 @@ export default function ModuloOrdens({
   const [showModalOrdem, setShowModalOrdem] = useState(false)
   const [docModalOrdem, setDocModalOrdem] = useState(null)
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
+  const [modalCheckoutRetirada, setModalCheckoutRetirada] = useState(null)
+  const [formaPagamentoCheckout, setFormaPagamentoCheckout] = useState('Dinheiro')
+  const [valorPagoClienteCheckout, setValorPagoClienteCheckout] = useState('')
   const [ordemExpandida, setOrdemExpandida] = useState(null)
   const [filtroStatus, setFiltroStatus] = useState(filtroInicial || 'TODAS')
 
@@ -152,34 +157,77 @@ export default function ModuloOrdens({
     }))
   }
 
-  const handleConcluirERetirar = (ordem) => {
-    const atualizada = { ...ordem, status: 'CONCLUÍDO' }
-    dbUpsert('ordens', atualizada)
-    setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
+  const handleAbrirCheckoutRetirada = (ordem) => {
+    setModalCheckoutRetirada(ordem)
+    setFormaPagamentoCheckout('Dinheiro')
+    setValorPagoClienteCheckout('')
+  }
+
+  const handleConfirmarCheckoutRetirada = (e) => {
+    e.preventDefault()
+    if (!modalCheckoutRetirada) return
+    const ordem = modalCheckoutRetirada
+    const valorCobrado = parseFloat(ordem.valor_servico) || 350.00
+    const hojeStr = new Date().toISOString().split('T')[0]
+    const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+    // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO'
+    const ordemAtualizada = { ...ordem, status: 'CONCLUÍDO' }
+    dbUpsert('ordens', ordemAtualizada)
+    setOrdens(prev => prev.map(o => o.id === ordem.id ? ordemAtualizada : o))
+
+    // 2. Registra Log de Auditoria
     registrarLog({
       usuario: usuarioLogado,
       acao: 'RETIRADA E PAGAMENTO',
-      descricao: `OS #${ordem.numero_os} finalizada. Retirada do equipamento realizada e pagamento de R$ ${(ordem.valor_servico || 350).toFixed(2)} registrado.`,
+      descricao: `OS #${ordem.numero_os} concluída. Retirada de equipamento realizada por ${ordem.cliente_nome}. Pagamento de R$ ${valorCobrado.toFixed(2)} registrado em ${formaPagamentoCheckout}.`,
       osId: ordem.id,
       osNumero: ordem.numero_os,
       setLogs
     })
+
+    // 3. Lança no Caixa Aberto da Recepção daquele momento
+    if (caixas && setCaixas) {
+      const caixaAbertoHoje = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas[0]
+      if (caixaAbertoHoje) {
+        const novaMovCaixa = {
+          id: `mov_os_${Date.now()}`,
+          tipo: 'RECEBIMENTO_OS',
+          descricao: `Recebimento OS #${ordem.numero_os} (${ordem.cliente_nome})`,
+          forma_pagamento: formaPagamentoCheckout,
+          valor: valorCobrado,
+          hora: horaAgoraStr,
+          os_numero: ordem.numero_os
+        }
+        const caixasAtualizados = caixas.map(c => {
+          if (c.id === caixaAbertoHoje.id) {
+            return { ...c, movimentacoes: [...(c.movimentacoes || []), novaMovCaixa] }
+          }
+          return c
+        })
+        setCaixas(caixasAtualizados)
+      }
+    }
+
+    // 4. Lança no Financeiro Empresarial
     if (setFinanceiro && financeiro) {
-      const novoLancamento = {
+      const novoLancamentoFin = {
         id: `f_${Date.now()}`,
         descricao: `OS #${ordem.numero_os} - ${ordem.marca_arma} ${ordem.modelo_arma} (${ordem.cliente_nome})`,
         tipo: 'Receita',
         categoria: 'Serviço Armeria',
-        valor: ordem.valor_servico || 350.00,
-        data_vencimento: new Date().toISOString().split('T')[0],
-        data_pagamento: new Date().toISOString().split('T')[0],
+        valor: valorCobrado,
+        data_vencimento: hojeStr,
+        data_pagamento: hojeStr,
         status: 'Pago',
-        forma_pagamento: 'PIX'
+        forma_pagamento: formaPagamentoCheckout
       }
-      setFinanceiro([novoLancamento, ...financeiro])
-      dbUpsert('financeiro', novoLancamento)
+      setFinanceiro([novoLancamentoFin, ...financeiro])
     }
-    alert(`OS #${ordem.numero_os} concluída! Receita lançada no Financeiro.`)
+
+    // 5. Exibe Comprovante / Ficha de Retirada
+    setModalCheckoutRetirada(null)
+    setDocModalOrdem(ordemAtualizada)
   }
 
   // Filtro de ordens — sempre em ordem numérica crescente de emissão
@@ -468,13 +516,13 @@ export default function ModuloOrdens({
                       </button>
                     )}
 
-                    {/* BOTÃO: Recepção conclui e registra pagamento */}
-                    {perfilOperador === 'recepcao' && ordem.status === 'AGUARDANDO RETIRADA' && (
+                    {/* BOTÃO: Recepção / Master realiza Checkout Unificado de Retirada */}
+                    {ordem.status === 'AGUARDANDO RETIRADA' && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleConcluirERetirar(ordem) }}
-                        style={{ backgroundColor: '#34D399', color: '#000', border: 'none', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                        onClick={(e) => { e.stopPropagation(); handleAbrirCheckoutRetirada(ordem) }}
+                        style={{ backgroundColor: '#10B981', color: '#FFF', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' }}
                       >
-                        <DollarSign size={13} /> Registrar Retirada & Pagamento
+                        <DollarSign size={14} /> 💰 Checkout de Retirada & Caixa
                       </button>
                     )}
                   </div>
@@ -586,6 +634,87 @@ export default function ModuloOrdens({
                 <button type="submit" className="btn-gold">
                   <Send size={15} />
                   <span>Concluir Laudo → Aguardar Aprovação</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL UNIFICADO: CHECKOUT DE RETIRADA & CAIXA ── */}
+      {modalCheckoutRetirada && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '540px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <DollarSign size={22} color="#34D399" />
+                  Checkout de Retirada & Quitação — OS #{modalCheckoutRetirada.numero_os}
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Entrega de equipamento e lançamento financeiro automático no caixa
+                </div>
+              </div>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalCheckoutRetirada(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarCheckoutRetirada} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Resumo do Cliente e Equipamento */}
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.83rem' }}>
+                <div><strong>CLIENTE:</strong> <span style={{ color: 'var(--gold-accent)', fontWeight: '700' }}>{modalCheckoutRetirada.cliente_nome?.toUpperCase()}</span></div>
+                <div><strong>EQUIPAMENTO:</strong> {modalCheckoutRetirada.marca_arma} {modalCheckoutRetirada.modelo_arma} ({modalCheckoutRetirada.calibre_arma}) — S/N: {modalCheckoutRetirada.numero_serie_arma || modalCheckoutRetirada.numero_serie || 'N/A'}</div>
+                {modalCheckoutRetirada.solucao_proposta && <div><strong>SERVIÇOS REALIZADOS:</strong> {modalCheckoutRetirada.solucao_proposta}</div>}
+              </div>
+
+              {/* Formas de Pagamento */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <CustomSelect
+                  label="Forma de Pagamento *"
+                  value={formaPagamentoCheckout}
+                  onChange={val => setFormaPagamentoCheckout(val)}
+                  options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
+                  placeholder="Selecione a forma..."
+                  allowCustom={false}
+                />
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Valor do Serviço/Peças (R$) *</label>
+                  <input
+                    disabled
+                    className="input-field"
+                    value={`R$ ${(parseFloat(modalCheckoutRetirada.valor_servico) || 350).toFixed(2)}`}
+                  />
+                </div>
+              </div>
+
+              {/* Se Dinheiro -> Troco */}
+              {formaPagamentoCheckout === 'Dinheiro' && (
+                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#34D399' }}>Valor Entregue pelo Cliente (R$)</label>
+                    <input type="number" step="0.01" className="input-field" value={valorPagoClienteCheckout} onChange={e => setValorPagoClienteCheckout(e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Troco a Devolver (R$)</label>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '800', color: (parseFloat(valorPagoClienteCheckout) || 0) > (parseFloat(modalCheckoutRetirada.valor_servico) || 350) ? '#F59E0B' : '#FFFFFF', paddingTop: '0.4rem' }}>
+                      R$ {Math.max(0, (parseFloat(valorPagoClienteCheckout) || 0) - (parseFloat(modalCheckoutRetirada.valor_servico) || 350)).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Status do Caixa */}
+              <div style={{ backgroundColor: 'rgba(59,130,246,0.1)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.3)', fontSize: '0.78rem', color: '#93C5FD', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={16} />
+                <span>O valor recebido será registrado automaticamente no <strong>Caixa ABERTO da Recepção</strong> e no Financeiro.</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalCheckoutRetirada(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold" style={{ backgroundColor: '#10B981', color: '#FFF' }}>
+                  <CheckCircle2 size={16} />
+                  <span>Finalizar Retirada & Dar Baixa</span>
                 </button>
               </div>
             </form>

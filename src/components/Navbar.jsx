@@ -97,7 +97,7 @@ export default function Navbar({
         <div className="desktop-only" style={{ height: '24px', width: '1px', backgroundColor: 'var(--border-color)' }}></div>
 
         <h2 className="desktop-only" style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-main)' }}>
-          {titles[activeTab] || 'Gestão G-CAC'}
+          {titles[activeTab] || 'Gestão Armeria'}
         </h2>
       </div>
 

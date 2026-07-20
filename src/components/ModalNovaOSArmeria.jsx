@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
 import CustomSelect from './CustomSelect'
@@ -11,6 +11,7 @@ export default function ModalNovaOSArmeria({
   setOrdens,
   armas = [],
   setArmas,
+  armaInicial = null,
   onClose
 }) {
   const [clienteId, setClienteId] = useState(clienteInicial?.id || clientes[0]?.id || '')
@@ -92,6 +93,12 @@ export default function ModalNovaOSArmeria({
       if (arma.orgao_registro) setOrgaoRegistro(arma.orgao_registro)
     }
   }
+
+  useEffect(() => {
+    if (armaInicial?.id) {
+      handleSelecionarArmaAcervo(armaInicial.id)
+    }
+  }, [armaInicial])
 
   // --- VERIFICADOR DE DUPLICIDADE E CADASTRO DE NOVOS ITENS ---
   const handleAddMarcaCustom = () => {
@@ -277,24 +284,29 @@ export default function ModalNovaOSArmeria({
 
           {/* SELETOR DE ARMA DO ACERVO DO CLIENTE */}
           {armasDoCliente.length > 0 && (
-            <div style={{ backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', padding: '0.9rem', borderRadius: '8px' }}>
-              <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-                <BookmarkCheck size={16} />
-                <span>SELECIONAR ARMA JÁ CADASTRADA NO ACERVO DO CLIENTE</span>
-              </label>
-              <select
-                className="input-field"
-                value={armaSelecionadaId}
-                onChange={e => handleSelecionarArmaAcervo(e.target.value)}
-                style={{ fontWeight: '700', color: '#FFFFFF', backgroundColor: '#181A20' }}
-              >
-                <option value="">-- SELECIONAR ARMA DO ACERVO OU PREENCHER MANUALMENTE --</option>
-                {armasDoCliente.map(a => (
-                  <option key={a.id} value={a.id}>
-                    🎯 {a.marca} {a.modelo} {a.calibre} — (N° Série: {a.numero_serie})
-                  </option>
-                ))}
-              </select>
+            <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', padding: '0.85rem', borderRadius: '8px' }}>
+              <CustomSelect
+                label="🎯 SELECIONAR ARMA JÁ CADASTRADA NO ACERVO DO CLIENTE"
+                value={
+                  armaSelecionadaId
+                    ? (() => {
+                        const a = armasDoCliente.find(item => item.id === armaSelecionadaId)
+                        return a ? `${a.marca} ${a.modelo} (${a.calibre}) - SÉRIE: ${a.numero_serie}`.toUpperCase() : ''
+                      })()
+                    : ''
+                }
+                onChange={val => {
+                  const a = armasDoCliente.find(item => `${item.marca} ${item.modelo} (${item.calibre}) - SÉRIE: ${item.numero_serie}`.toUpperCase() === val.toUpperCase())
+                  if (a) {
+                    handleSelecionarArmaAcervo(a.id)
+                  } else {
+                    handleSelecionarArmaAcervo('')
+                  }
+                }}
+                options={armasDoCliente.map(a => `${a.marca} ${a.modelo} (${a.calibre}) - SÉRIE: ${a.numero_serie}`.toUpperCase())}
+                placeholder="-- SELECIONAR ARMA DO ACERVO OU PREENCHER MANUALMENTE --"
+                allowCustom={false}
+              />
             </div>
           )}
 

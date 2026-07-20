@@ -32,6 +32,7 @@ export default function ModuloClientes({
 
   // Modais de ações do perfil
   const [showModalGerarOS, setShowModalGerarOS] = useState(false)
+  const [armaInicialParaOS, setArmaInicialParaOS] = useState(null)
   const [showModalGerarOrcamento, setShowModalGerarOrcamento] = useState(false)
   const [showModalRecibo, setShowModalRecibo] = useState(null)
   const [modalVerOSDetalhes, setModalVerOSDetalhes] = useState(null)
@@ -756,7 +757,20 @@ export default function ModuloClientes({
                                   <span>Histórico O.S. ({ordensDaArma.length})</span>
                                 </button>
 
-                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className="btn-gold"
+                                    style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                    title="Criar O.S. para esta arma"
+                                    onClick={() => {
+                                      setArmaInicialParaOS(arma)
+                                      setShowModalGerarOS(true)
+                                    }}
+                                  >
+                                    <FileText size={12} />
+                                    <span>DAR ENTRADA O.S.</span>
+                                  </button>
                                   <button
                                     type="button"
                                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
@@ -958,7 +972,13 @@ export default function ModuloClientes({
             clientes={clientes}
             ordens={ordens}
             setOrdens={setOrdens}
-            onClose={() => setShowModalGerarOS(false)}
+            armas={armas}
+            setArmas={setArmas}
+            armaInicial={armaInicialParaOS}
+            onClose={() => {
+              setShowModalGerarOS(false)
+              setArmaInicialParaOS(null)
+            }}
           />
         )}
 

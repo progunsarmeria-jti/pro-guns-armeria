@@ -79,9 +79,16 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  const atualizarConfig = (updated) => {
+    setFormData(updated)
+    if (typeof setConfig === 'function') {
+      setConfig(updated)
+    }
+  }
+
   const handleSalvarConfig = (e) => {
     if (e) e.preventDefault()
-    setConfig(formData)
+    atualizarConfig(formData)
     setSalvoFeedback(true)
     setTimeout(() => setSalvoFeedback(false), 3000)
   }
@@ -108,8 +115,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
     const novaLista = [...listaCategoriasAtivas, limpo]
     const updated = { ...formData, [catConfigAtual.chave]: novaLista }
-    setFormData(updated)
-    setConfig(updated)
+    atualizarConfig(updated)
     setInputNovaCategoria('')
   }
 
@@ -140,8 +146,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       updated.catalogo_servicos = novoCatalogo
     }
 
-    setFormData(updated)
-    setConfig(updated)
+    atualizarConfig(updated)
     setModalEditarCategoria(null)
   }
 
@@ -150,8 +155,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     if (window.confirm(`Deseja remover a categoria "${catNome}" de ${catConfigAtual.rotulo}?`)) {
       const novaLista = listaCategoriasAtivas.filter(c => c.toUpperCase() !== catNome.toUpperCase())
       const updated = { ...formData, [catConfigAtual.chave]: novaLista }
-      setFormData(updated)
-      setConfig(updated)
+      atualizarConfig(updated)
     }
   }
 
@@ -174,8 +178,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     const novoCatalogo = [...catalogoAtual, item]
 
     const updated = { ...formData, catalogo_servicos: novoCatalogo }
-    setFormData(updated)
-    setConfig(updated)
+    atualizarConfig(updated)
 
     setNovoServicoNome('')
     setNovoServicoValor('')
@@ -198,8 +201,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     const novoCatalogo = catalogoAtual.map(s => s.id === itemAtualizado.id ? itemAtualizado : s)
 
     const updated = { ...formData, catalogo_servicos: novoCatalogo }
-    setFormData(updated)
-    setConfig(updated)
+    atualizarConfig(updated)
     setServicoParaEditar(null)
     alert(`Serviço "${itemAtualizado.nome}" atualizado com sucesso!`)
   }
@@ -211,8 +213,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       const novoCatalogo = catalogoAtual.filter(s => s.id !== servicoId)
 
       const updated = { ...formData, catalogo_servicos: novoCatalogo }
-      setFormData(updated)
-      setConfig(updated)
+      atualizarConfig(updated)
     }
   }
 

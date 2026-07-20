@@ -515,7 +515,7 @@ export default function App() {
 
           {activeTab === 'configuracoes' && (
             <ModuloConfiguracoes
-              config={config} setConfig={handleAtualizarConfig}
+              config={config} setConfig={setConfig}
             />
           )}
         </main>

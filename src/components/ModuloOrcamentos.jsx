@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign } from 'lucide-react'
+import CustomSelect from './CustomSelect'
 
 export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, ordens, setOrdens, financeiro, setFinanceiro, config }) {
   const [showModalOrcamento, setShowModalOrcamento] = useState(false)
@@ -168,10 +169,22 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
             <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>Novo Orçamento / Proposta</h3>
             <form onSubmit={handleSalvarOrcamento} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cliente *</label>
-                <select className="input-field" value={novoClienteId} onChange={e => setNovoClienteId(e.target.value)}>
-                  {clientes.map(c => <option key={c.id} value={c.id}>{c.nome_completo} ({c.cpf})</option>)}
-                </select>
+                <CustomSelect
+                  label="Cliente *"
+                  value={
+                    (() => {
+                      const c = clientes.find(item => item.id === novoClienteId)
+                      return c ? `${c.nome_completo.toUpperCase()} (${c.cpf})` : ''
+                    })()
+                  }
+                  onChange={val => {
+                    const c = clientes.find(item => `${item.nome_completo.toUpperCase()} (${item.cpf})` === val)
+                    if (c) setNovoClienteId(c.id)
+                  }}
+                  options={clientes.map(c => `${c.nome_completo.toUpperCase()} (${c.cpf})`)}
+                  placeholder="Selecione o cliente..."
+                  allowCustom={false}
+                />
               </div>
 
               {/* Itens do Orçamento */}

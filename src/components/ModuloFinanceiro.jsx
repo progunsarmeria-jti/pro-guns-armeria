@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Plus, DollarSign, ArrowUpRight, ArrowDownRight, TrendingUp, Calendar, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Plus, DollarSign, ArrowUpRight, ArrowDownRight, TrendingUp, Calendar, CheckCircle2, AlertCircle, Filter, TrendingDown, FileText, X } from 'lucide-react'
+import CustomSelect from './CustomSelect'
 
 export default function ModuloFinanceiro({ financeiro, setFinanceiro }) {
   const [showModalFinanceiro, setShowModalFinanceiro] = useState(false)
@@ -159,13 +160,14 @@ export default function ModuloFinanceiro({ financeiro, setFinanceiro }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tipo</label>
-                  <select className="input-field" value={novoLancamento.tipo} onChange={e => setNovoLancamento({...novoLancamento, tipo: e.target.value})}>
-                    <option value="Receita">Receita (Entrada)</option>
-                    <option value="Despesa">Despesa (Saída)</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Tipo"
+                  value={novoLancamento.tipo === 'Receita' ? 'Receita (Entrada)' : 'Despesa (Saída)'}
+                  onChange={val => setNovoLancamento({...novoLancamento, tipo: val.includes('Receita') ? 'Receita' : 'Despesa'})}
+                  options={['Receita (Entrada)', 'Despesa (Saída)']}
+                  placeholder="Selecione o tipo..."
+                  allowCustom={false}
+                />
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Valor (R$) *</label>
                   <input required className="input-field" type="number" step="0.01" value={novoLancamento.valor} onChange={e => setNovoLancamento({...novoLancamento, valor: e.target.value})} placeholder="0.00" />
@@ -173,24 +175,22 @@ export default function ModuloFinanceiro({ financeiro, setFinanceiro }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Categoria</label>
-                  <select className="input-field" value={novoLancamento.categoria} onChange={e => setNovoLancamento({...novoLancamento, categoria: e.target.value})}>
-                    <option value="Serviço">Serviço Despachantaria</option>
-                    <option value="Venda">Venda de Armas/Insumos</option>
-                    <option value="Taxa">Taxas de Órgão (GRU)</option>
-                    <option value="Custo Fixo">Custo Fixo Armeria</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Forma de Pagamento</label>
-                  <select className="input-field" value={novoLancamento.forma_pagamento} onChange={e => setNovoLancamento({...novoLancamento, forma_pagamento: e.target.value})}>
-                    <option value="PIX">PIX</option>
-                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Categoria"
+                  value={novoLancamento.categoria}
+                  onChange={val => setNovoLancamento({...novoLancamento, categoria: val})}
+                  options={['Serviço Despachantaria', 'Venda de Armas/Insumos', 'Taxas de Órgão (GRU)', 'Custo Fixo Armeria']}
+                  placeholder="Selecione a categoria..."
+                  allowCustom={false}
+                />
+                <CustomSelect
+                  label="Forma de Pagamento"
+                  value={novoLancamento.forma_pagamento}
+                  onChange={val => setNovoLancamento({...novoLancamento, forma_pagamento: val})}
+                  options={['PIX', 'Cartão de Crédito', 'Boleto', 'Dinheiro']}
+                  placeholder="Selecione a forma..."
+                  allowCustom={false}
+                />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>

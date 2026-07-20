@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag, X } from 'lucide-react'
+import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
 
@@ -458,17 +459,14 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Categoria</label>
-                  <select
-                    className="input-field"
+                  <CustomSelect
+                    label="Categoria"
                     value={novoServicoCategoria}
-                    onChange={e => setNovoServicoCategoria(e.target.value)}
-                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
-                  >
-                    {categoriasDisponiveis.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    onChange={val => setNovoServicoCategoria(val)}
+                    options={categoriasDisponiveis}
+                    placeholder="Selecione a categoria..."
+                    allowCustom={false}
+                  />
                 </div>
               </div>
 
@@ -632,19 +630,14 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                    CATEGORIA
-                  </label>
-                  <select
-                    className="input-field"
+                  <CustomSelect
+                    label="CATEGORIA"
                     value={servicoParaEditar.categoria}
-                    onChange={e => setServicoParaEditar({ ...servicoParaEditar, categoria: e.target.value })}
-                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
-                  >
-                    {categoriasDisponiveis.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    onChange={val => setServicoParaEditar({ ...servicoParaEditar, categoria: val })}
+                    options={categoriasDisponiveis}
+                    placeholder="Selecione a categoria..."
+                    allowCustom={false}
+                  />
                 </div>
               </div>
 

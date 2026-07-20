@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Users, Shield, Key, Edit, Trash2, Check, X, Lock, Wrench, UserCheck } from 'lucide-react'
+import CustomSelect from './CustomSelect'
 
 export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado }) {
   const [showModalNovoUsuario, setShowModalNovoUsuario] = useState(false)
@@ -269,14 +270,23 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado })
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Cargo / Função</label>
                   <input className="input-field" value={usuarioForm.cargo} onChange={e => setUsuarioForm({...usuarioForm, cargo: e.target.value})} placeholder="Ex: Armeiro Chefe" />
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Perfil Padrão *</label>
-                  <select className="input-field" value={usuarioForm.perfil} onChange={e => handleTrocarPerfilForm(e.target.value)}>
-                    <option value="recepcao">🏢 Recepção / Atendimento</option>
-                    <option value="armeiro">🛠️ Armeiro (Oficina)</option>
-                    <option value="master">👑 Master (Administrador)</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Perfil Padrão *"
+                  value={
+                    usuarioForm.perfil === 'recepcao'
+                      ? '🏢 Recepção / Atendimento'
+                      : usuarioForm.perfil === 'armeiro'
+                      ? '🛠️ Armeiro (Oficina)'
+                      : '👑 Master (Administrador)'
+                  }
+                  onChange={val => {
+                    const perf = val.includes('Recepção') ? 'recepcao' : val.includes('Armeiro') ? 'armeiro' : 'master'
+                    handleTrocarPerfilForm(perf)
+                  }}
+                  options={['🏢 Recepção / Atendimento', '🛠️ Armeiro (Oficina)', '👑 Master (Administrador)']}
+                  placeholder="Selecione o perfil..."
+                  allowCustom={false}
+                />
               </div>
 
               {/* MATRIZ COMPLETA DE PERMISSÕES CUSTOMIZÁVEIS */}

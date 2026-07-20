@@ -264,17 +264,24 @@ export default function ModalNovaOSArmeria({
               CLIENTE REQUERENTE
             </label>
             {!clienteInicial && clientes && clientes.length > 0 ? (
-              <select
-                className="input-field"
-                value={clienteId}
-                onChange={e => {
-                  setClienteId(e.target.value)
-                  setArmaSelecionadaId('')
+              <CustomSelect
+                label=""
+                value={
+                  clienteAtual
+                    ? `${clienteAtual.nome_completo.toUpperCase()} (${clienteAtual.cpf}) - CR: ${clienteAtual.numero_cr || 'Sem CR'}`
+                    : ''
+                }
+                onChange={val => {
+                  const c = clientes.find(item => `${item.nome_completo.toUpperCase()} (${item.cpf}) - CR: ${item.numero_cr || 'Sem CR'}` === val)
+                  if (c) {
+                    setClienteId(c.id)
+                    setArmaSelecionadaId('')
+                  }
                 }}
-                style={{ fontWeight: '700' }}
-              >
-                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome_completo.toUpperCase()} ({c.cpf}) - CR: {c.numero_cr || 'Sem CR'}</option>)}
-              </select>
+                options={clientes.map(c => `${c.nome_completo.toUpperCase()} (${c.cpf}) - CR: ${c.numero_cr || 'Sem CR'}`)}
+                placeholder="Selecione o Cliente..."
+                allowCustom={false}
+              />
             ) : (
               <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>
                 {clienteAtual.nome_completo.toUpperCase()} — CPF: {clienteAtual.cpf} — CR: {clienteAtual.numero_cr || 'N/A'}

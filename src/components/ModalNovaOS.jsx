@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { X, Search, Plus, Trash2, CheckCircle2, DollarSign, User, Shield, Lock, MapPin } from 'lucide-react'
+import CustomSelect from './CustomSelect'
 
 export const CATALOGO_SERVICOS = [
   { id: 's1', nome: 'ATUALIZAÇÃO DE ATIVIDADES', valor: 350.00, categoria: 'Honorários' },
@@ -154,14 +155,21 @@ export default function ModalNovaOS({
               <div>
                 <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Nome Completo *</label>
                 {!clienteInicial && clientes && clientes.length > 0 ? (
-                  <select
-                    className="input-field"
-                    value={clienteSelecionadoId}
-                    onChange={e => setClienteSelecionadoId(e.target.value)}
-                    style={{ fontWeight: '700' }}
-                  >
-                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome_completo.toUpperCase()} ({c.cpf})</option>)}
-                  </select>
+                  <CustomSelect
+                    label=""
+                    value={
+                      clienteAtual
+                        ? `${clienteAtual.nome_completo.toUpperCase()} (${clienteAtual.cpf})`
+                        : ''
+                    }
+                    onChange={val => {
+                      const c = clientes.find(item => `${item.nome_completo.toUpperCase()} (${item.cpf})` === val)
+                      if (c) setClienteSelecionadoId(c.id)
+                    }}
+                    options={clientes.map(c => `${c.nome_completo.toUpperCase()} (${c.cpf})`)}
+                    placeholder="Selecione o Cliente..."
+                    allowCustom={false}
+                  />
                 ) : (
                   <input className="input-field" readOnly value={clienteAtual.nome_completo?.toUpperCase()} style={{ fontWeight: '700' }} />
                 )}

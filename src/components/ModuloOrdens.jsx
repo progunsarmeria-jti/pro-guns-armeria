@@ -350,21 +350,16 @@ export default function ModuloOrdens({
 
                   {/* Linha 2: Ações Operacionais */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-                    {/* ALTERAR STATUS MANUAL */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>STATUS:</span>
-                      <select
+                    {/* ALTERAR STATUS MANUAL (CUSTOM SELECT ESCURO) */}
+                    <div style={{ minWidth: '220px' }} onClick={e => e.stopPropagation()}>
+                      <CustomSelect
+                        label="STATUS:"
                         value={ordem.status}
-                        onChange={e => handleMudarStatus(ordem.id, e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                          background: 'var(--bg-dark)', color: cfg.color,
-                          border: `1px solid ${cfg.color}`, borderRadius: '6px',
-                          fontSize: '0.75rem', padding: '0.25rem 0.5rem', fontWeight: '700', cursor: 'pointer'
-                        }}
-                      >
-                        {STATUS_LISTA.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                        onChange={val => handleMudarStatus(ordem.id, val)}
+                        options={STATUS_LISTA}
+                        placeholder="Selecione o Status..."
+                        allowCustom={false}
+                      />
                     </div>
 
                     {/* BOTÃO: Armeiro pega arma não iniciada */}

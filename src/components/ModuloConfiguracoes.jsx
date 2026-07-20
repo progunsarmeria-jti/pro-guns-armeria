@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, ChevronDown, ChevronUp, Wrench, Plus, Trash2, Edit, DollarSign, Tag, X } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
@@ -11,13 +11,8 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
   const [salvoFeedback, setSalvoFeedback] = useState(false)
 
-  // Estado dos Acordeões (Seções Suspensas Que Abrem ao Clicar)
-  const [openSections, setOpenSections] = useState({
-    dados: true,
-    categorias: true,
-    servicos: true,
-    supabase: false
-  })
+  // Aba Principal Ativa: 'dados' | 'categorias' | 'servicos' | 'supabase'
+  const [abaConfigAtiva, setAbaConfigAtiva] = useState('dados')
 
   // Estado para Cadastro de Categorias por Módulo
   const [abaCategoriaAtiva, setAbaCategoriaAtiva] = useState('servicos') // 'servicos' | 'estoque' | 'financeiro' | 'equipamento'
@@ -74,10 +69,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       setFormData(prev => ({ ...INITIAL_CONFIG, ...config, ...prev }))
     }
   }, [config])
-
-  const toggleSection = (section) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
-  }
 
   const atualizarConfig = (updated) => {
     setFormData(updated)
@@ -159,7 +150,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
-  // Adicionar Novo Serviço ao Catálogo (FORÇA CAIXA ALTA AUTOMÁTICO)
+  // Adicionar Novo Serviço ao Catálogo
   const handleAdicionarServico = (e) => {
     e.preventDefault()
     if (!novoServicoNome || !novoServicoValor) {
@@ -222,454 +213,550 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   ]).map(c => c.toUpperCase())
 
   return (
-    <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', maxWidth: '1000px' }}>
+    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1050px', margin: '0 auto' }}>
+      {/* TÍTULO PRINCIPAL */}
       <div>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Settings size={22} color="var(--red-light)" />
-          <span>Configurações & Gestão de Categorias</span>
+        <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <Settings size={24} color="var(--red-light)" />
+          <span>Configurações do Sistema</span>
         </h1>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Cadastre e edite categorias de serviços, gerencie a tabela de preços e dados institucionais.
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          Gerencie dados institucionais da Armeria, categorias personalizadas, tabela de preços e conexão com banco de dados.
         </p>
       </div>
 
-      {/* ==========================================
-          1. SEÇÃO SUSPENSA: DADOS INSTITUCIONAIS
-      ========================================== */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div
-          onClick={() => toggleSection('dados')}
+      {/* BARRA SUPERIOR DE SUB-ABAS (NAVEGAÇÃO LIMPA E ORGANIZADA) */}
+      <div style={{
+        display: 'flex',
+        gap: '0.5rem',
+        borderBottom: '2px solid var(--border-color)',
+        paddingBottom: '0.1rem',
+        overflowX: 'auto'
+      }}>
+        <button
+          type="button"
+          onClick={() => setAbaConfigAtiva('dados')}
           style={{
-            padding: '0.75rem 1rem',
-            backgroundColor: 'var(--bg-input)',
-            borderBottom: openSections.dados ? '1px solid var(--border-color)' : 'none',
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'dados' ? '3px solid var(--gold-accent)' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'dados' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'dados' ? 'var(--gold-accent)' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
             display: 'flex',
-            justify: 'space-between',
             alignItems: 'center',
-            cursor: 'pointer'
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Building size={18} color="var(--gold-accent)" />
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              Dados Institucionais da Armeria
-            </h3>
-          </div>
-          {openSections.dados ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
-        </div>
+          <Building size={16} />
+          <span>Dados Institucionais</span>
+        </button>
 
-        {openSections.dados && (
-          <div style={{ padding: '1rem' }}>
-            <form onSubmit={handleSalvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nome Fantasia *</label>
-                  <input className="input-field" value={formData.nome_fantasia || ''} onChange={e => setFormData({...formData, nome_fantasia: e.target.value})} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Razão Social *</label>
-                  <input className="input-field" value={formData.razao_social || ''} onChange={e => setFormData({...formData, razao_social: e.target.value})} />
-                </div>
-              </div>
+        <button
+          type="button"
+          onClick={() => setAbaConfigAtiva('categorias')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'categorias' ? '3px solid #FBBF24' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'categorias' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'categorias' ? '#FBBF24' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Tag size={16} />
+          <span>Categorias do Sistema</span>
+        </button>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CNPJ * (Máscara Automática)</label>
-                  <input
-                    className="input-field"
-                    placeholder="00.000.000/0000-00"
-                    value={maskCNPJ(formData.cnpj || '')}
-                    onChange={e => setFormData({...formData, cnpj: maskCNPJ(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>N° CR da Armeria *</label>
-                  <input className="input-field" value={formData.cr_armeria || ''} onChange={e => setFormData({...formData, cr_armeria: e.target.value})} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Região Militar *</label>
-                  <input className="input-field" value={formData.rm_armeria || ''} onChange={e => setFormData({...formData, rm_armeria: e.target.value})} />
-                </div>
-              </div>
+        <button
+          type="button"
+          onClick={() => setAbaConfigAtiva('servicos')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'servicos' ? '3px solid #F87171' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'servicos' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'servicos' ? '#F87171' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Wrench size={16} />
+          <span>Catálogo de Serviços ({ (formData.catalogo_servicos || []).length })</span>
+        </button>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp *</label>
-                  <input
-                    className="input-field"
-                    placeholder="(00) 00000-0000"
-                    value={maskTelefone(formData.whatsapp || '')}
-                    onChange={e => setFormData({...formData, whatsapp: maskTelefone(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>E-mail Oficial *</label>
-                  <input className="input-field" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Endereço Completo *</label>
-                <input className="input-field" value={formData.endereco || ''} onChange={e => setFormData({...formData, endereco: e.target.value})} />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
-                {salvoFeedback && (
-                  <span style={{ fontSize: '0.78rem', color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <CheckCircle2 size={14} /> Dados institucionais salvos!
-                  </span>
-                )}
-                <button type="submit" className="btn-gold" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
-                  <Save size={15} />
-                  <span>Salvar Dados da Armeria</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setAbaConfigAtiva('supabase')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'supabase' ? '3px solid #34D399' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'supabase' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'supabase' ? '#34D399' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Database size={16} />
+          <span>Banco Supabase</span>
+          {isSupabaseConfigured && (
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34D399' }} />
+          )}
+        </button>
       </div>
 
       {/* ==========================================
-          2. SEÇÃO SUSPENSA: GESTÃO & CADASTRO DE CATEGORIAS DO SISTEMA
+          CONTEÚDO DA ABA 1: DADOS INSTITUCIONAIS
       ========================================== */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div
-          onClick={() => toggleSection('categorias')}
-          style={{
-            padding: '0.75rem 1rem',
-            backgroundColor: 'var(--bg-input)',
-            borderBottom: openSections.categorias ? '1px solid var(--border-color)' : 'none',
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Tag size={18} color="#FBBF24" />
+      {abaConfigAtiva === 'dados' && (
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <Building size={20} color="var(--gold-accent)" />
             <div>
-              <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+                Dados Institucionais da Armeria
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                Informações cadastrais exibidas em O.S., laudos técnicos e comprovantes.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSalvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Nome Fantasia *</label>
+                <input className="input-field" value={formData.nome_fantasia || ''} onChange={e => setFormData({...formData, nome_fantasia: e.target.value})} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Razão Social *</label>
+                <input className="input-field" value={formData.razao_social || ''} onChange={e => setFormData({...formData, razao_social: e.target.value})} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>CNPJ * (Máscara Automática)</label>
+                <input
+                  className="input-field"
+                  placeholder="00.000.000/0000-00"
+                  value={maskCNPJ(formData.cnpj || '')}
+                  onChange={e => setFormData({...formData, cnpj: maskCNPJ(e.target.value)})}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>N° CR da Armeria *</label>
+                <input className="input-field" value={formData.cr_armeria || ''} onChange={e => setFormData({...formData, cr_armeria: e.target.value})} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Região Militar *</label>
+                <input className="input-field" value={formData.rm_armeria || ''} onChange={e => setFormData({...formData, rm_armeria: e.target.value})} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Telefone / WhatsApp *</label>
+                <input
+                  className="input-field"
+                  placeholder="(00) 00000-0000"
+                  value={maskTelefone(formData.whatsapp || '')}
+                  onChange={e => setFormData({...formData, whatsapp: maskTelefone(e.target.value)})}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>E-mail Oficial *</label>
+                <input className="input-field" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Endereço Completo *</label>
+              <input className="input-field" value={formData.endereco || ''} onChange={e => setFormData({...formData, endereco: e.target.value})} />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+              {salvoFeedback && (
+                <span style={{ fontSize: '0.85rem', color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <CheckCircle2 size={16} /> Dados institucionais salvos!
+                </span>
+              )}
+              <button type="submit" className="btn-gold">
+                <Save size={16} />
+                <span>Salvar Dados da Armeria</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ==========================================
+          CONTEÚDO DA ABA 2: CATEGORIAS DO SISTEMA
+      ========================================== */}
+      {abaConfigAtiva === 'categorias' && (
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <Tag size={20} color="#FBBF24" />
+            <div>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
                 Cadastro & Gestão de Categorias por Módulo
               </h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                Selecione o módulo abaixo para gerenciar as categorias cadastradas.
+              </p>
             </div>
           </div>
-          {openSections.categorias ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
-        </div>
 
-        {openSections.categorias && (
-          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {/* ABAS DE NAVEGAÇÃO DE CATEGORIAS POR MÓDULO */}
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.5rem' }}>
-              {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
-                const ativa = abaCategoriaAtiva === mod.id
-                const qtd = ((dataSafe && dataSafe[mod.chave]) || mod.padrao).length
-                return (
-                  <button
-                    key={mod.id}
-                    type="button"
-                    onClick={() => { setAbaCategoriaAtiva(mod.id); setInputNovaCategoria('') }}
-                    style={{
-                      backgroundColor: ativa ? 'rgba(245,158,11,0.15)' : 'var(--bg-input)',
-                      border: ativa ? `1px solid ${mod.cor}` : '1px solid var(--border-color)',
-                      color: ativa ? mod.cor : 'var(--text-muted)',
-                      padding: '0.5rem 0.85rem',
-                      borderRadius: '8px',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    <span>{mod.rotulo}</span>
-                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-                      {qtd}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* BANNER INFORMATIVO DO CAMPO DESTINO DA CATEGORIA SELECIONADA */}
-            <div style={{ backgroundColor: 'rgba(96,165,250,0.08)', padding: '0.75rem 1rem', borderRadius: '8px', border: `1px solid ${catConfigAtual.cor}40`, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-main)' }}>
-              <Tag size={16} color={catConfigAtual.cor} />
-              <div>
-                <strong>{catConfigAtual.rotulo}:</strong> <span style={{ color: 'var(--text-muted)' }}>{catConfigAtual.campoDestino}</span>
-              </div>
-            </div>
-
-            {/* Formulário de Cadastro de Categoria para a Aba Ativa */}
-            <form onSubmit={handleAdicionarCategoriaAbas} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                  NOVA CATEGORIA PARA {catConfigAtual.rotulo.toUpperCase()} * (CAIXA ALTA AUTOMÁTICO)
-                </label>
-                <input
-                  required
-                  className="input-field"
-                  placeholder={`Ex: Nova Categoria para ${catConfigAtual.rotulo}...`}
-                  value={inputNovaCategoria}
-                  onChange={e => setInputNovaCategoria(e.target.value.toUpperCase())}
-                  style={{ textTransform: 'uppercase' }}
-                />
-              </div>
-
-              <button type="submit" className="btn-gold" style={{ padding: '0.65rem 1.2rem' }}>
-                <Plus size={16} />
-                <span>Adicionar Categoria</span>
-              </button>
-            </form>
-
-            {/* Grid de Categorias Cadastradas com Botões de EDITAR e EXCLUIR */}
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-                CATEGORIAS REGISTRADAS ({listaCategoriasAtivas.length}):
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {listaCategoriasAtivas.map(cat => (
-                  <div
-                    key={cat}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      backgroundColor: 'var(--bg-input)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '20px',
-                      padding: '0.4rem 0.85rem',
-                      fontSize: '0.82rem',
-                      color: 'var(--text-main)',
-                      fontWeight: '700'
-                    }}
-                  >
-                    <Tag size={14} color={catConfigAtual.cor} />
-                    <span>{cat.toUpperCase()}</span>
-
-                    {/* BOTÃO EDITAR CATEGORIA */}
-                    <button
-                      type="button"
-                      onClick={() => setModalEditarCategoria({
-                        modulo: abaCategoriaAtiva,
-                        chave: catConfigAtual.chave,
-                        original: cat,
-                        editado: cat
-                      })}
-                      style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      title="Editar Nome da Categoria"
-                    >
-                      <Edit size={13} />
-                    </button>
-
-                    {/* BOTÃO EXCLUIR CATEGORIA */}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoverCategoriaAbas(cat)}
-                      style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      title="Excluir Categoria"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ==========================================
-          3. SEÇÃO SUSPENSA: CATÁLOGO DE SERVIÇOS & VALORES (COM EDITAR E EXCLUIR)
-      ========================================== */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div
-          onClick={() => toggleSection('servicos')}
-          style={{
-            padding: '0.75rem 1rem',
-            backgroundColor: 'var(--bg-input)',
-            borderBottom: openSections.servicos ? '1px solid var(--border-color)' : 'none',
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Wrench size={18} color="#F87171" />
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              Catálogo de Serviços & Tabela de Valores
-            </h3>
-            <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.45rem', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', fontWeight: '800' }}>
-              {(formData.catalogo_servicos || []).length} Serviços Cadastrados
-            </span>
-          </div>
-          {openSections.servicos ? <ChevronUp size={18} color="var(--text-muted)" /> : <ChevronDown size={18} color="var(--text-muted)" />}
-        </div>
-
-        {openSections.servicos && (
-          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {/* Formulário de Cadastro de Novo Serviço em CAIXA ALTA */}
-            <form onSubmit={handleAdicionarServico} style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Plus size={16} />
-                <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO</span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Nome do Serviço *</label>
-                  <input
-                    required
-                    className="input-field"
-                    placeholder="EX: LIMPEZA ULTRASSÔNICA + LUBRIFICAÇÃO TÁTICA"
-                    value={novoServicoNome}
-                    onChange={e => setNovoServicoNome(e.target.value.toUpperCase())}
-                    style={{ textTransform: 'uppercase', fontWeight: '700' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Valor Padrão (R$) *</label>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    className="input-field"
-                    placeholder="250.00"
-                    value={novoServicoValor}
-                    onChange={e => setNovoServicoValor(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <CustomSelect
-                    label="Categoria"
-                    value={novoServicoCategoria}
-                    onChange={val => setNovoServicoCategoria(val)}
-                    options={categoriasDisponiveis}
-                    placeholder="Selecione a categoria..."
-                    allowCustom={false}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.3rem' }}>
-                <button type="submit" className="btn-gold" style={{ padding: '0.5rem 1rem', fontSize: '0.82rem' }}>
-                  <Plus size={16} />
-                  <span>Adicionar Serviço ao Catálogo</span>
+          {/* MÓDULOS DE CATEGORIAS (SELETOR COMPACTO) */}
+          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.6rem' }}>
+            {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
+              const ativa = abaCategoriaAtiva === mod.id
+              const qtd = ((dataSafe && dataSafe[mod.chave]) || mod.padrao).length
+              return (
+                <button
+                  key={mod.id}
+                  type="button"
+                  onClick={() => { setAbaCategoriaAtiva(mod.id); setInputNovaCategoria('') }}
+                  style={{
+                    backgroundColor: ativa ? 'rgba(245,158,11,0.15)' : 'var(--bg-input)',
+                    border: ativa ? `1px solid ${mod.cor}` : '1px solid var(--border-color)',
+                    color: ativa ? mod.cor : 'var(--text-muted)',
+                    padding: '0.5rem 0.85rem',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span>{mod.rotulo}</span>
+                  <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                    {qtd}
+                  </span>
                 </button>
-              </div>
-            </form>
+              )
+            })}
+          </div>
 
-            {/* Tabela de Serviços Cadastrados com Ações de EDITAR e EXCLUIR */}
+          {/* BANNER DO CAMPO DESTINO */}
+          <div style={{ backgroundColor: 'rgba(96,165,250,0.08)', padding: '0.75rem 1rem', borderRadius: '6px', border: `1px solid ${catConfigAtual.cor}40`, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-main)' }}>
+            <Tag size={16} color={catConfigAtual.cor} />
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
-                SERVIÇOS DISPONÍVEIS NA ARMERIA
-              </div>
-
-              <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-                      <th style={{ padding: '0.75rem 1rem' }}>NOME DO SERVIÇO</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>CATEGORIA</th>
-                      <th style={{ padding: '0.75rem 1rem' }}>VALOR PADRÃO (R$)</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>AÇÕES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.catalogo_servicos || []).length === 0 ? (
-                      <tr>
-                        <td colSpan="4" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                          Nenhum serviço cadastrado no catálogo.
-                        </td>
-                      </tr>
-                    ) : (
-                      formData.catalogo_servicos.map(s => (
-                        <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                            {s.nome.toUpperCase()}
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem' }}>
-                            <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>{(s.categoria || 'GERAL').toUpperCase()}</span>
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#FBBF24' }}>
-                            R$ {(parseFloat(s.valor) || 0).toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '0.6rem' }}>
-                              {/* BOTÃO EDITAR SERVIÇO */}
-                              <button
-                                type="button"
-                                onClick={() => setServicoParaEditar(s)}
-                                style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer' }}
-                                title="Editar Serviço"
-                              >
-                                <Edit size={16} />
-                              </button>
-                              {/* BOTÃO EXCLUIR SERVIÇO */}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoverServico(s.id)}
-                                style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
-                                title="Excluir Serviço"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <strong>{catConfigAtual.rotulo}:</strong> <span style={{ color: 'var(--text-muted)' }}>{catConfigAtual.campoDestino}</span>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ==========================================
-          MODAL: EDITAR CATEGORIA
-      ========================================== */}
-      {modalEditarCategoria && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--gold-accent)' }}>Editar Nome da Categoria</h3>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarCategoria(null)}>
-                <X size={20} />
-              </button>
+          {/* FORMULÁRIO DE CADASTRO DE CATEGORIA */}
+          <form onSubmit={handleAdicionarCategoriaAbas} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                NOVA CATEGORIA PARA {catConfigAtual.rotulo.toUpperCase()} * (CAIXA ALTA AUTOMÁTICO)
+              </label>
+              <input
+                required
+                className="input-field"
+                placeholder={`Ex: Nova Categoria...`}
+                value={inputNovaCategoria}
+                onChange={e => setInputNovaCategoria(e.target.value.toUpperCase())}
+                style={{ textTransform: 'uppercase' }}
+              />
             </div>
 
-            <form onSubmit={handleSalvarEdicaoCategoriaModal} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.4rem' }}>
-                  NOME DA CATEGORIA *
-                </label>
-                <input
-                  required
-                  className="input-field"
-                  value={modalEditarCategoria.editado || ''}
-                  onChange={e => setModalEditarCategoria({ ...modalEditarCategoria, editado: e.target.value.toUpperCase() })}
-                  style={{ textTransform: 'uppercase', fontWeight: '700' }}
-                  autoFocus
-                />
-              </div>
+            <button type="submit" className="btn-gold" style={{ padding: '0.55rem 1.1rem' }}>
+              <Plus size={16} />
+              <span>Adicionar Categoria</span>
+            </button>
+          </form>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setModalEditarCategoria(null)}>Cancelar</button>
-                <button type="submit" className="btn-gold">Salvar Categoria</button>
-              </div>
-            </form>
+          {/* GRID DE CATEGORIAS CADASTRADAS */}
+          <div>
+            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
+              CATEGORIAS REGISTRADAS ({listaCategoriasAtivas.length}):
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {listaCategoriasAtivas.map(cat => (
+                <div
+                  key={cat}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: 'var(--bg-input)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.82rem',
+                    color: 'var(--text-main)',
+                    fontWeight: '700'
+                  }}
+                >
+                  <Tag size={14} color={catConfigAtual.cor} />
+                  <span>{cat.toUpperCase()}</span>
+
+                  <button
+                    type="button"
+                    onClick={() => setModalEditarCategoria({
+                      modulo: abaCategoriaAtiva,
+                      chave: catConfigAtual.chave,
+                      original: cat,
+                      editado: cat
+                    })}
+                    style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    title="Editar Nome da Categoria"
+                  >
+                    <Edit size={13} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoverCategoriaAbas(cat)}
+                    style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    title="Excluir Categoria"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* ==========================================
-          MODAL: EDITAR SERVIÇO E PREÇO
+          CONTEÚDO DA ABA 3: CATÁLOGO DE SERVIÇOS
       ========================================== */}
+      {abaConfigAtiva === 'servicos' && (
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <Wrench size={20} color="#F87171" />
+            <div>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+                Catálogo de Serviços & Tabela de Valores
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                Cadastre e gerencie a tabela de preços padrão de serviços executados na armeria.
+              </p>
+            </div>
+          </div>
+
+          {/* FORMULÁRIO DE CADASTRO DE SERVIÇO */}
+          <form onSubmit={handleAdicionarServico} style={{ backgroundColor: 'var(--bg-input)', padding: '1.1rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Plus size={16} />
+              <span>CADASTRAR NOVO SERVIÇO NO CATÁLOGO</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Nome do Serviço *</label>
+                <input
+                  required
+                  className="input-field"
+                  placeholder="EX: LIMPEZA ULTRASSÔNICA"
+                  value={novoServicoNome}
+                  onChange={e => setNovoServicoNome(e.target.value.toUpperCase())}
+                  style={{ textTransform: 'uppercase', fontWeight: '700' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Valor Padrão (R$) *</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="250.00"
+                  value={novoServicoValor}
+                  onChange={e => setNovoServicoValor(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <CustomSelect
+                  label="Categoria"
+                  value={novoServicoCategoria}
+                  onChange={val => setNovoServicoCategoria(val)}
+                  options={categoriasDisponiveis}
+                  placeholder="Selecione a categoria..."
+                  allowCustom={false}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.3rem' }}>
+              <button type="submit" className="btn-gold" style={{ padding: '0.5rem 1rem', fontSize: '0.82rem' }}>
+                <Plus size={16} />
+                <span>Adicionar Serviço ao Catálogo</span>
+              </button>
+            </div>
+          </form>
+
+          {/* TABELA DE SERVIÇOS CADASTRADOS */}
+          <div>
+            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+              SERVIÇOS DISPONÍVEIS NA ARMERIA
+            </div>
+
+            <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>NOME DO SERVIÇO</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>CATEGORIA</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>VALOR PADRÃO (R$)</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(formData.catalogo_servicos || []).length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        Nenhum serviço cadastrado no catálogo.
+                      </td>
+                    </tr>
+                  ) : (
+                    formData.catalogo_servicos.map(s => (
+                      <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                          {s.nome.toUpperCase()}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem' }}>
+                          <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>{(s.categoria || 'GERAL').toUpperCase()}</span>
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: '800', color: '#FBBF24' }}>
+                          R$ {(parseFloat(s.valor) || 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '0.6rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => setServicoParaEditar(s)}
+                              style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer' }}
+                              title="Editar Serviço"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoverServico(s.id)}
+                              style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
+                              title="Excluir Serviço"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          CONTEÚDO DA ABA 4: BANCO SUPABASE
+      ========================================== */}
+      {abaConfigAtiva === 'supabase' && (
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <Database size={20} color={isSupabaseConfigured ? '#34D399' : 'var(--gold-accent)'} />
+            <div>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700', margin: 0 }}>
+                Conexão com Banco de Dados Supabase
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                Sincronização em nuvem e armazenamento relacional do sistema.
+              </p>
+            </div>
+            {isSupabaseConfigured ? (
+              <span className="badge badge-green" style={{ marginLeft: 'auto' }}>CONECTADO</span>
+            ) : (
+              <span className="badge badge-yellow" style={{ marginLeft: 'auto' }}>DEMO LOCAL</span>
+            )}
+          </div>
+
+          <form onSubmit={handleConectarSupabase} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Project URL do Supabase</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="https://xxxxxxxxxxxx.supabase.co"
+                value={supaUrl}
+                onChange={e => setSupaUrl(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>API Anon Key (Public Key)</label>
+              <input
+                type="password"
+                className="input-field"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                value={supaKey}
+                onChange={e => setSupaKey(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <button type="submit" className="btn-gold">
+                <Key size={16} />
+                <span>{isSupabaseConfigured ? 'Atualizar Conexão' : 'Conectar ao Supabase'}</span>
+              </button>
+
+              {isSupabaseConfigured && (
+                <button type="button" className="btn-secondary" onClick={clearSupabaseKeys} style={{ color: '#F87171' }}>
+                  Desconectar
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: 'var(--bg-input)', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--gold-accent)' }}>💡 Dica Importante para o Supabase:</strong>
+            <p style={{ marginTop: '0.4rem' }}>
+              Não se esqueça de copiar o conteúdo do arquivo <code>supabase_schema.sql</code> (gerado no seu projeto) e colá-lo no <strong>SQL Editor</strong> do painel Supabase para criar todas as tabelas automaticamente!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA EDITAR SERVIÇO E PREÇO */}
       {servicoParaEditar && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '1.5rem' }}>
@@ -733,89 +820,6 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           </div>
         </div>
       )}
-
-      {/* ==========================================
-          4. SEÇÃO SUSPENSA: CONEXÃO SUPABASE
-      ========================================== */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div
-          onClick={() => toggleSection('supabase')}
-          style={{
-            padding: '1.2rem 1.5rem',
-            backgroundColor: 'var(--bg-input)',
-            borderBottom: openSections.supabase ? '1px solid var(--border-color)' : 'none',
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Database size={22} color={isSupabaseConfigured ? '#34D399' : 'var(--gold-accent)'} />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '700' }}>
-              Conexão com Banco de Dados Supabase
-            </h3>
-            {isSupabaseConfigured ? (
-              <span className="badge badge-green">CONECTADO</span>
-            ) : (
-              <span className="badge badge-yellow">DEMO LOCAL</span>
-            )}
-          </div>
-          {openSections.supabase ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
-        </div>
-
-        {openSections.supabase && (
-          <div style={{ padding: '1.5rem' }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Para sincronizar seus clientes, armas e ordens de serviço diretamente no banco de dados Supabase da Pró Guns Armeria, cole suas chaves abaixo.
-            </p>
-
-            <form onSubmit={handleConectarSupabase} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Project URL do Supabase</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="https://xxxxxxxxxxxx.supabase.co"
-                  value={supaUrl}
-                  onChange={e => setSupaUrl(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>API Anon Key (Public Key)</label>
-                <input
-                  type="password"
-                  className="input-field"
-                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                  value={supaKey}
-                  onChange={e => setSupaKey(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="submit" className="btn-gold">
-                  <Key size={16} />
-                  <span>{isSupabaseConfigured ? 'Atualizar Conexão' : 'Conectar ao Supabase'}</span>
-                </button>
-
-                {isSupabaseConfigured && (
-                  <button type="button" className="btn-secondary" onClick={clearSupabaseKeys} style={{ color: '#F87171' }}>
-                    Desconectar
-                  </button>
-                )}
-              </div>
-            </form>
-
-            <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: 'var(--bg-input)', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              <strong style={{ color: 'var(--gold-accent)' }}>💡 Dica Importante para o Supabase:</strong>
-              <p style={{ marginTop: '0.4rem' }}>
-                Não se esqueça de copiar o conteúdo do arquivo <code>supabase_schema.sql</code> (gerado no seu projeto) e colá-lo no <strong>SQL Editor</strong> do painel Supabase para criar todas as tabelas automaticamente!
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* MODAL PARA EDITAR NOME DE CATEGORIA */}
       {modalEditarCategoria && (

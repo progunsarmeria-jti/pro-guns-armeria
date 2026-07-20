@@ -3,9 +3,10 @@ import { Settings, Building, Database, Save, CheckCircle2, Copy, Shield, Key, Ch
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
+import { INITIAL_CONFIG } from '../lib/initialData'
 
 export default function ModuloConfiguracoes({ config, setConfig }) {
-  const [formData, setFormData] = useState(config)
+  const [formData, setFormData] = useState(() => config || INITIAL_CONFIG)
   const [supaUrl, setSupaUrl] = useState(localStorage.getItem('PROGUNS_SUPABASE_URL') || '')
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
   const [salvoFeedback, setSalvoFeedback] = useState(false)
@@ -58,8 +59,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
+  const dataSafe = formData || INITIAL_CONFIG || {}
   const catConfigAtual = CONFIG_CATEGORIAS_MAP[abaCategoriaAtiva] || CONFIG_CATEGORIAS_MAP.servicos
-  const listaCategoriasAtivas = formData[catConfigAtual.chave] || catConfigAtual.padrao
+  const listaCategoriasAtivas = dataSafe[catConfigAtual.chave] || catConfigAtual.padrao
 
   // Estado para Cadastro e Edição de Serviço
   const [novoServicoNome, setNovoServicoNome] = useState('')
@@ -69,7 +71,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
   useEffect(() => {
     if (config) {
-      setFormData(config)
+      setFormData(prev => ({ ...INITIAL_CONFIG, ...config, ...prev }))
     }
   }, [config])
 
@@ -214,7 +216,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
-  const categoriasDisponiveis = (formData.categorias_servicos || [
+  const categoriasDisponiveis = (dataSafe.categorias_servicos || [
     'MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO', 'LIMPEZA & CONSERVAÇÃO', 'CUSTOMIZAÇÃO', 'PINTURA & CERAKOTE'
   ]).map(c => c.toUpperCase())
 
@@ -362,7 +364,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.5rem' }}>
               {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
                 const ativa = abaCategoriaAtiva === mod.id
-                const qtd = (formData[mod.chave] || mod.padrao).length
+                const qtd = ((dataSafe && dataSafe[mod.chave]) || mod.padrao).length
                 return (
                   <button
                     key={mod.id}

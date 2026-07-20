@@ -124,12 +124,23 @@ export default function App() {
     // 2. Mescla dados locais (preservando alterações recentes feitas na sessão)
     locaisList.forEach(item => {
       if (item?.id) {
-        const existente = mapa.get(String(item.id))
+        const existente = mapa.get(String(item.id)) || {}
         mapa.set(String(item.id), { ...existente, ...item })
       }
     })
 
     const mesclado = Array.from(mapa.values())
+
+    // Ordenação determinística estática para evitar oscilação/looping de itens na tela
+    if (tabela === 'usuarios') {
+      mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
+    } else if (tabela === 'clientes') {
+      mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
+    } else if (tabela === 'ordens') {
+      mesclado.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
+    } else if (tabela === 'logs') {
+      mesclado.sort((a, b) => String(b.id || '').localeCompare(String(a.id || '')))
+    }
 
     // Identifica itens locais que ainda não foram para a nuvem e salva no Supabase
     const faltantesNoSupabase = mesclado.filter(m => !remotosList.some(r => String(r.id) === String(m.id)))
@@ -171,13 +182,13 @@ export default function App() {
       const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
       const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
 
-      setClientes(finalClientes);     ls.set('PROGUNS_CLIENTES',   finalClientes)
-      setOrdens(finalOrdens);         ls.set('PROGUNS_ORDENS',     finalOrdens)
-      setOrcamentos(finalOrcamentos); ls.set('PROGUNS_ORCAMENTOS', finalOrcamentos)
-      setFinanceiro(finalFinanceiro); ls.set('PROGUNS_FINANCEIRO', finalFinanceiro)
-      setUsuarios(finalUsuarios);     ls.set('PROGUNS_USUARIOS',   finalUsuarios)
-      setArmas(finalArmas);           ls.set('PROGUNS_ARMAS',      finalArmas)
-      setLogs(finalLogs);             ls.set('PROGUNS_LOGS',       finalLogs)
+      setClientes(prev => JSON.stringify(prev) === JSON.stringify(finalClientes) ? prev : finalClientes)
+      setOrdens(prev => JSON.stringify(prev) === JSON.stringify(finalOrdens) ? prev : finalOrdens)
+      setOrcamentos(prev => JSON.stringify(prev) === JSON.stringify(finalOrcamentos) ? prev : finalOrcamentos)
+      setFinanceiro(prev => JSON.stringify(prev) === JSON.stringify(finalFinanceiro) ? prev : finalFinanceiro)
+      setUsuarios(prev => JSON.stringify(prev) === JSON.stringify(finalUsuarios) ? prev : finalUsuarios)
+      setArmas(prev => JSON.stringify(prev) === JSON.stringify(finalArmas) ? prev : finalArmas)
+      setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
 
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)

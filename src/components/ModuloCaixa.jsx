@@ -18,9 +18,13 @@ import {
   RefreshCw,
   ShoppingBag,
   TrendingUp,
-  FileCheck
+  FileCheck,
+  Edit,
+  Trash2,
+  Shield
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { isSupabaseConfigured, dbDelete, dbUpsertAll } from '../lib/supabase'
 
 const fmtBRL = (val) => {
   const num = parseFloat(val)
@@ -37,10 +41,14 @@ export default function ModuloCaixa({
   financeiro = [],
   setFinanceiro,
   usuarioLogado,
+  usuarios = [],
   config
 }) {
   const hojeStr = new Date().toISOString().split('T')[0]
   const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+  // Seletor de Abas Principais: 'atual' | 'historico'
+  const [abaCaixaAtiva, setAbaCaixaAtiva] = useState('atual')
 
   // Caixa do dia atual (se existir)
   const caixaAtual = caixas.find(c => c.data === hojeStr) || null
@@ -50,6 +58,12 @@ export default function ModuloCaixa({
   const [modalNovoLancamento, setModalNovoLancamento] = useState(false)
   const [modalFecharCaixa, setModalFecharCaixa] = useState(false)
   const [modalRelatorioIntegra, setModalRelatorioIntegra] = useState(null)
+
+  // Modais de Edição e Exclusão com Senha Master
+  const [modalEditarCaixaMaster, setModalEditarCaixaMaster] = useState(null)
+  const [modalExcluirCaixaMaster, setModalExcluirCaixaMaster] = useState(null)
+  const [senhaMasterInput, setSenhaMasterInput] = useState('')
+  const [erroSenhaMaster, setErroSenhaMaster] = useState('')
 
   // Forms State
   const [fundoTrocoInicial, setFundoTrocoInicial] = useState('100.00')
@@ -319,15 +333,87 @@ export default function ModuloCaixa({
 
   const relData = modalRelatorioIntegra ? getRelatorioData(modalRelatorioIntegra) : null
 
+  // ─── Handlers de Edição e Exclusão de Caixas com Senha Master ───────────────
+  const handleConfirmarEdicaoCaixaMaster = (e) => {
+    if (e) e.preventDefault()
+    if (!modalEditarCaixaMaster) return
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMaster('Senha Master incorreta! Operação não autorizada.')
+      return
+    }
+
+    const caixasAtualizados = caixas.map(c => {
+      if (c.id === modalEditarCaixaMaster.id) {
+        return {
+          ...c,
+          saldo_inicial: parseFloat(modalEditarCaixaMaster.saldo_inicial) || 0,
+          status: modalEditarCaixaMaster.status,
+          operador_abertura: modalEditarCaixaMaster.operador_abertura || c.operador_abertura,
+          operador_fechamento: modalEditarCaixaMaster.operador_fechamento || c.operador_fechamento
+        }
+      }
+      return c
+    })
+
+    if (typeof setCaixas === 'function') {
+      setCaixas(caixasAtualizados)
+    }
+
+    if (isSupabaseConfigured()) {
+      dbUpsertAll('caixas', caixasAtualizados)
+    }
+
+    setModalEditarCaixaMaster(null)
+    setSenhaMasterInput('')
+    setErroSenhaMaster('')
+    alert('Caixa diário atualizado com sucesso!')
+  }
+
+  const handleConfirmarExclusaoCaixaMaster = (e) => {
+    if (e) e.preventDefault()
+    if (!modalExcluirCaixaMaster) return
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMaster('Senha Master incorreta! Operação não autorizada.')
+      return
+    }
+
+    const caixaParaDeletar = modalExcluirCaixaMaster
+    const caixasFiltrados = caixas.filter(c => String(c.id) !== String(caixaParaDeletar.id))
+
+    if (typeof setCaixas === 'function') {
+      setCaixas(caixasFiltrados)
+    }
+
+    if (isSupabaseConfigured()) {
+      dbDelete('caixas', caixaParaDeletar.id)
+    }
+
+    setModalExcluirCaixaMaster(null)
+    setSenhaMasterInput('')
+    setErroSenhaMaster('')
+    alert(`Caixa do dia ${caixaParaDeletar.data} excluído com sucesso!`)
+  }
+
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header do Módulo Caixa (Tiro Digital Style) */}
+    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1100px', margin: '0 auto' }}>
+      {/* Header do Módulo Caixa */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-primary)', margin: 0 }}>
-            Caixa Registradora & Frente de Loja (Tiro Digital)
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--gold-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Wallet size={24} color="var(--gold-accent)" />
+            <span>Caixa Registradora & Frente de Loja</span>
           </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
             Abertura, recebimentos por modalidade (Dinheiro, Cartão Crédito, Débito, PIX), sangrias, reforços e relatório na íntegra.
           </p>
         </div>
@@ -335,17 +421,17 @@ export default function ModuloCaixa({
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {!caixaAtual || caixaAtual.status === 'FECHADO' ? (
             <button className="btn-gold" onClick={() => setModalAbrirCaixa(true)}>
-              <Unlock size={18} />
+              <Unlock size={16} />
               <span>Abrir Caixa do Dia</span>
             </button>
           ) : (
             <>
               <button className="btn-gold" onClick={() => setModalNovoLancamento(true)}>
-                <Plus size={18} />
+                <Plus size={16} />
                 <span>Registrar Pagamento / Venda</span>
               </button>
               <button className="btn-secondary" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', borderColor: '#EF4444' }} onClick={() => setModalFecharCaixa(true)}>
-                <Lock size={18} />
+                <Lock size={16} />
                 <span>Fechar Caixa</span>
               </button>
             </>
@@ -353,186 +439,289 @@ export default function ModuloCaixa({
         </div>
       </div>
 
-      {/* ─── BLCOS KPI DE ÍNTEGRA DO CAIXA (MODELO TIRO DIGITAL) ──────────────── */}
-      {caixaAtual && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <div className="card" style={{ borderLeft: '4px solid #3B82F6' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VENDAS ¹</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#60A5FA', marginTop: '0.2rem' }}>
-              {qtdVendasGeradas}
+      {/* SELETOR DE ABAS PRINCIPAIS DO CAIXA: CAIXA DO DIA vs HISTÓRICO */}
+      <div style={{
+        display: 'flex',
+        gap: '0.5rem',
+        borderBottom: '2px solid var(--border-color)',
+        paddingBottom: '0.1rem',
+        overflowX: 'auto'
+      }}>
+        <button
+          type="button"
+          onClick={() => setAbaCaixaAtiva('atual')}
+          style={{
+            padding: '0.65rem 1.2rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaCaixaAtiva === 'atual' ? '3px solid var(--gold-primary)' : '3px solid transparent',
+            backgroundColor: abaCaixaAtiva === 'atual' ? 'var(--bg-card)' : 'transparent',
+            color: abaCaixaAtiva === 'atual' ? 'var(--gold-primary)' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Wallet size={16} />
+          <span>Caixa do Dia ({hojeStr})</span>
+          {caixaAtual?.status === 'ABERTO' ? (
+            <span className="badge badge-green" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>ABERTO</span>
+          ) : (
+            <span className="badge badge-red" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>FECHADO</span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAbaCaixaAtiva('historico')}
+          style={{
+            padding: '0.65rem 1.2rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaCaixaAtiva === 'historico' ? '3px solid #60A5FA' : '3px solid transparent',
+            backgroundColor: abaCaixaAtiva === 'historico' ? 'var(--bg-card)' : 'transparent',
+            color: abaCaixaAtiva === 'historico' ? '#60A5FA' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Clock size={16} />
+          <span>Histórico de Caixas Anteriores</span>
+          <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+            {caixas.length}
+          </span>
+        </button>
+      </div>
+
+      {/* ─── ABA 1: CAIXA DO DIA ATUAL ────────────────────────────────────────── */}
+      {abaCaixaAtiva === 'atual' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* 4 CARDS KPI DE RESUMO DO CAIXA DO DIA */}
+          {caixaAtual && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              <div className="card" style={{ borderLeft: '4px solid #3B82F6' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VENDAS ¹</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#60A5FA', marginTop: '0.2rem' }}>
+                  {qtdVendasGeradas}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Vendas / O.S. geradas</div>
+              </div>
+
+              <div className="card" style={{ borderLeft: '4px solid #F59E0B' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VALOR EM VENDAS ¹</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#F59E0B', marginTop: '0.2rem' }}>
+                  R$ {fmtBRL(valorTotalVendasGeradas)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Valor bruto total em vendas</div>
+              </div>
+
+              <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>PAGOS RECEBIDOS ²</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#34D399', marginTop: '0.2rem' }}>
+                  R$ {fmtBRL(totalPagosRecebidos)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{qtdTotalPagamentos} pagamentos efetuados</div>
+              </div>
+
+              <div className="card" style={{ borderLeft: '4px solid var(--gold-primary)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>SALDO FINAL EM DINHEIRO ⁴</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--gold-primary)', marginTop: '0.2rem' }}>
+                  R$ {fmtBRL(saldoFinalDinheiroGaveta)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Disponível em espécie na gaveta</div>
+              </div>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Vendas / O.S. geradas</div>
+          )}
+
+          {/* CARD DE STATUS DO CAIXA DO DIA */}
+          <div className="card" style={{
+            backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+            borderColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '10px',
+                  backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Wallet size={22} color={caixaAtual?.status === 'ABERTO' ? '#34D399' : '#F87171'} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                      Caixa Recepção ({hojeStr})
+                    </span>
+                    <span className={`badge ${caixaAtual?.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
+                      {caixaAtual?.status === 'ABERTO' ? 'ABERTO' : 'FECHADO'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {caixaAtual ? (
+                      <>Aberto em: <strong>{caixaAtual.hora_abertura}</strong> | Aberto por: <strong>{caixaAtual.operador_abertura}</strong></>
+                    ) : (
+                      <>Caixa atualmente encerrado. Para iniciar os recebimentos do dia, clique em "Abrir Caixa do Dia".</>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {caixaAtual && (
+                <button className="btn-secondary" onClick={() => setModalRelatorioIntegra(caixaAtual)} style={{ fontSize: '0.82rem' }}>
+                  <Printer size={16} />
+                  <span>Ver Íntegra do Caixa</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="card" style={{ borderLeft: '4px solid #F59E0B' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VALOR EM VENDAS ¹</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#F59E0B', marginTop: '0.2rem' }}>
-              R$ {fmtBRL(valorTotalVendasGeradas)}
+          {/* TABELA DE MOVIMENTAÇÕES DO CAIXA DO DIA */}
+          <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+            <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Movimentações Registradas no Caixa Atual ({movimentacoes.length})</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Recebido: R$ {fmtBRL(totalPagosRecebidos)}</span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Valor bruto total em vendas</div>
-          </div>
 
-          <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>PAGOS RECEBIDOS ²</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#34D399', marginTop: '0.2rem' }}>
-              R$ {fmtBRL(totalPagosRecebidos)}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{qtdTotalPagamentos} pagamentos efetuados</div>
-          </div>
-
-          <div className="card" style={{ borderLeft: '4px solid var(--gold-primary)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>SALDO FINAL EM DINHEIRO ⁴</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--gold-primary)', marginTop: '0.2rem' }}>
-              R$ {fmtBRL(saldoFinalDinheiroGaveta)}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Disponível em espécie na gaveta</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
+                  <th style={{ padding: '0.75rem 1rem' }}>HORÁRIO</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>TIPO</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>DESCRIÇÃO</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>FORMA PAGAMENTO</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>VALOR (R$)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movimentacoes.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Nenhuma movimentação no caixa do dia ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  movimentacoes.map(m => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{m.hora}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span className={`badge ${m.tipo === 'SANGRIA' ? 'badge-red' : m.tipo === 'REFORCO' ? 'badge-yellow' : 'badge-green'}`}>
+                          {m.tipo === 'RECEBIMENTO_OS' ? 'Recebimento O.S' : m.tipo === 'VENDA_BALCAO' ? 'Venda Balcão' : m.tipo}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>{m.descricao}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.78rem',
+                          border: '1px solid var(--border-color)'
+                        }}>
+                          {m.forma_pagamento}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: m.tipo === 'SANGRIA' ? '#F87171' : '#34D399' }}>
+                        {m.tipo === 'SANGRIA' ? '-' : '+'} R$ {fmtBRL(m.valor)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Card Status Geral do Caixa */}
-      <div className="card" style={{
-        backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-        borderColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '12px',
-              backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Wallet size={24} color={caixaAtual?.status === 'ABERTO' ? '#34D399' : '#F87171'} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                  Caixa Recepção ({hojeStr})
-                </span>
-                <span className={`badge ${caixaAtual?.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
-                  {caixaAtual?.status === 'ABERTO' ? 'ABERTO' : 'FECHADO'}
-                </span>
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {caixaAtual ? (
-                  <>Aberto em: <strong>{caixaAtual.hora_abertura}</strong> | Aberto por: <strong>{caixaAtual.operador_abertura}</strong></>
-                ) : (
-                  <>Caixa atualmente encerrado. Para iniciar os recebimentos do dia, clique em "Abrir Caixa do Dia".</>
-                )}
-              </div>
-            </div>
+      {/* ─── ABA 2: HISTÓRICO DE CAIXAS ANTERIORES ────────────────────────────── */}
+      {abaCaixaAtiva === 'historico' && (
+        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+          <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-color)', fontWeight: '700', color: '#60A5FA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Histórico de Caixas Anteriores ({caixas.length})</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>* Apenas Admin Master pode Editar ou Excluir Caixas</span>
           </div>
 
-          {caixaAtual && (
-            <button className="btn-secondary" onClick={() => setModalRelatorioIntegra(caixaAtual)} style={{ fontSize: '0.82rem' }}>
-              <Printer size={16} />
-              <span>Ver Íntegra do Caixa</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tabela de Movimentações em Aberto */}
-      <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Movimentações Registradas no Caixa Atual ({movimentacoes.length})</span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Recebido: R$ {fmtBRL(totalPagosRecebidos)}</span>
-        </div>
-
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-              <th style={{ padding: '0.85rem 1rem' }}>HORÁRIO</th>
-              <th style={{ padding: '0.85rem 1rem' }}>TIPO</th>
-              <th style={{ padding: '0.85rem 1rem' }}>DESCRIÇÃO</th>
-              <th style={{ padding: '0.85rem 1rem' }}>FORMA PAGAMENTO</th>
-              <th style={{ padding: '0.85rem 1rem' }}>VALOR (R$)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {movimentacoes.length === 0 ? (
-              <tr>
-                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  Nenhuma movimentação no caixa do dia ainda.
-                </td>
-              </tr>
-            ) : (
-              movimentacoes.map(m => (
-                <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{m.hora}</td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span className={`badge ${m.tipo === 'SANGRIA' ? 'badge-red' : m.tipo === 'REFORCO' ? 'badge-yellow' : 'badge-green'}`}>
-                      {m.tipo === 'RECEBIMENTO_OS' ? 'Recebimento O.S' : m.tipo === 'VENDA_BALCAO' ? 'Venda Balcão' : m.tipo}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: '600' }}>{m.descricao}</td>
-                  <td style={{ padding: '0.85rem 1rem' }}>
-                    <span style={{
-                      backgroundColor: 'rgba(255,255,255,0.05)',
-                      padding: '0.2rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      border: '1px solid var(--border-color)'
-                    }}>
-                      {m.forma_pagamento}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: m.tipo === 'SANGRIA' ? '#F87171' : '#34D399' }}>
-                    {m.tipo === 'SANGRIA' ? '-' : '+'} R$ {fmtBRL(m.valor)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Histórico de Caixas Anteriores Fechados */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--gold-primary)' }}>
-          Histórico de Caixas Encerrados
-        </div>
-        <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '0.75rem' }}>DATA</th>
-                <th style={{ padding: '0.75rem' }}>OPERADOR ABERTURA</th>
-                <th style={{ padding: '0.75rem' }}>ABERTURA</th>
-                <th style={{ padding: '0.75rem' }}>FECHAMENTO</th>
-                <th style={{ padding: '0.75rem' }}>SALDO INICIAL</th>
-                <th style={{ padding: '0.75rem' }}>STATUS</th>
-                <th style={{ padding: '0.75rem', textAlign: 'right' }}>RELATÓRIO</th>
+              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
+                <th style={{ padding: '0.75rem 1rem' }}>DATA</th>
+                <th style={{ padding: '0.75rem 1rem' }}>OPERADOR ABERTURA</th>
+                <th style={{ padding: '0.75rem 1rem' }}>HORA ABERTURA</th>
+                <th style={{ padding: '0.75rem 1rem' }}>HORA FECHAMENTO</th>
+                <th style={{ padding: '0.75rem 1rem' }}>SALDO INICIAL</th>
+                <th style={{ padding: '0.75rem 1rem' }}>STATUS</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>AÇÕES</th>
               </tr>
             </thead>
             <tbody>
-              {caixas.map(cx => (
-                <tr key={cx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: '700' }}>{cx.data}</td>
-                  <td style={{ padding: '0.75rem' }}>{cx.operador_abertura}</td>
-                  <td style={{ padding: '0.75rem' }}>{cx.hora_abertura}</td>
-                  <td style={{ padding: '0.75rem' }}>{cx.hora_fechamento || '-'}</td>
-                  <td style={{ padding: '0.75rem' }}>R$ {fmtBRL(cx.saldo_inicial)}</td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span className={`badge ${cx.status === 'ABERTO' ? 'badge-green' : 'badge-gray'}`}>
-                      {cx.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                    <button
-                      className="btn-secondary"
-                      style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
-                      onClick={() => setModalRelatorioIntegra(cx)}
-                    >
-                      <Printer size={14} /> Íntegra do Caixa
-                    </button>
+              {caixas.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    Nenhum caixa registrado no histórico.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                caixas.map(cx => (
+                  <tr key={cx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>{cx.data}</td>
+                    <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>{cx.operador_abertura}</td>
+                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{cx.hora_abertura}</td>
+                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{cx.hora_fechamento || 'Em aberto'}</td>
+                    <td style={{ padding: '0.75rem 1rem', fontWeight: '700' }}>R$ {fmtBRL(cx.saldo_inicial)}</td>
+                    <td style={{ padding: '0.75rem 1rem' }}>
+                      <span className={`badge ${cx.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
+                        {cx.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem' }}
+                          onClick={() => setModalRelatorioIntegra(cx)}
+                          title="Ver Íntegra do Caixa"
+                        >
+                          <Printer size={13} />
+                          <span>Íntegra</span>
+                        </button>
+
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: '#60A5FA', borderColor: 'rgba(96,165,250,0.4)' }}
+                          onClick={() => { setModalEditarCaixaMaster(cx); setSenhaMasterInput(''); setErroSenhaMaster('') }}
+                          title="Editar Caixa (Requer Senha Master)"
+                        >
+                          <Edit size={13} />
+                          <span>Editar</span>
+                        </button>
+
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem', color: '#F87171', borderColor: 'rgba(239,68,68,0.4)' }}
+                          onClick={() => { setModalExcluirCaixaMaster(cx); setSenhaMasterInput(''); setErroSenhaMaster('') }}
+                          title="Excluir Caixa (Requer Senha Master)"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
 
       {/* ── MODAL ABRIR CAIXA ────────────────────────────────────────────────── */}
       {modalAbrirCaixa && (
@@ -956,6 +1145,148 @@ export default function ModuloCaixa({
                 <Printer size={16} /> Imprimir Íntegra do Caixa
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDITAR CAIXA (REQUER SENHA MASTER) ─────────────────────────── */}
+      {modalEditarCaixaMaster && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', borderLeft: '4px solid #60A5FA' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', color: '#60A5FA', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit size={20} /> Editar Caixa ({modalEditarCaixaMaster.data})
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarCaixaMaster(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarEdicaoCaixaMaster} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>DATA DO CAIXA</label>
+                  <input disabled className="input-field" value={modalEditarCaixaMaster.data} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>STATUS DO CAIXA</label>
+                  <select
+                    className="input-field"
+                    value={modalEditarCaixaMaster.status}
+                    onChange={e => setModalEditarCaixaMaster({ ...modalEditarCaixaMaster, status: e.target.value })}
+                  >
+                    <option value="ABERTO">ABERTO</option>
+                    <option value="FECHADO">FECHADO</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>SALDO INICIAL (R$) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  value={modalEditarCaixaMaster.saldo_inicial}
+                  onChange={e => setModalEditarCaixaMaster({ ...modalEditarCaixaMaster, saldo_inicial: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>OPERADOR ABERTURA</label>
+                  <input
+                    className="input-field"
+                    value={modalEditarCaixaMaster.operador_abertura || ''}
+                    onChange={e => setModalEditarCaixaMaster({ ...modalEditarCaixaMaster, operador_abertura: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>OPERADOR FECHAMENTO</label>
+                  <input
+                    className="input-field"
+                    value={modalEditarCaixaMaster.operador_fechamento || ''}
+                    onChange={e => setModalEditarCaixaMaster({ ...modalEditarCaixaMaster, operador_fechamento: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', padding: '0.85rem', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <label style={{ fontSize: '0.78rem', color: '#F87171', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.4rem' }}>
+                  <Shield size={15} /> SENHA DO USUÁRIO MASTER *
+                </label>
+                <input
+                  type="password"
+                  required
+                  className="input-field"
+                  placeholder="Digite a Senha Master..."
+                  value={senhaMasterInput}
+                  onChange={e => { setSenhaMasterInput(e.target.value); setErroSenhaMaster('') }}
+                />
+                {erroSenhaMaster && (
+                  <div style={{ color: '#F87171', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: '700' }}>
+                    {erroSenhaMaster}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalEditarCaixaMaster(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold">
+                  <span>Salvar Alterações (Master)</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EXCLUIR CAIXA (REQUER SENHA MASTER) ────────────────────────── */}
+      {modalExcluirCaixaMaster && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', borderLeft: '4px solid #F87171' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', color: '#F87171', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Shield size={20} /> Excluir Caixa ({modalExcluirCaixaMaster.data})
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalExcluirCaixaMaster(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              Você está prestes a excluir o registro do Caixa do dia <strong>{modalExcluirCaixaMaster.data}</strong>. Esta ação é irreversível e excluirá o histórico de sangrias e movimentações deste dia.
+            </p>
+
+            <form onSubmit={handleConfirmarExclusaoCaixaMaster} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  DIGITE A SENHA DO USUÁRIO MASTER *
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  className="input-field"
+                  placeholder="Senha Master do Usuário..."
+                  value={senhaMasterInput}
+                  onChange={e => { setSenhaMasterInput(e.target.value); setErroSenhaMaster('') }}
+                />
+                {erroSenhaMaster && (
+                  <div style={{ color: '#F87171', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: '700' }}>
+                    {erroSenhaMaster}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalExcluirCaixaMaster(null)}>Cancelar</button>
+                <button type="submit" className="btn-red" style={{ backgroundColor: '#DC2626' }}>
+                  <Trash2 size={16} />
+                  <span>Excluir Caixa Permanentemente</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

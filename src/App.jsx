@@ -496,6 +496,7 @@ export default function App() {
               estoque={estoque} setEstoque={setEstoque}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
               usuarioLogado={usuarioLogado}
+              usuarios={usuarios}
               config={config}
             />
           )}

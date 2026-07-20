@@ -5,6 +5,7 @@ import {
   Crosshair, BookmarkCheck
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
+import CustomSelect from './CustomSelect'
 import { maskCPF, maskRG, maskTelefone } from '../lib/masks'
 import { dbUpsert, dbDelete } from '../lib/supabase'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
@@ -1123,133 +1124,88 @@ export default function ModuloClientes({
 
               <form onSubmit={handleSalvarArmaAcervo} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                 {/* CATEGORIA */}
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CATEGORIA *</label>
-                  <select
-                    required
-                    className="input-field"
-                    value={armaForm.categoria}
-                    onChange={e => setArmaForm({...armaForm, categoria: e.target.value})}
-                  >
-                    <option value="">Selecione a Categoria...</option>
-                    {CATEGORIAS_BASE.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
-                </div>
+                <CustomSelect
+                  label="CATEGORIA *"
+                  value={armaForm.categoria}
+                  onChange={val => setArmaForm({...armaForm, categoria: val})}
+                  options={CATEGORIAS_BASE}
+                  placeholder="Selecione a Categoria..."
+                  allowCustom={false}
+                />
 
                 {/* TIPO E MARCA */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>TIPO *</label>
-                    <select
-                      required
-                      className="input-field"
-                      value={armaForm.tipo}
-                      onChange={e => setArmaForm({...armaForm, tipo: e.target.value})}
-                    >
-                      <option value="">Selecione o Tipo...</option>
-                      {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    {armaForm.tipo === 'Outros' && (
-                      <input
-                        required
-                        className="input-field"
-                        style={{ marginTop: '0.4rem' }}
-                        placeholder="Especifique o tipo..."
-                        value={customTipoAcervo}
-                        onChange={e => {
-                          setCustomTipoAcervo(e.target.value)
-                          setArmaForm(prev => ({ ...prev, tipo: e.target.value || 'Outros' }))
-                        }}
-                      />
-                    )}
-                  </div>
+                  <CustomSelect
+                    label="TIPO *"
+                    value={armaForm.tipo}
+                    onChange={val => setArmaForm({...armaForm, tipo: val})}
+                    options={TIPOS_BASE}
+                    placeholder="Selecione o Tipo..."
+                    allowCustom={false}
+                  />
 
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MARCA / FABRICANTE *</label>
-                    <select
-                      required
-                      className="input-field"
-                      value={armaForm.marca}
-                      onChange={e => setArmaForm({...armaForm, marca: e.target.value})}
-                    >
-                      <option value="">Selecione a Marca...</option>
-                      {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
-                      <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
-                    </select>
-                    {armaForm.marca === '__NOVA__' && (
-                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                        <input
-                          required
-                          className="input-field"
-                          placeholder="Digite a marca..."
-                          value={customMarcaAcervoInput}
-                          onChange={e => setCustomMarcaAcervoInput(e.target.value)}
-                        />
-                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddMarcaAcervo}>
-                          Adicionar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <CustomSelect
+                    label="MARCA / FABRICANTE *"
+                    value={armaForm.marca}
+                    onChange={val => {
+                      const jaExiste = listMarcas.find(m => m.toUpperCase() === val.toUpperCase())
+                      if (jaExiste) {
+                        setAvisoDuplicidadeAcervo(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
+                        setArmaForm(prev => ({ ...prev, marca: jaExiste }))
+                      } else {
+                        setListMarcas(prev => [...prev, val])
+                        setArmaForm(prev => ({ ...prev, marca: val }))
+                        setAvisoDuplicidadeAcervo(`✅ Nova marca "${val}" adicionada à lista!`)
+                      }
+                      setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+                    }}
+                    options={listMarcas}
+                    placeholder="Selecione a Marca..."
+                    customLabel="+ Cadastrar Nova Marca..."
+                  />
                 </div>
 
                 {/* MODELO E CALIBRE */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MODELO *</label>
-                    <select
-                      required
-                      className="input-field"
-                      value={armaForm.modelo}
-                      onChange={e => setArmaForm({...armaForm, modelo: e.target.value})}
-                    >
-                      <option value="">Selecione o Modelo...</option>
-                      {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
-                      <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
-                    </select>
-                    {armaForm.modelo === '__NOVO__' && (
-                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                        <input
-                          required
-                          className="input-field"
-                          placeholder="Digite o modelo..."
-                          value={customModeloAcervoInput}
-                          onChange={e => setCustomModeloAcervoInput(e.target.value)}
-                        />
-                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddModeloAcervo}>
-                          Adicionar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <CustomSelect
+                    label="MODELO *"
+                    value={armaForm.modelo}
+                    onChange={val => {
+                      const jaExiste = listModelos.find(m => m.toUpperCase() === val.toUpperCase())
+                      if (jaExiste) {
+                        setAvisoDuplicidadeAcervo(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
+                        setArmaForm(prev => ({ ...prev, modelo: jaExiste }))
+                      } else {
+                        setListModelos(prev => [...prev, val])
+                        setArmaForm(prev => ({ ...prev, modelo: val }))
+                        setAvisoDuplicidadeAcervo(`✅ Novo modelo "${val}" adicionado à lista!`)
+                      }
+                      setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+                    }}
+                    options={listModelos}
+                    placeholder="Selecione o Modelo..."
+                    customLabel="+ Cadastrar Novo Modelo..."
+                  />
 
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CALIBRE *</label>
-                    <select
-                      required
-                      className="input-field"
-                      value={armaForm.calibre}
-                      onChange={e => setArmaForm({...armaForm, calibre: e.target.value})}
-                    >
-                      <option value="">Selecione o Calibre...</option>
-                      {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
-                    </select>
-                    {armaForm.calibre === '__NOVO__' && (
-                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                        <input
-                          required
-                          className="input-field"
-                          placeholder="Digite o calibre..."
-                          value={customCalibreAcervoInput}
-                          onChange={e => setCustomCalibreAcervoInput(e.target.value)}
-                        />
-                        <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddCalibreAcervo}>
-                          Adicionar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <CustomSelect
+                    label="CALIBRE *"
+                    value={armaForm.calibre}
+                    onChange={val => {
+                      const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
+                      if (jaExiste) {
+                        setAvisoDuplicidadeAcervo(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)
+                        setArmaForm(prev => ({ ...prev, calibre: jaExiste }))
+                      } else {
+                        setListCalibres(prev => [...prev, val])
+                        setArmaForm(prev => ({ ...prev, calibre: val }))
+                        setAvisoDuplicidadeAcervo(`✅ Novo calibre "${val}" adicionado à lista!`)
+                      }
+                      setTimeout(() => setAvisoDuplicidadeAcervo(''), 4000)
+                    }}
+                    options={listCalibres}
+                    placeholder="Selecione o Calibre..."
+                    customLabel="+ Cadastrar Novo Calibre..."
+                  />
                 </div>
 
                 <div>

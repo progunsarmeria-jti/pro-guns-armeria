@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
+import CustomSelect from './CustomSelect'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
 export default function ModalNovaOSArmeria({
@@ -298,124 +299,89 @@ export default function ModalNovaOSArmeria({
           )}
 
           {/* 1. SELEÇÃO DA CATEGORIA DA ARMA */}
-          <div>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-              CATEGORIA *
-            </label>
-            <select
-              required
-              className="input-field"
-              value={categoriaArma}
-              onChange={e => setCategoriaArma(e.target.value)}
-              style={{ fontWeight: '700' }}
-            >
-              <option value="">Selecione a Categoria...</option>
-              {CATEGORIAS_BASE.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            label="CATEGORIA *"
+            value={categoriaArma}
+            onChange={val => setCategoriaArma(val)}
+            options={CATEGORIAS_BASE}
+            placeholder="Selecione a Categoria..."
+            allowCustom={false}
+          />
 
           {/* 2. DADOS DA ARMA (GRID COM SELEÇÃO DE MARCA, MODELO, CALIBRE E TIPO) */}
           <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {/* TIPO */}
-            <div>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                TIPO *
-              </label>
-              <select required className="input-field" value={tipoArma} onChange={e => setTipoArma(e.target.value)}>
-                <option value="">Selecione o Tipo...</option>
-                {TIPOS_BASE.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-              {tipoArma === 'Outros' && (
-                <input
-                  required
-                  className="input-field"
-                  style={{ marginTop: '0.4rem' }}
-                  placeholder="Especifique o tipo..."
-                  value={customTipo}
-                  onChange={e => setCustomTipo(e.target.value)}
-                />
-              )}
-            </div>
+            <CustomSelect
+              label="TIPO *"
+              value={tipoArma}
+              onChange={val => setTipoArma(val)}
+              options={TIPOS_BASE}
+              placeholder="Selecione o Tipo..."
+              allowCustom={false}
+            />
 
             {/* MARCA / FABRICANTE (LISTA DO PORTAL G-CAC) */}
-            <div>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                MARCA / FABRICANTE *
-              </label>
-              <select required className="input-field" value={marcaArma} onChange={e => setMarcaArma(e.target.value)}>
-                <option value="">Selecione a Marca...</option>
-                {listMarcas.map(m => <option key={m} value={m}>{m}</option>)}
-                <option value="__NOVA__">+ Cadastrar Nova Marca...</option>
-              </select>
-              {marcaArma === '__NOVA__' && (
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  <input
-                    required
-                    className="input-field"
-                    placeholder="Digite a nova marca..."
-                    value={customMarcaInput}
-                    onChange={e => setCustomMarcaInput(e.target.value)}
-                  />
-                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddMarcaCustom}>
-                    Adicionar
-                  </button>
-                </div>
-              )}
-            </div>
+            <CustomSelect
+              label="MARCA / FABRICANTE *"
+              value={marcaArma}
+              onChange={val => {
+                const jaExiste = listMarcas.find(m => m.toUpperCase() === val.toUpperCase())
+                if (jaExiste) {
+                  setAvisoDuplicidade(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
+                  setMarcaArma(jaExiste)
+                } else {
+                  setListMarcas(prev => [...prev, val])
+                  setMarcaArma(val)
+                  setAvisoDuplicidade(`✅ Nova marca "${val}" adicionada à lista!`)
+                }
+                setTimeout(() => setAvisoDuplicidade(''), 4000)
+              }}
+              options={listMarcas}
+              placeholder="Selecione a Marca..."
+              customLabel="+ Cadastrar Nova Marca..."
+            />
 
             {/* MODELO (LISTA DO PORTAL G-CAC) */}
-            <div>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                MODELO *
-              </label>
-              <select required className="input-field" value={modeloArma} onChange={e => setModeloArma(e.target.value)}>
-                <option value="">Selecione o Modelo...</option>
-                {listModelos.map(mod => <option key={mod} value={mod}>{mod}</option>)}
-                <option value="__NOVO__">+ Cadastrar Novo Modelo...</option>
-              </select>
-              {modeloArma === '__NOVO__' && (
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  <input
-                    required
-                    className="input-field"
-                    placeholder="Digite o novo modelo..."
-                    value={customModeloInput}
-                    onChange={e => setCustomModeloInput(e.target.value)}
-                  />
-                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddModeloCustom}>
-                    Adicionar
-                  </button>
-                </div>
-              )}
-            </div>
+            <CustomSelect
+              label="MODELO *"
+              value={modeloArma}
+              onChange={val => {
+                const jaExiste = listModelos.find(m => m.toUpperCase() === val.toUpperCase())
+                if (jaExiste) {
+                  setAvisoDuplicidade(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
+                  setModeloArma(jaExiste)
+                } else {
+                  setListModelos(prev => [...prev, val])
+                  setModeloArma(val)
+                  setAvisoDuplicidade(`✅ Novo modelo "${val}" adicionado à lista!`)
+                }
+                setTimeout(() => setAvisoDuplicidade(''), 4000)
+              }}
+              options={listModelos}
+              placeholder="Selecione o Modelo..."
+              customLabel="+ Cadastrar Novo Modelo..."
+            />
 
             {/* CALIBRE (LISTA DO PORTAL G-CAC) */}
-            <div>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                CALIBRE *
-              </label>
-              <select required className="input-field" value={calibreArma} onChange={e => setCalibreArma(e.target.value)}>
-                <option value="">Selecione o Calibre...</option>
-                {listCalibres.map(c => <option key={c} value={c}>{c}</option>)}
-                <option value="__NOVO__">+ Cadastrar Novo Calibre...</option>
-              </select>
-              {calibreArma === '__NOVO__' && (
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  <input
-                    required
-                    className="input-field"
-                    placeholder="Digite o novo calibre..."
-                    value={customCalibreInput}
-                    onChange={e => setCustomCalibreInput(e.target.value)}
-                  />
-                  <button type="button" className="btn-gold" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={handleAddCalibreCustom}>
-                    Adicionar
-                  </button>
-                </div>
-              )}
-            </div>
+            <CustomSelect
+              label="CALIBRE *"
+              value={calibreArma}
+              onChange={val => {
+                const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
+                if (jaExiste) {
+                  setAvisoDuplicidade(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)
+                  setCalibreArma(jaExiste)
+                } else {
+                  setListCalibres(prev => [...prev, val])
+                  setCalibreArma(val)
+                  setAvisoDuplicidade(`✅ Novo calibre "${val}" adicionado à lista!`)
+                }
+                setTimeout(() => setAvisoDuplicidade(''), 4000)
+              }}
+              options={listCalibres}
+              placeholder="Selecione o Calibre..."
+              customLabel="+ Cadastrar Novo Calibre..."
+            />
           </div>
 
           {/* NÚMERO DE SÉRIE E ÓRGÃO DE REGISTRO */}

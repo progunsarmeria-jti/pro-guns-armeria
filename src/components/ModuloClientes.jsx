@@ -179,10 +179,12 @@ export default function ModuloClientes({
     atividades_apostiladas: ['Atirador Desportivo']
   })
 
-  const filteredClientes = clientes.filter(c =>
-    c.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.cpf.includes(searchTerm)
-  )
+  const filteredClientes = [...clientes]
+    .filter(c =>
+      (c.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.cpf || '').includes(searchTerm)
+    )
+    .sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || '', 'pt-BR', { sensitivity: 'base' }))
 
   const handleToggleAtividade = (atv) => {
     const atvas = clienteForm.atividades_apostiladas || []
@@ -1444,7 +1446,7 @@ export default function ModuloClientes({
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
                 onClick={() => setSelectedCliente(cliente)}
               >
-                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '220px' }}>
+                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '260px', fontSize: '0.86rem' }}>
                   {cliente.nome_completo.toUpperCase()}
                 </td>
                 <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.cpf}</td>

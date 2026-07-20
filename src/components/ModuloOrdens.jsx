@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye } from 'lucide-react'
+import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import { dbUpsert } from '../lib/supabase'
 
@@ -157,35 +157,37 @@ export default function ModuloOrdens({
         </button>
       </div>
 
-      {/* ── FILTROS DE STATUS ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-        {[
-          { key: 'TODAS', label: `TODAS (${ordens.length})` },
-          { key: 'EM ABERTO', label: `EM ABERTO (${ordens.filter(o => o.status !== 'CONCLUÍDO').length})` },
-          ...STATUS_LISTA.map(s => ({ key: s, label: `${s} (${ordensPorStatus[s]})` }))
-        ].map(({ key, label }) => {
-          const ativo = filtroStatus === key
-          return (
-            <button
-              key={key}
-              onClick={() => setFiltroStatus(key)}
-              style={{
-                padding: '0.28rem 0.7rem',
-                borderRadius: '4px',
-                border: ativo ? '1px solid rgba(139, 38, 42, 0.6)' : '1px solid var(--border-color)',
-                backgroundColor: ativo ? 'rgba(139, 38, 42, 0.2)' : 'var(--bg-input)',
-                color: ativo ? '#F0F2F5' : 'var(--text-muted)',
-                fontSize: '0.7rem',
-                fontWeight: ativo ? '700' : '500',
-                cursor: 'pointer',
-                letterSpacing: '0.2px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {label}
-            </button>
-          )
-        })}
+      {/* ── FILTRO DE STATUS EM LISTA ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--bg-card)', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border-color)', width: 'fit-content', flexWrap: 'wrap' }}>
+        <label htmlFor="filtro-status-os" style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+          <Filter size={16} />
+          <span>Filtrar por Status:</span>
+        </label>
+        <select
+          id="filtro-status-os"
+          value={filtroStatus}
+          onChange={(e) => setFiltroStatus(e.target.value)}
+          className="input-field"
+          style={{
+            minWidth: '240px',
+            padding: '0.45rem 0.8rem',
+            fontSize: '0.82rem',
+            fontWeight: '700',
+            color: 'var(--text-main)',
+            backgroundColor: 'var(--bg-input)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="TODAS">📋 TODAS AS O.S. ({ordens.length})</option>
+          <option value="EM ABERTO">⚡ EM ABERTO ({ordens.filter(o => o.status !== 'CONCLUÍDO').length})</option>
+          {STATUS_LISTA.map(s => (
+            <option key={s} value={s}>
+              • {s} ({ordensPorStatus[s]})
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ── LISTA DE ORDENS ── */}

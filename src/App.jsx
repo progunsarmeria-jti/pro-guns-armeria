@@ -37,6 +37,100 @@ import {
   subscribeToTable
 } from './lib/supabase'
 
+// ─── Componente ErrorBoundary (Proteção Global Contra Tela Preta) ─────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary capturou um erro de renderização:", error, errorInfo)
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null })
+  }
+
+  handleResetAll = () => {
+    try {
+      localStorage.clear()
+    } catch(e) {}
+    window.location.href = '/'
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          backgroundColor: '#0A0B0D',
+          color: '#F0F2F5',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div className="card" style={{ maxWidth: '560px', width: '100%', padding: '2rem', borderLeft: '4px solid #F87171' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <AlertTriangle size={32} color="#F87171" />
+              <div>
+                <h2 style={{ fontSize: '1.2rem', color: '#F87171', fontWeight: '800', margin: 0 }}>
+                  Atenção: Falha de Execução no Módulo
+                </h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>
+                  O sistema identificou um erro nos dados do módulo atual e interrompeu a exibição para proteger seus registros.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: '#161920',
+              border: '1px solid #262B36',
+              padding: '0.85rem',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              color: '#FCA5A5',
+              fontFamily: 'monospace',
+              marginBottom: '1.25rem',
+              wordBreak: 'break-all'
+            }}>
+              {this.state.error?.toString() || 'Erro inesperado.'}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={this.handleReset}
+                style={{ fontSize: '0.82rem' }}
+              >
+                <RefreshCw size={15} /> Recarregar Módulo
+              </button>
+              <button
+                type="button"
+                className="btn-gold"
+                onClick={this.handleResetAll}
+                style={{ fontSize: '0.82rem', backgroundColor: '#8B262A', borderColor: '#8B262A' }}
+              >
+                Limpar Cache e Restaurar
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 // ─── Helper localStorage & sessionStorage ─────────────────────────────────────
 const ls = {
   get: (key, fallback) => {
@@ -413,114 +507,116 @@ export default function App() {
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
-          {activeTab === 'home' && (
-            <ModuloHome
-              ordens={ordens}
-              orcamentos={orcamentos}
-              estoque={estoque}
-              caixas={caixas}
-              financeiro={financeiro}
-              clientes={clientes}
-              setActiveTab={setActiveTab}
-              setFiltroStatusOrdens={setFiltroStatusOrdens}
-            />
-          )}
+          <ErrorBoundary key={activeTab}>
+            {activeTab === 'home' && (
+              <ModuloHome
+                ordens={ordens}
+                orcamentos={orcamentos}
+                estoque={estoque}
+                caixas={caixas}
+                financeiro={financeiro}
+                clientes={clientes}
+                setActiveTab={setActiveTab}
+                setFiltroStatusOrdens={setFiltroStatusOrdens}
+              />
+            )}
 
-          {activeTab === 'alertas' && (
-            <ModuloAlertas
-              alertas={alertas} setAlertas={setAlertas}
-              ordens={ordens} setOrdens={setOrdens}
-              usuarioLogado={usuarioLogado}
-              setActiveTab={setActiveTab}
-              setFiltroStatusOrdens={setFiltroStatusOrdens}
-            />
-          )}
+            {activeTab === 'alertas' && (
+              <ModuloAlertas
+                alertas={alertas} setAlertas={setAlertas}
+                ordens={ordens} setOrdens={setOrdens}
+                usuarioLogado={usuarioLogado}
+                setActiveTab={setActiveTab}
+                setFiltroStatusOrdens={setFiltroStatusOrdens}
+              />
+            )}
 
-          {activeTab === 'clientes' && (
-            <ModuloClientes
-              clientes={clientes} setClientes={setClientes}
-              armas={armas} setArmas={setArmas}
-              ordens={ordens} setOrdens={setOrdens}
-              orcamentos={orcamentos} setOrcamentos={setOrcamentos}
-              financeiro={financeiro} setFinanceiro={setFinanceiro}
-              logs={logs} setLogs={setLogs}
-              setActiveTab={setActiveTab}
-              perfilOperador={usuarioLogado?.perfil || 'recepcao'}
-              usuarioLogado={usuarioLogado}
-              config={config}
-            />
-          )}
+            {activeTab === 'clientes' && (
+              <ModuloClientes
+                clientes={clientes} setClientes={setClientes}
+                armas={armas} setArmas={setArmas}
+                ordens={ordens} setOrdens={setOrdens}
+                orcamentos={orcamentos} setOrcamentos={setOrcamentos}
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                logs={logs} setLogs={setLogs}
+                setActiveTab={setActiveTab}
+                perfilOperador={usuarioLogado?.perfil || 'recepcao'}
+                usuarioLogado={usuarioLogado}
+                config={config}
+              />
+            )}
 
-          {activeTab === 'ordens' && (
-            <ModuloOrdens
-              ordens={ordens} setOrdens={setOrdens}
-              clientes={clientes}
-              armas={armas} setArmas={setArmas}
-              financeiro={financeiro} setFinanceiro={setFinanceiro}
-              caixas={caixas} setCaixas={setCaixas}
-              alertas={alertas} setAlertas={setAlertas}
-              usuarios={usuarios}
-              logs={logs} setLogs={setLogs}
-              perfilOperador={usuarioLogado?.perfil || 'recepcao'}
-              usuarioLogado={usuarioLogado}
-              notificacoes={notificacoes} setNotificacoes={setNotificacoes}
-              config={config}
-              filtroInicial={filtroStatusOrdens}
-            />
-          )}
+            {activeTab === 'ordens' && (
+              <ModuloOrdens
+                ordens={ordens} setOrdens={setOrdens}
+                clientes={clientes}
+                armas={armas} setArmas={setArmas}
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                caixas={caixas} setCaixas={setCaixas}
+                alertas={alertas} setAlertas={setAlertas}
+                usuarios={usuarios}
+                logs={logs} setLogs={setLogs}
+                perfilOperador={usuarioLogado?.perfil || 'recepcao'}
+                usuarioLogado={usuarioLogado}
+                notificacoes={notificacoes} setNotificacoes={setNotificacoes}
+                config={config}
+                filtroInicial={filtroStatusOrdens}
+              />
+            )}
 
-          {activeTab === 'orcamentos' && (
-            <ModuloOrcamentos
-              orcamentos={orcamentos} setOrcamentos={setOrcamentos}
-              clientes={clientes}
-              ordens={ordens} setOrdens={setOrdens}
-              financeiro={financeiro} setFinanceiro={setFinanceiro}
-              config={config}
-              usuarioLogado={usuarioLogado}
-              usuarios={usuarios}
-            />
-          )}
+            {activeTab === 'orcamentos' && (
+              <ModuloOrcamentos
+                orcamentos={orcamentos} setOrcamentos={setOrcamentos}
+                clientes={clientes}
+                ordens={ordens} setOrdens={setOrdens}
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                config={config}
+                usuarioLogado={usuarioLogado}
+                usuarios={usuarios}
+              />
+            )}
 
-          {activeTab === 'estoque' && (
-            <ModuloEstoque
-              estoque={estoque} setEstoque={setEstoque}
-              usuarioLogado={usuarioLogado}
-              config={config}
-            />
-          )}
+            {activeTab === 'estoque' && (
+              <ModuloEstoque
+                estoque={estoque} setEstoque={setEstoque}
+                usuarioLogado={usuarioLogado}
+                config={config}
+              />
+            )}
 
-          {activeTab === 'caixa' && (
-            <ModuloCaixa
-              caixas={caixas} setCaixas={setCaixas}
-              ordens={ordens} setOrdens={setOrdens}
-              estoque={estoque} setEstoque={setEstoque}
-              financeiro={financeiro} setFinanceiro={setFinanceiro}
-              usuarioLogado={usuarioLogado}
-              usuarios={usuarios}
-              config={config}
-            />
-          )}
+            {activeTab === 'caixa' && (
+              <ModuloCaixa
+                caixas={caixas} setCaixas={setCaixas}
+                ordens={ordens} setOrdens={setOrdens}
+                estoque={estoque} setEstoque={setEstoque}
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                usuarioLogado={usuarioLogado}
+                usuarios={usuarios}
+                config={config}
+              />
+            )}
 
-          {activeTab === 'financeiro' && (
-            <ModuloFinanceiro
-              financeiro={financeiro} setFinanceiro={setFinanceiro}
-              config={config}
-            />
-          )}
+            {activeTab === 'financeiro' && (
+              <ModuloFinanceiro
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                config={config}
+              />
+            )}
 
-          {activeTab === 'usuarios' && (
-            <ModuloUsuarios
-              usuarios={usuarios} setUsuarios={setUsuarios}
-              usuarioLogado={usuarioLogado}
-              logs={logs} setLogs={setLogs}
-            />
-          )}
+            {activeTab === 'usuarios' && (
+              <ModuloUsuarios
+                usuarios={usuarios} setUsuarios={setUsuarios}
+                usuarioLogado={usuarioLogado}
+                logs={logs} setLogs={setLogs}
+              />
+            )}
 
-          {activeTab === 'configuracoes' && (
-            <ModuloConfiguracoes
-              config={config} setConfig={setConfig}
-            />
-          )}
+            {activeTab === 'configuracoes' && (
+              <ModuloConfiguracoes
+                config={config} setConfig={setConfig}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 

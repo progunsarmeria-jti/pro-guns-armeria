@@ -29,7 +29,7 @@ import {
   subscribeToTable
 } from './lib/supabase'
 
-// ─── Helper localStorage ──────────────────────────────────────────────────────
+// ─── Helper localStorage & sessionStorage ─────────────────────────────────────
 const ls = {
   get: (key, fallback) => {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback }
@@ -37,6 +37,19 @@ const ls = {
   },
   set: (key, val) => {
     try { localStorage.setItem(key, JSON.stringify(val)) } catch (e) {}
+  }
+}
+
+const ss = {
+  get: (key, fallback) => {
+    try { const v = sessionStorage.getItem(key); return v ? JSON.parse(v) : fallback }
+    catch (e) { return fallback }
+  },
+  set: (key, val) => {
+    try { sessionStorage.setItem(key, JSON.stringify(val)) } catch (e) {}
+  },
+  remove: (key) => {
+    try { sessionStorage.removeItem(key) } catch (e) {}
   }
 }
 
@@ -54,7 +67,11 @@ export default function App() {
   const [financeiro, setFinanceiro] = useState(() => ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
-  const [usuarioLogado, setUsuarioLogado] = useState(() => ls.get('PROGUNS_AUTH_USER', null))
+  // Sessão do usuário guardada apenas no sessionStorage para exigir novo login ao fechar aba/GUI
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    localStorage.removeItem('PROGUNS_AUTH_USER') // Limpa resquícios antigos do localStorage
+    return ss.get('PROGUNS_AUTH_USER', null)
+  })
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
 
   const [notificacoes, setNotificacoes] = useState([{
@@ -64,6 +81,7 @@ export default function App() {
   }])
 
   const handleLogoff = () => {
+    ss.remove('PROGUNS_AUTH_USER')
     localStorage.removeItem('PROGUNS_AUTH_USER')
     setUsuarioLogado(null)
   }

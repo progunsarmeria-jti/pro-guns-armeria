@@ -50,8 +50,8 @@ export default function ModalLogin({ usuarios, usuarioLogado, setUsuarioLogado, 
 
     if (senhaDigitada === usuarioEncontrado.senha_pessoal || senhaDigitada === 'admin123') {
       setUsuarioLogado(usuarioEncontrado)
-      localStorage.setItem('PROGUNS_AUTH_USER', JSON.stringify(usuarioEncontrado))
-      alert(`Bem-vindo, ${usuarioEncontrado.nome_completo}! Autenticado com sucesso.`)
+      sessionStorage.setItem('PROGUNS_AUTH_USER', JSON.stringify(usuarioEncontrado))
+      localStorage.removeItem('PROGUNS_AUTH_USER')
       if (onClose) onClose()
     } else {
       setErroLogin('Senha incorreta! Digite a senha cadastrada pelo Master.')

@@ -552,70 +552,9 @@ export const INITIAL_ESTOQUE = [
   }
 ];
 
-export const INITIAL_CAIXAS = [
-  {
-    id: "cx_20260720",
-    data: "2026-07-20",
-    hora_abertura: "08:00",
-    hora_fechamento: null,
-    operador_abertura: "GUILHERME GOMES (ADMIN)",
-    operador_fechamento: null,
-    saldo_inicial: 200.00, // Fundo de troco inicial
-    status: "ABERTO", // 'ABERTO' | 'FECHADO'
-    movimentacoes: [
-      {
-        id: "mov_1",
-        tipo: "RECEBIMENTO_OS",
-        descricao: "Recebimento parcial OS #1001 (Cliente Carlos Silveira)",
-        forma_pagamento: "PIX",
-        valor: 450.00,
-        hora: "10:15",
-        os_numero: 1001
-      },
-      {
-        id: "mov_2",
-        tipo: "VENDA_BALCAO",
-        descricao: "Venda de 1x Óleo Lubrificante Sintético Tático 100ml",
-        forma_pagamento: "Dinheiro",
-        valor: 45.00,
-        hora: "11:30"
-      }
-    ],
-    conferencia: {
-      dinheiro_informado: 0,
-      cartao_credito_informado: 0,
-      cartao_debito_informado: 0,
-      pix_informado: 0,
-      divergencia: 0,
-      observacoes: ""
-    }
-  }
-];
+export const INITIAL_CAIXAS = [];
 
-export const INITIAL_ALERTAS = [
-  {
-    id: "alt_1002",
-    os_id: "o2",
-    os_numero: 1002,
-    cliente_nome: "ROBERTO ALVES MENDES",
-    cliente_telefone: "(64) 99123-8877",
-    equipamento: "Carabina Rossi Dione 5.5",
-    tipo_alerta: "AGUARDANDO APROVAÇÃO", // 'AGUARDANDO APROVAÇÃO' | 'AGUARDANDO RETIRADA'
-    mensagem: "Armeiro concluiu a análise técnica da Carabina Rossi. Orçamento de R$ 280,00 pendente de aprovação do cliente.",
-    status: "PENDENTE", // 'PENDENTE' | 'RESOLVIDO'
-    created_at: new Date(Date.now() - 15 * 60000).toISOString(),
-    tentativas_contato: [
-      {
-        id: "t1",
-        data_hora: "20/07/2026 14:30",
-        operador: "JOÃO SILVA",
-        resultado: "Sem resposta / Deixei recado",
-        observacao: "Liguei no telefone cadastrado mas deu caixa postal. Envei mensagem de WhatsApp."
-      }
-    ],
-    resolucao: null
-  }
-];
+export const INITIAL_ALERTAS = [];
 
 
 

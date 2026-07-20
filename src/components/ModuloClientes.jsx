@@ -1147,8 +1147,11 @@ export default function ModuloClientes({
                   <CustomSelect
                     label="MARCA / FABRICANTE *"
                     value={armaForm.marca}
-                    onChange={val => {
-                      const jaExiste = listMarcas.find(m => m.toUpperCase() === val.toUpperCase())
+                    onChange={val => setArmaForm(prev => ({ ...prev, marca: val }))}
+                    onAddCustom={newVal => {
+                      const val = newVal.trim().toUpperCase()
+                      if (!val) return
+                      const jaExiste = listMarcas.find(m => m.toUpperCase() === val)
                       if (jaExiste) {
                         setAvisoDuplicidadeAcervo(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
                         setArmaForm(prev => ({ ...prev, marca: jaExiste }))
@@ -1170,8 +1173,11 @@ export default function ModuloClientes({
                   <CustomSelect
                     label="MODELO *"
                     value={armaForm.modelo}
-                    onChange={val => {
-                      const jaExiste = listModelos.find(m => m.toUpperCase() === val.toUpperCase())
+                    onChange={val => setArmaForm(prev => ({ ...prev, modelo: val }))}
+                    onAddCustom={newVal => {
+                      const val = newVal.trim().toUpperCase()
+                      if (!val) return
+                      const jaExiste = listModelos.find(m => m.toUpperCase() === val)
                       if (jaExiste) {
                         setAvisoDuplicidadeAcervo(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
                         setArmaForm(prev => ({ ...prev, modelo: jaExiste }))
@@ -1190,7 +1196,10 @@ export default function ModuloClientes({
                   <CustomSelect
                     label="CALIBRE *"
                     value={armaForm.calibre}
-                    onChange={val => {
+                    onChange={val => setArmaForm(prev => ({ ...prev, calibre: val }))}
+                    onAddCustom={newVal => {
+                      const val = newVal.trim()
+                      if (!val) return
                       const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
                       if (jaExiste) {
                         setAvisoDuplicidadeAcervo(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)

@@ -324,8 +324,11 @@ export default function ModalNovaOSArmeria({
             <CustomSelect
               label="MARCA / FABRICANTE *"
               value={marcaArma}
-              onChange={val => {
-                const jaExiste = listMarcas.find(m => m.toUpperCase() === val.toUpperCase())
+              onChange={val => setMarcaArma(val)}
+              onAddCustom={newVal => {
+                const val = newVal.trim().toUpperCase()
+                if (!val) return
+                const jaExiste = listMarcas.find(m => m.toUpperCase() === val)
                 if (jaExiste) {
                   setAvisoDuplicidade(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
                   setMarcaArma(jaExiste)
@@ -345,8 +348,11 @@ export default function ModalNovaOSArmeria({
             <CustomSelect
               label="MODELO *"
               value={modeloArma}
-              onChange={val => {
-                const jaExiste = listModelos.find(m => m.toUpperCase() === val.toUpperCase())
+              onChange={val => setModeloArma(val)}
+              onAddCustom={newVal => {
+                const val = newVal.trim().toUpperCase()
+                if (!val) return
+                const jaExiste = listModelos.find(m => m.toUpperCase() === val)
                 if (jaExiste) {
                   setAvisoDuplicidade(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
                   setModeloArma(jaExiste)
@@ -366,7 +372,10 @@ export default function ModalNovaOSArmeria({
             <CustomSelect
               label="CALIBRE *"
               value={calibreArma}
-              onChange={val => {
+              onChange={val => setCalibreArma(val)}
+              onAddCustom={newVal => {
+                const val = newVal.trim()
+                if (!val) return
                 const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
                 if (jaExiste) {
                   setAvisoDuplicidade(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)

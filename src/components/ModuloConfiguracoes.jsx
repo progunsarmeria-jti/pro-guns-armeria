@@ -255,7 +255,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp * (Máscara Automática)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp *</label>
                   <input
                     className="input-field"
                     placeholder="(00) 00000-0000"

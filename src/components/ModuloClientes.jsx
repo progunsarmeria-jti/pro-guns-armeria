@@ -199,9 +199,14 @@ export default function ModuloClientes({
     const created = {
       ...clienteForm,
       id: `c_${Date.now()}`,
+      nome_completo: (clienteForm.nome_completo || '').toUpperCase(),
+      endereco: (clienteForm.endereco || '').toUpperCase(),
+      cidade: (clienteForm.cidade || '').toUpperCase(),
+      numero_cr: (clienteForm.numero_cr || '').toUpperCase(),
       status: 'Ativo'
     }
     setClientes([created, ...clientes])
+    dbUpsert('clientes', created)
     setShowModalNovoCliente(false)
     resetForm()
   }
@@ -211,9 +216,14 @@ export default function ModuloClientes({
     if (!selectedCliente || !clienteForm.nome_completo) return
     const updated = {
       ...selectedCliente,
-      ...clienteForm
+      ...clienteForm,
+      nome_completo: (clienteForm.nome_completo || '').toUpperCase(),
+      endereco: (clienteForm.endereco || '').toUpperCase(),
+      cidade: (clienteForm.cidade || '').toUpperCase(),
+      numero_cr: (clienteForm.numero_cr || '').toUpperCase()
     }
     setClientes(clientes.map(c => c.id === selectedCliente.id ? updated : c))
+    dbUpsert('clientes', updated)
     setSelectedCliente(updated)
     setShowModalEditarCliente(false)
     alert('Cadastro do cliente atualizado com sucesso!')
@@ -1478,7 +1488,7 @@ export default function ModuloClientes({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF * (Máscara Automática)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPF *</label>
                   <input
                     required
                     className="input-field"
@@ -1488,7 +1498,7 @@ export default function ModuloClientes({
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG (Máscara Automática)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>RG</label>
                   <input
                     className="input-field"
                     placeholder="00.000.000-0"
@@ -1504,7 +1514,7 @@ export default function ModuloClientes({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) * (Máscara Automática)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Telefone (WhatsApp) *</label>
                   <input
                     required
                     className="input-field"

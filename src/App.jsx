@@ -450,6 +450,7 @@ export default function App() {
               financeiro={financeiro} setFinanceiro={setFinanceiro}
               caixas={caixas} setCaixas={setCaixas}
               alertas={alertas} setAlertas={setAlertas}
+              usuarios={usuarios}
               logs={logs} setLogs={setLogs}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}

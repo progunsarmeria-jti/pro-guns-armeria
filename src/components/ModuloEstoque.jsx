@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
 
 export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado }) {
   const [busca, setBusca] = useState('')
@@ -102,10 +103,12 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado 
     }
 
     if (itemEdicao) {
-      setEstoque(estoque.map(p => p.id === itemEdicao.id ? novoItemObj : p))
+      setEstoque(prev => prev.map(p => p.id === itemEdicao.id ? novoItemObj : p))
     } else {
-      setEstoque([novoItemObj, ...estoque])
+      setEstoque(prev => [novoItemObj, ...prev])
     }
+
+    if (isSupabaseConfigured()) dbUpsert('estoque', novoItemObj)
 
     setModalItem(false)
   }
@@ -116,22 +119,29 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado 
     const delta = parseInt(qtdAjuste) || 0
     if (delta <= 0) return
 
+    let itemAjustado = null
     const estoqueAtualizado = estoque.map(p => {
       if (p.id === modalAjuste.id) {
         const novaQtd = tipoAjuste === 'ENTRADA' ? p.quantidade + delta : Math.max(0, p.quantidade - delta)
-        return { ...p, quantidade: novaQtd }
+        itemAjustado = { ...p, quantidade: novaQtd }
+        return itemAjustado
       }
       return p
     })
 
     setEstoque(estoqueAtualizado)
+    if (itemAjustado && isSupabaseConfigured()) dbUpsert('estoque', itemAjustado)
+
     setModalAjuste(null)
     setQtdAjuste('')
   }
 
   const handleExcluirItem = (id) => {
     if (window.confirm('Tem certeza que deseja remover esta peça do estoque?')) {
-      setEstoque(estoque.filter(p => p.id !== id))
+      setEstoque(prev => prev.filter(p => String(p.id) !== String(id)))
+      if (isSupabaseConfigured()) {
+        dbDelete('estoque', id)
+      }
     }
   }
 

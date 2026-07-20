@@ -273,7 +273,8 @@ export default function ModuloClientes({
   const handleExcluirCliente = (clienteId, e) => {
     if (e) e.stopPropagation()
     if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
-      setClientes(clientes.filter(c => c.id !== clienteId))
+      setClientes(prev => prev.filter(c => c.id !== clienteId))
+      dbDelete('clientes', clienteId)
       if (selectedCliente && selectedCliente.id === clienteId) {
         setSelectedCliente(null)
       }

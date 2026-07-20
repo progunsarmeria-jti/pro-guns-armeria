@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield } from 'lucide-react'
+import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
-import { dbUpsert } from '../lib/supabase'
+import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 
 const STATUS_CONFIG = {
@@ -29,6 +29,7 @@ export default function ModuloOrdens({
   setCaixas,
   alertas,
   setAlertas,
+  usuarios,
   logs,
   setLogs,
   perfilOperador,
@@ -42,6 +43,9 @@ export default function ModuloOrdens({
   const [docModalOrdem, setDocModalOrdem] = useState(null)
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
   const [modalCheckoutRetirada, setModalCheckoutRetirada] = useState(null)
+  const [modalExcluirOS, setModalExcluirOS] = useState(null)
+  const [senhaMasterInput, setSenhaMasterInput] = useState('')
+  const [erroSenhaMaster, setErroSenhaMaster] = useState('')
   const [formaPagamentoCheckout, setFormaPagamentoCheckout] = useState('Dinheiro')
   const [valorPagoClienteCheckout, setValorPagoClienteCheckout] = useState('')
   const [ordemExpandida, setOrdemExpandida] = useState(null)
@@ -271,6 +275,46 @@ export default function ModuloOrdens({
     setDocModalOrdem(ordemAtualizada)
   }
 
+  const handleConfirmarExclusaoOS = (e) => {
+    e.preventDefault()
+    if (!modalExcluirOS) return
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMaster('Senha Master incorreta! Operação não autorizada.')
+      return
+    }
+
+    const osParaDeletar = modalExcluirOS
+
+    // 1. Remove do estado de ordens
+    setOrdens(prev => prev.filter(o => String(o.id) !== String(osParaDeletar.id)))
+
+    // 2. Remove do Supabase se configurado
+    if (isSupabaseConfigured()) {
+      dbDelete('ordens', osParaDeletar.id)
+    }
+
+    // 3. Registra no Log de Auditoria
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'EXCLUSÃO DE OS',
+      descricao: `OS #${osParaDeletar.numero_os} (${osParaDeletar.cliente_nome}) excluída permanentemente pelo Master ${masterValido.nome_completo || 'Admin'}.`,
+      osId: osParaDeletar.id,
+      osNumero: osParaDeletar.numero_os,
+      setLogs
+    })
+
+    setModalExcluirOS(null)
+    setSenhaMasterInput('')
+    setErroSenhaMaster('')
+    alert(`Ordem de Serviço #${osParaDeletar.numero_os} excluída com sucesso!`)
+  }
+
   // Filtro de ordens — sempre em ordem numérica crescente de emissão
   const ordensOrdenadas = [...ordens].sort((a, b) => (a.numero_os || 0) - (b.numero_os || 0))
 
@@ -445,6 +489,19 @@ export default function ModuloOrdens({
                   >
                     <Printer size={14} />
                   </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setModalExcluirOS(ordem)
+                      setSenhaMasterInput('')
+                      setErroSenhaMaster('')
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
+                    title="Excluir O.S. (Requer Senha Master)"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                   <ChevronDown
                     size={15}
                     color="var(--text-muted)"
@@ -566,6 +623,19 @@ export default function ModuloOrdens({
                         <DollarSign size={14} /> 💰 Checkout de Retirada & Caixa
                       </button>
                     )}
+                    {/* BOTÃO: Excluir O.S. (Requer Senha Master) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setModalExcluirOS(ordem)
+                        setSenhaMasterInput('')
+                        setErroSenhaMaster('')
+                      }}
+                      style={{ backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid #EF4444', color: '#FCA5A5', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: 'auto' }}
+                      title="Excluir Ordem de Serviço (Requer Senha Master)"
+                    >
+                      <Trash2 size={13} /> Excluir O.S. (Master)
+                    </button>
                   </div>
 
                   {/* Linha 3: Histórico de Auditoria & Trilha do Gestor */}
@@ -805,6 +875,57 @@ export default function ModuloOrdens({
               <button style={{ backgroundColor: '#e5e7eb', color: '#1f2937', border: '1px solid #D1D5DB', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }} onClick={() => setDocModalOrdem(null)}>Fechar</button>
               <button className="btn-gold" onClick={() => window.print()}>Imprimir Comprovante</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE EXCLUSÃO DE OS (AUTENTICAÇÃO MASTER) ────────────────────────── */}
+      {modalExcluirOS && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '460px', borderLeft: '4px solid #EF4444' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#F87171', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={20} color="#F87171" />
+                Autorização Master Requerida
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalExcluirOS(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarExclusaoOS} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ backgroundColor: 'rgba(239,68,68,0.1)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.83rem', color: '#FCA5A5' }}>
+                <div><strong>ATENÇÃO:</strong> Você está excluindo permanentemente a <strong>OS #{modalExcluirOS.numero_os}</strong> ({modalExcluirOS.cliente_nome} — {modalExcluirOS.marca_arma} {modalExcluirOS.modelo_arma}).</div>
+                <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Esta ação não poderá ser desfeita. Digite a senha de um usuário Master para autorizar.</div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Senha Pessoal do Usuário Master *</label>
+                <input
+                  required
+                  autoFocus
+                  type="password"
+                  className="input-field"
+                  value={senhaMasterInput}
+                  onChange={e => { setSenhaMasterInput(e.target.value); setErroSenhaMaster('') }}
+                  placeholder="Digite a senha master..."
+                  style={{ textTransform: 'none' }}
+                />
+              </div>
+
+              {erroSenhaMaster && (
+                <div style={{ color: '#F87171', fontSize: '0.78rem', fontWeight: '700' }}>
+                  ⚠️ {erroSenhaMaster}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalExcluirOS(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold" style={{ backgroundColor: '#DC2626', color: '#FFF' }}>
+                  <Trash2 size={16} /> Excluir O.S. Permanentemente
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1430,11 +1430,9 @@ export default function ModuloClientes({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-              <th style={{ padding: '0.85rem 1rem', minWidth: '220px' }}>NOME DO CLIENTE</th>
+              <th style={{ padding: '0.85rem 1rem' }}>NOME DO CLIENTE</th>
               <th style={{ padding: '0.85rem 1rem' }}>CPF</th>
               <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
-              <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>N° DO CR</th>
-              <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>VALIDADE CR</th>
               <th className="desktop-only" style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
               <th className="mobile-only" style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}></th>
             </tr>
@@ -1446,17 +1444,11 @@ export default function ModuloClientes({
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
                 onClick={() => setSelectedCliente(cliente)}
               >
-                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '260px', fontSize: '0.86rem' }}>
+                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '0.88rem' }}>
                   {cliente.nome_completo.toUpperCase()}
                 </td>
                 <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.cpf}</td>
                 <td className="desktop-only" style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.telefone}</td>
-                <td className="desktop-only" style={{ padding: '0.85rem 1rem', fontWeight: '600', color: '#FBBF24' }}>
-                  {cliente.numero_cr || 'Sem CR'}
-                </td>
-                <td className="desktop-only" style={{ padding: '0.85rem 1rem' }}>
-                  <span className="badge badge-green">{cliente.validade_cr || 'N/A'}</span>
-                </td>
                 <td className="desktop-only" style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                   <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                     <button

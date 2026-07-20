@@ -1,10 +1,11 @@
 -- ==========================================================
 -- SCRIPT DE BANCO DE DADOS COMPLETO - PRÓ GUNS ARMERIA
 -- EXECUTE ESTE SCRIPT NO 'SQL EDITOR' DO SEU SUPABASE
+-- (Cria tabelas exclusivas 'proguns_*' para evitar conflitos)
 -- ==========================================================
 
 -- 1. Tabela de Configuração da Armeria
-CREATE TABLE IF NOT EXISTS public.empresa_config (
+CREATE TABLE IF NOT EXISTS public.proguns_config (
     id TEXT PRIMARY KEY,
     nome_fantasia TEXT NOT NULL DEFAULT 'Pró Guns Armeria',
     razao_social TEXT,
@@ -23,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.empresa_config (
 );
 
 -- 2. Tabela de Clientes CACs
-CREATE TABLE IF NOT EXISTS public.clientes (
+CREATE TABLE IF NOT EXISTS public.proguns_clientes (
     id TEXT PRIMARY KEY,
     nome_completo TEXT NOT NULL,
     cpf TEXT,
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.clientes (
 );
 
 -- 3. Tabela de Acervo de Armas do Cliente
-CREATE TABLE IF NOT EXISTS public.armas (
+CREATE TABLE IF NOT EXISTS public.proguns_armas (
     id TEXT PRIMARY KEY,
     cliente_id TEXT,
     tipo TEXT,
@@ -70,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.armas (
 );
 
 -- 4. Tabela de Ordens de Serviço (Armeria)
-CREATE TABLE IF NOT EXISTS public.ordens (
+CREATE TABLE IF NOT EXISTS public.proguns_ordens (
     id TEXT PRIMARY KEY,
     numero_os INT,
     cliente_id TEXT,
@@ -96,7 +97,7 @@ CREATE TABLE IF NOT EXISTS public.ordens (
 );
 
 -- 5. Tabela de Orçamentos
-CREATE TABLE IF NOT EXISTS public.orcamentos (
+CREATE TABLE IF NOT EXISTS public.proguns_orcamentos (
     id TEXT PRIMARY KEY,
     numero_orcamento INT,
     cliente_id TEXT,
@@ -113,7 +114,7 @@ CREATE TABLE IF NOT EXISTS public.orcamentos (
 );
 
 -- 6. Tabela do Módulo Financeiro
-CREATE TABLE IF NOT EXISTS public.financeiro (
+CREATE TABLE IF NOT EXISTS public.proguns_financeiro (
     id TEXT PRIMARY KEY,
     descricao TEXT NOT NULL,
     tipo TEXT NOT NULL,
@@ -130,7 +131,7 @@ CREATE TABLE IF NOT EXISTS public.financeiro (
 );
 
 -- 7. Tabela de Usuários do Sistema
-CREATE TABLE IF NOT EXISTS public.usuarios (
+CREATE TABLE IF NOT EXISTS public.proguns_usuarios (
     id TEXT PRIMARY KEY,
     nome_completo TEXT NOT NULL,
     cpf TEXT,
@@ -146,47 +147,47 @@ CREATE TABLE IF NOT EXISTS public.usuarios (
 -- ==========================================================
 -- DESATIVAR RLS PARA ACESSO DIRETO VIA CHAVE ANÔNIMA
 -- ==========================================================
-ALTER TABLE public.empresa_config DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.clientes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.armas DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ordens DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orcamentos DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.financeiro DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_config DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_clientes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_armas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_ordens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_orcamentos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_financeiro DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_usuarios DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================================
 -- HABILITAR SUPABASE REALTIME (NOTIFICAÇÕES VIA WEBSOCKET)
 -- ==========================================================
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'ordens') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.ordens;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_ordens') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_ordens;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clientes') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.clientes;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_clientes') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_clientes;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'armas') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.armas;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_armas') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_armas;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'orcamentos') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.orcamentos;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_orcamentos') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_orcamentos;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'financeiro') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.financeiro;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_financeiro') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_financeiro;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'usuarios') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.usuarios;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_usuarios') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_usuarios;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'empresa_config') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.empresa_config;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_config') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_config;
     END IF;
 END $$;
 
 -- Configurar Replica Identity para payload completo em atualizações
-ALTER TABLE public.empresa_config REPLICA IDENTITY FULL;
-ALTER TABLE public.clientes REPLICA IDENTITY FULL;
-ALTER TABLE public.armas REPLICA IDENTITY FULL;
-ALTER TABLE public.ordens REPLICA IDENTITY FULL;
-ALTER TABLE public.orcamentos REPLICA IDENTITY FULL;
-ALTER TABLE public.financeiro REPLICA IDENTITY FULL;
-ALTER TABLE public.usuarios REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_config REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_clientes REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_armas REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_ordens REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_orcamentos REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_financeiro REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_usuarios REPLICA IDENTITY FULL;

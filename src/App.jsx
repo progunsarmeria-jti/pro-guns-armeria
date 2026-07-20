@@ -58,13 +58,24 @@ export default function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [syncStatus, setSyncStatus] = useState('idle') // 'idle' | 'loading' | 'ok' | 'error'
 
+  // Helper para obter dados iniciais fundidos com o localStorage local
+  const getInitial = (key, fallback) => {
+    const saved = ls.get(key, null)
+    if (!saved || !Array.isArray(saved)) return fallback
+    // Mescla IDs do fallback para não perder registros novos
+    const mapa = new Map()
+    fallback.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
+    saved.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
+    return Array.from(mapa.values())
+  }
+
   // ── Estados com fallback localStorage ─────────────────────────────────────
-  const [usuarios,   setUsuarios]   = useState(() => ls.get('PROGUNS_USUARIOS',   INITIAL_USUARIOS))
-  const [clientes,   setClientes]   = useState(() => ls.get('PROGUNS_CLIENTES',   INITIAL_CLIENTES))
-  const [armas,      setArmas]      = useState(() => ls.get('PROGUNS_ARMAS',      INITIAL_ARMAS))
-  const [ordens,     setOrdens]     = useState(() => ls.get('PROGUNS_ORDENS',     INITIAL_ORDENS))
-  const [orcamentos, setOrcamentos] = useState(() => ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS))
-  const [financeiro, setFinanceiro] = useState(() => ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
+  const [usuarios,   setUsuarios]   = useState(() => getInitial('PROGUNS_USUARIOS',   INITIAL_USUARIOS))
+  const [clientes,   setClientes]   = useState(() => getInitial('PROGUNS_CLIENTES',   INITIAL_CLIENTES))
+  const [armas,      setArmas]      = useState(() => getInitial('PROGUNS_ARMAS',      INITIAL_ARMAS))
+  const [ordens,     setOrdens]     = useState(() => getInitial('PROGUNS_ORDENS',     INITIAL_ORDENS))
+  const [orcamentos, setOrcamentos] = useState(() => getInitial('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS))
+  const [financeiro, setFinanceiro] = useState(() => getInitial('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
   // Sessão do usuário guardada apenas no sessionStorage para exigir novo login ao fechar aba/GUI

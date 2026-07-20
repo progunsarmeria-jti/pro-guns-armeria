@@ -238,6 +238,80 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_ESTOQUE', estoque) }, [estoque])
   useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
   useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
+
+  // ─── MECANISMO INTELIGENTE DE INTEGRIDADE & PURGA AUTOMÁTICA DE ÓRFÃOS ────────
+  useEffect(() => {
+    // 1. Purga Inteligente de Alertas Órfãos (Referentes a O.S. ou Clientes Excluídos)
+    const alertasFiltrados = (alertas || []).filter(alerta => {
+      if (alerta.ordem_id || alerta.os_numero) {
+        const osExiste = (ordens || []).some(o => 
+          String(o.id) === String(alerta.ordem_id) || 
+          Number(o.numero_os) === Number(alerta.os_numero)
+        )
+        if (!osExiste) return false // O.S. foi excluída, purgar alerta pendente!
+      }
+      if (alerta.cliente_id) {
+        const clienteExiste = (clientes || []).some(c => String(c.id) === String(alerta.cliente_id))
+        if (!clienteExiste) return false // Cliente foi excluído, purgar alerta!
+      }
+      return true
+    })
+
+    if (alertasFiltrados.length !== alertas.length) {
+      setAlertas(alertasFiltrados)
+      ls.set('PROGUNS_ALERTAS', alertasFiltrados)
+      if (isSupabaseConfigured()) {
+        dbUpsertAll('alertas', alertasFiltrados)
+      }
+    }
+
+    // 2. Purga Inteligente de Notificações Órfãs
+    const notifsFiltradas = (notificacoes || []).filter(n => {
+      if (n.os_numero) {
+        return (ordens || []).some(o => Number(o.numero_os) === Number(n.os_numero))
+      }
+      return true
+    })
+    if (notifsFiltradas.length !== notificacoes.length) {
+      setNotificacoes(notifsFiltradas)
+    }
+
+    // 3. Purga Inteligente de Lançamentos Financeiros Pendentes de O.S. Excluídas
+    const financeiroFiltrado = (financeiro || []).filter(f => {
+      if (f.ordem_id) {
+        return (ordens || []).some(o => String(o.id) === String(f.ordem_id))
+      }
+      return true
+    })
+    if (financeiroFiltrado.length !== financeiro.length) {
+      setFinanceiro(financeiroFiltrado)
+      ls.set('PROGUNS_FINANCEIRO', financeiroFiltrado)
+    }
+
+    // 4. Purga Inteligente de Armas vinculadas a Clientes Excluídos
+    const armasFiltradas = (armas || []).filter(a => {
+      if (a.cliente_id) {
+        return (clientes || []).some(c => String(c.id) === String(a.cliente_id))
+      }
+      return true
+    })
+    if (armasFiltradas.length !== armas.length) {
+      setArmas(armasFiltradas)
+      ls.set('PROGUNS_ARMAS', armasFiltradas)
+    }
+
+    // 5. Purga Inteligente de Orçamentos vinculados a Clientes Excluídos
+    const orcamentosFiltrados = (orcamentos || []).filter(orc => {
+      if (orc.cliente_id) {
+        return (clientes || []).some(c => String(c.id) === String(orc.cliente_id))
+      }
+      return true
+    })
+    if (orcamentosFiltrados.length !== orcamentos.length) {
+      setOrcamentos(orcamentosFiltrados)
+      ls.set('PROGUNS_ORCAMENTOS', orcamentosFiltrados)
+    }
+  }, [ordens, clientes, alertas, notificacoes, financeiro, armas, orcamentos])
   useEffect(() => { ls.set('PROGUNS_LOGS', logs) }, [logs])
   useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
 

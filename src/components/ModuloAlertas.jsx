@@ -38,9 +38,20 @@ export default function ModuloAlertas({
   const [dataAgendamento, setDataAgendamento] = useState('')
   const [detalhesConversa, setDetalhesConversa] = useState('')
 
+  // Purga defensiva imediata de alertas órfãos cuja O.S. não existe mais
+  const alertasValidos = (alertas || []).filter(a => {
+    if (a.ordem_id || a.os_numero) {
+      return (ordens || []).some(o => 
+        String(o.id) === String(a.ordem_id) || 
+        Number(o.numero_os) === Number(a.os_numero)
+      )
+    }
+    return true
+  })
+
   // Métricas do Painel
-  const alertasPendentes = alertas.filter(a => a.status === 'PENDENTE')
-  const alertasResolvidos = alertas.filter(a => a.status === 'RESOLVIDO')
+  const alertasPendentes = alertasValidos.filter(a => a.status === 'PENDENTE')
+  const alertasResolvidos = alertasValidos.filter(a => a.status === 'RESOLVIDO')
 
   // Helper de cálculo de tempo decorrido
   const getTempoDecorrido = (dateString) => {
@@ -154,10 +165,10 @@ export default function ModuloAlertas({
     setDetalhesConversa('')
   }
 
-  const alertasFiltrados = alertas.filter(a => {
-    const matchStatus = filtroStatus === 'TODOS' || a.status === filtroStatus
-    const matchTipo = filtroTipo === 'TODOS' || a.tipo_alerta === filtroTipo
-    return matchStatus && matchTipo
+  const alertasFiltrados = alertasValidos.filter(a => {
+    if (filtroStatus !== 'TODOS' && a.status !== filtroStatus) return false
+    if (filtroTipo !== 'TODOS' && a.tipo_alerta !== filtroTipo) return false
+    return true
   })
 
   return (

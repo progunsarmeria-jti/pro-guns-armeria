@@ -21,8 +21,16 @@ export default function Sidebar({
   const orcamentosPendentes = (orcamentos || []).filter(o => o.status === 'Pendente').length
   const estoqueBaixoCount = (estoque || []).filter(i => (i.quantidade || 0) <= (i.estoque_minimo || 2)).length
   const caixaHoje = (caixas || []).find(c => c.data === new Date().toISOString().split('T')[0])
-  const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
-  const alertasPendentesCount = (alertas || []).filter(a => a.status === 'PENDENTE').length
+  const alertasValidos = (alertas || []).filter(a => {
+    if (a.ordem_id || a.os_numero) {
+      return (ordens || []).some(o => 
+        String(o.id) === String(a.ordem_id) || 
+        Number(o.numero_os) === Number(a.os_numero)
+      )
+    }
+    return true
+  })
+  const alertasPendentesCount = alertasValidos.filter(a => a.status === 'PENDENTE').length
 
   const menuItems = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,       badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },

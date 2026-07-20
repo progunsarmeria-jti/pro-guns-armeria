@@ -636,17 +636,17 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
       {/* ==========================================
           MODAL: EDITAR CATEGORIA
       ========================================== */}
-      {categoriaParaEditar && (
+      {modalEditarCategoria && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--gold-accent)' }}>Editar Nome da Categoria</h3>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setCategoriaParaEditar(null)}>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarCategoria(null)}>
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSalvarEdicaoCategoria} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleSalvarEdicaoCategoriaModal} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.4rem' }}>
                   NOME DA CATEGORIA *
@@ -654,15 +654,15 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                 <input
                   required
                   className="input-field"
-                  value={categoriaParaEditar.editado}
-                  onChange={e => setCategoriaParaEditar({ ...categoriaParaEditar, editado: e.target.value.toUpperCase() })}
+                  value={modalEditarCategoria.editado || ''}
+                  onChange={e => setModalEditarCategoria({ ...modalEditarCategoria, editado: e.target.value.toUpperCase() })}
                   style={{ textTransform: 'uppercase', fontWeight: '700' }}
                   autoFocus
                 />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setCategoriaParaEditar(null)}>Cancelar</button>
+                <button type="button" className="btn-secondary" onClick={() => setModalEditarCategoria(null)}>Cancelar</button>
                 <button type="submit" className="btn-gold">Salvar Categoria</button>
               </div>
             </form>

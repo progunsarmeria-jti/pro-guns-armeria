@@ -868,7 +868,7 @@ export default function ModuloCaixa({
                 <tr style={{ borderBottom: '2px solid #111827', fontWeight: '800', backgroundColor: '#F9FAFB' }}>
                   <td style={{ padding: '0.55rem' }}>Total</td>
                   <td style={{ padding: '0.55rem' }}>R$ {fmtBRL(relData.totalPagos)}</td>
-                  <td style={{ padding: '0.55rem', textAlign: 'right' }}>{relData.qtdDin + relData.qtdCred + relData.qtdDeb + relData.qtdPix}</td>
+                  <td style={{ padding: '0.55rem', textAlign: 'right' }}>{(relData.qtdDin || 0) + (relData.qtdCred || 0) + (relData.qtdDeb || 0) + (relData.qtdPix || 0)}</td>
                 </tr>
               </tbody>
             </table>
@@ -877,7 +877,7 @@ export default function ModuloCaixa({
             <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#111827', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.4rem', marginBottom: '0.6rem' }}>
               Sangrias Registradas
             </h3>
-            {relData.sangrias.length === 0 ? (
+            {(!relData.sangrias || relData.sangrias.length === 0) ? (
               <div style={{ fontSize: '0.8rem', color: '#6B7280', fontStyle: 'italic', marginBottom: '1.5rem' }}>
                 Nenhuma sangria registrada.
               </div>
@@ -891,11 +891,11 @@ export default function ModuloCaixa({
                   </tr>
                 </thead>
                 <tbody>
-                  {relData.sangrias.map(s => (
-                    <tr key={s.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                      <td style={{ padding: '0.5rem' }}>{s.hora}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(s.valor)}</td>
-                      <td style={{ padding: '0.5rem' }}>{s.descricao}</td>
+                  {relData.sangrias.map((s, idx) => (
+                    <tr key={s?.id || idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '0.5rem' }}>{s?.hora || '-'}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(s?.valor)}</td>
+                      <td style={{ padding: '0.5rem' }}>{s?.descricao || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -906,7 +906,7 @@ export default function ModuloCaixa({
             <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#111827', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.4rem', marginBottom: '0.6rem' }}>
               Reforços Registrados
             </h3>
-            {relData.reforcos.length === 0 ? (
+            {(!relData.reforcos || relData.reforcos.length === 0) ? (
               <div style={{ fontSize: '0.8rem', color: '#6B7280', fontStyle: 'italic', marginBottom: '1.5rem' }}>
                 Nenhum reforço registrado.
               </div>
@@ -920,11 +920,11 @@ export default function ModuloCaixa({
                   </tr>
                 </thead>
                 <tbody>
-                  {relData.reforcos.map(r => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                      <td style={{ padding: '0.5rem' }}>{r.hora}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(r.valor)}</td>
-                      <td style={{ padding: '0.5rem' }}>{r.descricao}</td>
+                  {relData.reforcos.map((r, idx) => (
+                    <tr key={r?.id || idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '0.5rem' }}>{r?.hora || '-'}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(r?.valor)}</td>
+                      <td style={{ padding: '0.5rem' }}>{r?.descricao || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

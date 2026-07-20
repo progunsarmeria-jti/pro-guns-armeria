@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
+import { hojeISO } from '../lib/dates'
 import CustomSelect from './CustomSelect'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
@@ -77,7 +78,7 @@ export default function ModalNovaOSArmeria({
 
   // Guia de Tráfego de Manutenção (GT)
   const [gtProtocolo, setGtProtocolo] = useState('')
-  const [gtDataEmissao, setGtDataEmissao] = useState(new Date().toISOString().split('T')[0])
+  const [gtDataEmissao, setGtDataEmissao] = useState(hojeISO())
   const [gtDataVencimento, setGtDataVencimento] = useState('')
 
   // Seleção de Arma do Acervo -> Auto-preenche os dados
@@ -202,7 +203,7 @@ export default function ModalNovaOSArmeria({
       valor_servico: 0,
       valor_taxamento: 0,
       status: 'NÃO INICIADO',
-      created_at: new Date().toISOString().split('T')[0]
+      created_at: hojeISO()
     }
 
     // Se marcado para salvar no Acervo e a arma ainda não constar no cadastro do cliente
@@ -222,7 +223,7 @@ export default function ModalNovaOSArmeria({
         numero_craf: 'N/A',
         validade_craf: 'N/A',
         status: 'Regular',
-        created_at: new Date().toISOString().split('T')[0]
+        created_at: hojeISO()
       }
       if (setArmas) setArmas([novaArmaAcervo, ...armas])
       dbUpsert('armas', novaArmaAcervo)

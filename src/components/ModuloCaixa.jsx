@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, dbDelete, dbUpsertAll } from '../lib/supabase'
+import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 
 const fmtBRL = (val) => {
   const num = parseFloat(val)
@@ -44,7 +45,8 @@ export default function ModuloCaixa({
   usuarios = [],
   config
 }) {
-  const hojeStr = new Date().toISOString().split('T')[0]
+  // hojeStr é YYYY-MM-DD para comparações internas; exibição usa formatarData()
+  const hojeStr = hojeISO()
   const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   // Seletor de Abas Principais: 'atual' | 'historico'
@@ -409,7 +411,7 @@ export default function ModuloCaixa({
     setModalExcluirCaixaMaster(null)
     setSenhaMasterInput('')
     setErroSenhaMaster('')
-    alert(`Caixa do dia ${caixaParaDeletar.data} excluído com sucesso!`)
+    alert(`Caixa do dia ${formatarData(caixaParaDeletar.data)} excluído com sucesso!`)
   }
 
   return (
@@ -476,7 +478,7 @@ export default function ModuloCaixa({
           }}
         >
           <Wallet size={16} />
-          <span>Caixa do Dia ({hojeStr})</span>
+          <span>Caixa do Dia ({formatarData(hojeStr)})</span>
           {caixaAtual?.status === 'ABERTO' ? (
             <span className="badge badge-green" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>ABERTO</span>
           ) : (
@@ -569,7 +571,7 @@ export default function ModuloCaixa({
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                      Caixa Recepção ({hojeStr})
+                      Caixa Recepção ({formatarData(hojeStr)})
                     </span>
                     <span className={`badge ${caixaAtual?.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
                       {caixaAtual?.status === 'ABERTO' ? 'ABERTO' : 'FECHADO'}
@@ -681,7 +683,7 @@ export default function ModuloCaixa({
               ) : (
                 caixas.map(cx => (
                   <tr key={cx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>{cx.data}</td>
+                    <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>{formatarData(cx.data)}</td>
                     <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>{cx.operador_abertura}</td>
                     <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{cx.hora_abertura}</td>
                     <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{cx.hora_fechamento || 'Em aberto'}</td>
@@ -748,7 +750,7 @@ export default function ModuloCaixa({
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Data da Abertura</label>
-                <input disabled className="input-field" value={`${hojeStr} ${horaAgoraStr}`} />
+                <input disabled className="input-field" value={`${formatarData(hojeStr)} ${horaAgoraStr}`} />
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Saldo Inicial em Dinheiro (R$) *</label>
@@ -1163,7 +1165,7 @@ export default function ModuloCaixa({
           <div className="card" style={{ width: '100%', maxWidth: '480px', borderLeft: '4px solid #60A5FA' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', color: '#60A5FA', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Edit size={20} /> Editar Caixa ({modalEditarCaixaMaster.data})
+                <Edit size={20} /> Editar Caixa ({formatarData(modalEditarCaixaMaster.data)})
               </h3>
               <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarCaixaMaster(null)}>
                 <X size={20} />
@@ -1174,7 +1176,7 @@ export default function ModuloCaixa({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>DATA DO CAIXA</label>
-                  <input disabled className="input-field" value={modalEditarCaixaMaster.data} />
+                  <input disabled className="input-field" value={formatarData(modalEditarCaixaMaster.data)} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>STATUS DO CAIXA</label>
@@ -1255,7 +1257,7 @@ export default function ModuloCaixa({
           <div className="card" style={{ width: '100%', maxWidth: '440px', borderLeft: '4px solid #F87171' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.1rem', color: '#F87171', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Shield size={20} /> Excluir Caixa ({modalExcluirCaixaMaster.data})
+                <Shield size={20} /> Excluir Caixa ({formatarData(modalExcluirCaixaMaster.data)})
               </h3>
               <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalExcluirCaixaMaster(null)}>
                 <X size={20} />
@@ -1263,7 +1265,7 @@ export default function ModuloCaixa({
             </div>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Você está prestes a excluir o registro do Caixa do dia <strong>{modalExcluirCaixaMaster.data}</strong>. Esta ação é irreversível e excluirá o histórico de sangrias e movimentações deste dia.
+              Você está prestes a excluir o registro do Caixa do dia <strong>{formatarData(modalExcluirCaixaMaster.data)}</strong>. Esta ação é irreversível e excluirá o histórico de sangrias e movimentações deste dia.
             </p>
 
             <form onSubmit={handleConfirmarExclusaoCaixaMaster} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

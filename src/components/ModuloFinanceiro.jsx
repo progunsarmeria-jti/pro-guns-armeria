@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { hojeISO, formatarData } from '../lib/dates'
 import {
   Plus,
   DollarSign,
@@ -30,7 +31,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
     tipo: 'Receita',
     categoria: 'Serviço Armeria',
     valor: '',
-    data_vencimento: new Date().toISOString().split('T')[0],
+    data_vencimento: hojeISO(),
     forma_pagamento: 'PIX',
     status: 'Pago'
   })
@@ -56,7 +57,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
       ...novoLancamento,
       id: `f_${Date.now()}`,
       valor: parseFloat(novoLancamento.valor) || 0,
-      data_pagamento: novoLancamento.status === 'Pago' ? new Date().toISOString().split('T')[0] : null
+      data_pagamento: novoLancamento.status === 'Pago' ? hojeISO() : null
     }
     setFinanceiro([created, ...financeiro])
     setShowModalFinanceiro(false)
@@ -65,7 +66,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
       tipo: 'Receita',
       categoria: 'Serviço Armeria',
       valor: '',
-      data_vencimento: new Date().toISOString().split('T')[0],
+      data_vencimento: hojeISO(),
       forma_pagamento: 'PIX',
       status: 'Pago'
     })
@@ -77,7 +78,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
         return {
           ...f,
           status: 'Pago',
-          data_pagamento: new Date().toISOString().split('T')[0]
+          data_pagamento: hojeISO()
         }
       }
       return f
@@ -318,7 +319,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
                     <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: item.tipo === 'Receita' ? '#34D399' : '#F87171' }}>
                       {item.tipo === 'Receita' ? '+' : '-'} R$ {(item.valor || 0).toFixed(2)}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>{item.data_vencimento}</td>
+                    <td style={{ padding: '0.85rem 1rem' }}>{formatarData(item.data_vencimento)}</td>
                     <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{item.forma_pagamento}</td>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <span className={`badge ${item.status === 'Pago' ? 'badge-green' : 'badge-yellow'}`}>
@@ -367,7 +368,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
                     <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <td style={{ padding: '0.5rem' }}>{item.descricao}</td>
                       <td style={{ padding: '0.5rem', fontWeight: '700', color: '#34D399' }}>R$ {item.valor.toFixed(2)}</td>
-                      <td style={{ padding: '0.5rem' }}>{item.data_vencimento}</td>
+                      <td style={{ padding: '0.5rem' }}>{formatarData(item.data_vencimento)}</td>
                       <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                         <button className="btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.7rem' }} onClick={() => handleBaixarLancamento(item.id)}>
                           Baixar
@@ -400,7 +401,7 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, confi
                     <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <td style={{ padding: '0.5rem' }}>{item.descricao}</td>
                       <td style={{ padding: '0.5rem', fontWeight: '700', color: '#F87171' }}>R$ {item.valor.toFixed(2)}</td>
-                      <td style={{ padding: '0.5rem' }}>{item.data_vencimento}</td>
+                      <td style={{ padding: '0.5rem' }}>{formatarData(item.data_vencimento)}</td>
                       <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                         <button className="btn-secondary" style={{ padding: '0.2rem 0.45rem', fontSize: '0.7rem' }} onClick={() => handleBaixarLancamento(item.id)}>
                           Baixar

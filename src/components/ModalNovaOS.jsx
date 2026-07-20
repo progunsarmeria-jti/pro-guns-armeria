@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { X, Search, Plus, Trash2, CheckCircle2, DollarSign, User, Shield, Lock, MapPin } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { hojeISO } from '../lib/dates'
 
 export const CATALOGO_SERVICOS = [
   { id: 's1', nome: 'ATUALIZAÇÃO DE ATIVIDADES', valor: 350.00, categoria: 'Honorários' },
@@ -97,7 +98,7 @@ export default function ModalNovaOS({
       tipo_servico: servicosSelecionados.map(s => s.nome).join(' + '),
       orgao_destino: 'Exército (SIGMA)',
       numero_protocolo: `2026.07.${Math.floor(1000 + Math.random() * 9000)}`,
-      data_protocolo: new Date().toISOString().split('T')[0],
+      data_protocolo: hojeISO(),
       valor_servico: totalGeral,
       valor_taxamento: totalTaxas,
       status: 'Aguardando Doc',
@@ -115,8 +116,8 @@ export default function ModalNovaOS({
         tipo: 'Receita',
         categoria: 'Serviço',
         valor: statusPagamento === 'Pago' ? totalGeral : (parseFloat(valorPago) || 0),
-        data_vencimento: new Date().toISOString().split('T')[0],
-        data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString().split('T')[0] : null,
+        data_vencimento: hojeISO(),
+        data_pagamento: statusPagamento === 'Pago' ? hojeISO() : null,
         status: statusPagamento === 'Pago' ? 'Pago' : 'Pendente',
         forma_pagamento: 'PIX'
       }

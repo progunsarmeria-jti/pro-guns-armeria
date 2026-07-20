@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { hojeISO, formatarData } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
@@ -213,7 +214,7 @@ export default function ModuloOrdens({
     if (!modalCheckoutRetirada) return
     const ordem = modalCheckoutRetirada
     const valorCobrado = parseFloat(ordem.valor_servico) || 350.00
-    const hojeStr = new Date().toISOString().split('T')[0]
+    const hojeStr = hojeISO()
     const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
     // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO'

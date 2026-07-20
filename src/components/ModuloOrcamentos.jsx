@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { hojeISO, formatarData } from '../lib/dates'
 import { Plus, Calculator, FileText, CheckCircle, XCircle, ArrowRight, Printer, Trash2, DollarSign, Edit, Shield, X } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, dbDelete } from '../lib/supabase'
@@ -164,8 +165,8 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
       tipo: 'Receita',
       categoria: 'Serviço Armeria',
       valor: orcamento.valor_final,
-      data_vencimento: new Date().toISOString().split('T')[0],
-      data_pagamento: new Date().toISOString().split('T')[0],
+      data_vencimento: hojeISO(),
+      data_pagamento: hojeISO(),
       status: 'Pago',
       forma_pagamento: orcamento.forma_pagamento
     }

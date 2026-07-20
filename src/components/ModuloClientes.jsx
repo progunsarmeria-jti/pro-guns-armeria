@@ -384,7 +384,37 @@ export default function ModuloClientes({
                 </span>
               </button>
 
-              {/* Balão 2: GERAR ORÇAMENTO */}
+              {/* Balão 2: ACERVO DE ARMAS */}
+              <button
+                onClick={() => {
+                  setActiveSubTab('acervo')
+                  setArmaForm({
+                    categoria: 'Arma de Fogo', tipo: 'Pistola', marca: '', modelo: '', calibre: '',
+                    numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
+                  })
+                  setArmaParaEditar(null)
+                  setShowModalNovaArma(true)
+                }}
+                style={{
+                  backgroundColor: 'rgba(217, 119, 6, 0.15)',
+                  border: '1px solid rgba(217, 119, 6, 0.4)',
+                  borderRadius: '10px',
+                  padding: '1rem 0.6rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Crosshair size={24} color="#F59E0B" />
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F59E0B', letterSpacing: '0.5px', textAlign: 'center' }}>
+                  ACERVO DE ARMAS
+                </span>
+              </button>
+
+              {/* Balão 3: GERAR ORÇAMENTO */}
               <button
                 onClick={() => setShowModalGerarOrcamento(true)}
                 style={{
@@ -406,7 +436,7 @@ export default function ModuloClientes({
                 </span>
               </button>
 
-              {/* Balão 3: GERAR RECIBO */}
+              {/* Balão 4: GERAR RECIBO */}
               <button
                 onClick={() => setShowModalRecibo({ valor: '450,00', descricao: 'Serviços de Manutenção e Armeria' })}
                 style={{
@@ -428,7 +458,7 @@ export default function ModuloClientes({
                 </span>
               </button>
 
-              {/* Balão 4: INICIAR CONVERSA (WHATSAPP) */}
+              {/* Balão 5: INICIAR CONVERSA (WHATSAPP) */}
               <button
                 onClick={() => handleAbrirWhatsApp(selectedCliente.telefone)}
                 style={{
@@ -451,7 +481,7 @@ export default function ModuloClientes({
               </button>
             </div>
 
-            {/* Container de Abas (O.S., ORÇAMENTOS, RECIBOS, HAVER) */}
+            {/* Container de Abas (O.S., ACERVO DE ARMAS, ORÇAMENTOS, RECIBOS, HAVER) */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{
                 display: 'flex',
@@ -485,18 +515,16 @@ export default function ModuloClientes({
                     }}
                   >
                     <span>{tab.label}</span>
-                    {tab.count > 0 && (
-                      <span style={{
-                        fontSize: '0.68rem',
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '10px',
-                        backgroundColor: activeSubTab === tab.id ? 'var(--red-tactical)' : 'var(--border-color)',
-                        color: '#FFFFFF',
-                        fontWeight: '700'
-                      }}>
-                        {tab.count}
-                      </span>
-                    )}
+                    <span style={{
+                      fontSize: '0.68rem',
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: '10px',
+                      backgroundColor: activeSubTab === tab.id ? 'var(--red-tactical)' : 'var(--border-color)',
+                      color: '#FFFFFF',
+                      fontWeight: '700'
+                    }}>
+                      {tab.count}
+                    </span>
                   </button>
                 ))}
               </div>

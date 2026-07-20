@@ -31,6 +31,7 @@ export default function Sidebar({
     return true
   })
   const alertasPendentesCount = alertasValidos.filter(a => a.status === 'PENDENTE').length
+  const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
 
   const menuItems = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,       badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },

@@ -19,7 +19,8 @@ const TABLE_MAP = {
   empresa_config: 'proguns_config',
   logs: 'proguns_logs',
   estoque: 'proguns_estoque',
-  caixas: 'proguns_caixas'
+  caixas: 'proguns_caixas',
+  alertas: 'proguns_alertas'
 }
 
 export const getTableName = (tabela) => TABLE_MAP[tabela] || tabela

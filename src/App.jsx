@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ModuloHome from './components/ModuloHome'
+import ModuloAlertas from './components/ModuloAlertas'
 import ModuloClientes from './components/ModuloClientes'
 import ModuloOrdens from './components/ModuloOrdens'
 import ModuloOrcamentos from './components/ModuloOrcamentos'
@@ -22,6 +23,7 @@ import {
   INITIAL_FINANCEIRO,
   INITIAL_ESTOQUE,
   INITIAL_CAIXAS,
+  INITIAL_ALERTAS,
   INITIAL_CONFIG,
   INITIAL_LOGS
 } from './lib/initialData'
@@ -60,10 +62,10 @@ const ss = {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home') // Default: Home (Tela Inicial)
+  const [activeTab, setActiveTab] = useState('home')
   const [filtroStatusOrdens, setFiltroStatusOrdens] = useState('')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [syncStatus, setSyncStatus] = useState('idle') // 'idle' | 'loading' | 'ok' | 'error'
+  const [syncStatus, setSyncStatus] = useState('idle')
 
   // Helper para obter dados iniciais fundidos com o localStorage local
   const getInitial = (key, fallback) => {
@@ -84,8 +86,11 @@ export default function App() {
   const [financeiro, setFinanceiro] = useState(() => getInitial('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
   const [estoque,    setEstoque]    = useState(() => getInitial('PROGUNS_ESTOQUE',    INITIAL_ESTOQUE))
   const [caixas,     setCaixas]     = useState(() => getInitial('PROGUNS_CAIXAS',     INITIAL_CAIXAS))
+  const [alertas,    setAlertas]    = useState(() => getInitial('PROGUNS_ALERTAS',    INITIAL_ALERTAS))
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
+
+  const prevAlertasCount = useRef(alertas.filter(a => a.status === 'PENDENTE').length)
 
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     localStorage.removeItem('PROGUNS_AUTH_USER')
@@ -105,6 +110,28 @@ export default function App() {
     setUsuarioLogado(null)
   }
 
+  // Tocar alerta sonoro Web Audio API quando chega novo alerta pendente
+  useEffect(() => {
+    const pendentesAtuais = alertas.filter(a => a.status === 'PENDENTE').length
+    if (pendentesAtuais > prevAlertasCount.current) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+        const osc = audioCtx.createOscillator()
+        const gain = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15)
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
+        osc.connect(gain)
+        gain.connect(audioCtx.destination)
+        osc.start()
+        osc.stop(audioCtx.currentTime + 0.4)
+      } catch (e) {}
+    }
+    prevAlertasCount.current = pendentesAtuais
+  }, [alertas])
+
   // ── Sincronização Automática em localStorage ──────────────────────────────────
   useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])
   useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
@@ -114,6 +141,7 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
   useEffect(() => { ls.set('PROGUNS_ESTOQUE', estoque) }, [estoque])
   useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
+  useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
   useEffect(() => { ls.set('PROGUNS_LOGS', logs) }, [logs])
   useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
 
@@ -134,9 +162,7 @@ export default function App() {
 
     const mesclado = Array.from(mapa.values())
 
-    if (tabela === 'usuarios') {
-      mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
-    } else if (tabela === 'clientes') {
+    if (tabela === 'usuarios' || tabela === 'clientes') {
       mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
     } else if (tabela === 'ordens') {
       mesclado.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
@@ -155,7 +181,7 @@ export default function App() {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbLogs] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
@@ -164,6 +190,7 @@ export default function App() {
         dbLoad('armas'),
         dbLoad('estoque'),
         dbLoad('caixas'),
+        dbLoad('alertas'),
         dbLoad('logs')
       ])
 
@@ -175,6 +202,7 @@ export default function App() {
       const localArmas      = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
       const localEstoque    = ls.get('PROGUNS_ESTOQUE', INITIAL_ESTOQUE)
       const localCaixas     = ls.get('PROGUNS_CAIXAS', INITIAL_CAIXAS)
+      const localAlertas    = ls.get('PROGUNS_ALERTAS', INITIAL_ALERTAS)
       const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
@@ -185,6 +213,7 @@ export default function App() {
       const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
       const finalEstoque    = mesclarDados(dbEstoque, localEstoque, 'estoque')
       const finalCaixas     = mesclarDados(dbCaixas, localCaixas, 'caixas')
+      const finalAlertas    = mesclarDados(dbAlertas, localAlertas, 'alertas')
       const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
 
       setClientes(prev => JSON.stringify(prev) === JSON.stringify(finalClientes) ? prev : finalClientes)
@@ -195,6 +224,7 @@ export default function App() {
       setArmas(prev => JSON.stringify(prev) === JSON.stringify(finalArmas) ? prev : finalArmas)
       setEstoque(prev => JSON.stringify(prev) === JSON.stringify(finalEstoque) ? prev : finalEstoque)
       setCaixas(prev => JSON.stringify(prev) === JSON.stringify(finalCaixas) ? prev : finalCaixas)
+      setAlertas(prev => JSON.stringify(prev) === JSON.stringify(finalAlertas) ? prev : finalAlertas)
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
 
       if (!silencioso) setSyncStatus('ok')
@@ -234,6 +264,7 @@ export default function App() {
       subscribeToTable('financeiro', () => carregarDoSupabase(true)),
       subscribeToTable('estoque',    () => carregarDoSupabase(true)),
       subscribeToTable('caixas',     () => carregarDoSupabase(true)),
+      subscribeToTable('alertas',    () => carregarDoSupabase(true)),
       subscribeToTable('usuarios',   () => carregarDoSupabase(true)),
     ].filter(Boolean)
 
@@ -279,6 +310,11 @@ export default function App() {
     ls.set('PROGUNS_CAIXAS', caixas)
     if (isSupabaseConfigured()) dbUpsertAll('caixas', caixas)
   }, [caixas])
+
+  useEffect(() => {
+    ls.set('PROGUNS_ALERTAS', alertas)
+    if (isSupabaseConfigured()) dbUpsertAll('alertas', alertas)
+  }, [alertas])
 
   const handleAtualizarConfig = (novosDados) => {
     setConfig(novosDados)
@@ -364,6 +400,7 @@ export default function App() {
           orcamentos={orcamentos}
           estoque={estoque}
           caixas={caixas}
+          alertas={alertas}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
@@ -375,6 +412,16 @@ export default function App() {
               caixas={caixas}
               financeiro={financeiro}
               clientes={clientes}
+              setActiveTab={setActiveTab}
+              setFiltroStatusOrdens={setFiltroStatusOrdens}
+            />
+          )}
+
+          {activeTab === 'alertas' && (
+            <ModuloAlertas
+              alertas={alertas} setAlertas={setAlertas}
+              ordens={ordens} setOrdens={setOrdens}
+              usuarioLogado={usuarioLogado}
               setActiveTab={setActiveTab}
               setFiltroStatusOrdens={setFiltroStatusOrdens}
             />
@@ -402,6 +449,7 @@ export default function App() {
               armas={armas} setArmas={setArmas}
               financeiro={financeiro} setFinanceiro={setFinanceiro}
               caixas={caixas} setCaixas={setCaixas}
+              alertas={alertas} setAlertas={setAlertas}
               logs={logs} setLogs={setLogs}
               perfilOperador={usuarioLogado?.perfil || 'recepcao'}
               usuarioLogado={usuarioLogado}

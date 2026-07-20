@@ -27,6 +27,8 @@ export default function ModuloOrdens({
   setFinanceiro,
   caixas,
   setCaixas,
+  alertas,
+  setAlertas,
   logs,
   setLogs,
   perfilOperador,
@@ -49,6 +51,28 @@ export default function ModuloOrdens({
     if (filtroInicial) setFiltroStatus(filtroInicial)
   }, [filtroInicial])
 
+  // Helper para Disparar Alerta para o Painel da Recepção
+  const dispararAlertaRecepcao = (ordemTarget, tipoAlerta, mensagemAlerta) => {
+    if (!setAlertas) return
+    const cliObj = (clientes || []).find(c => String(c.id) === String(ordemTarget.cliente_id))
+    const novoAlerta = {
+      id: `alt_${Date.now()}`,
+      os_id: ordemTarget.id,
+      os_numero: ordemTarget.numero_os,
+      cliente_nome: ordemTarget.cliente_nome,
+      cliente_telefone: cliObj?.telefone || '',
+      equipamento: `${ordemTarget.marca_arma} ${ordemTarget.modelo_arma}`,
+      tipo_alerta: tipoAlerta,
+      mensagem: mensagemAlerta,
+      status: 'PENDENTE',
+      created_at: new Date().toISOString(),
+      tentativas_contato: [],
+      resolucao: null
+    }
+    setAlertas(prev => [novoAlerta, ...(prev || [])])
+    if (isSupabaseConfigured()) dbUpsert('alertas', novoAlerta)
+  }
+
   // Form State do Laudo do Armeiro
   const [diagnosticoArmeiro, setDiagnosticoArmeiro] = useState('')
   const [solucaoProposta, setSolucaoProposta] = useState('')
@@ -68,6 +92,16 @@ export default function ModuloOrdens({
             osNumero: o.numero_os,
             setLogs
           })
+
+          // Dispara Alerta se for para Retirada
+          if (novoStatus === 'AGUARDANDO RETIRADA') {
+            dispararAlertaRecepcao(
+              o,
+              'AGUARDANDO RETIRADA',
+              `Manutenção concluída pelo armeiro (${usuarioLogado?.nome_completo || 'Oficina'}). Equipamento pronto para retirada pelo cliente.`
+            )
+          }
+
           return atualizada
         }
         return o
@@ -115,6 +149,13 @@ export default function ModuloOrdens({
       osNumero: modalLaudoArmeiro.numero_os,
       setLogs
     })
+
+    // Dispara Alerta automático para o Painel de Alerta da Recepção
+    dispararAlertaRecepcao(
+      modalLaudoArmeiro,
+      'AGUARDANDO APROVAÇÃO',
+      `Armeiro ${usuarioLogado?.nome_completo || 'Técnico'} concluiu o laudo técnico. Orçamento de R$ ${valorTotal.toFixed(2)} pendente de aprovação com o cliente.`
+    )
     const novaNotificacao = {
       id: `n_${Date.now()}`,
       os_numero: modalLaudoArmeiro.numero_os,

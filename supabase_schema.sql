@@ -171,6 +171,22 @@ CREATE TABLE IF NOT EXISTS public.proguns_caixas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 10. Tabela de Central de Alertas e Atendimentos da Recepção
+CREATE TABLE IF NOT EXISTS public.proguns_alertas (
+    id TEXT PRIMARY KEY,
+    os_id TEXT,
+    os_numero INT,
+    cliente_nome TEXT,
+    cliente_telefone TEXT,
+    equipamento TEXT,
+    tipo_alerta TEXT,
+    mensagem TEXT,
+    status TEXT DEFAULT 'PENDENTE',
+    tentativas_contato JSONB DEFAULT '[]'::jsonb,
+    resolucao JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- ==========================================================
 -- DESATIVAR RLS PARA ACESSO DIRETO VIA CHAVE ANÔNIMA
 -- ==========================================================
@@ -183,6 +199,7 @@ ALTER TABLE public.proguns_financeiro DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_usuarios DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_estoque DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_caixas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_alertas DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================================
 -- HABILITAR SUPABASE REALTIME (NOTIFICAÇÕES VIA WEBSOCKET)
@@ -216,6 +233,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_caixas') THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_caixas;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_alertas') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_alertas;
+    END IF;
 END $$;
 
 -- Configurar Replica Identity para payload completo em atualizações
@@ -228,4 +248,6 @@ ALTER TABLE public.proguns_financeiro REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_usuarios REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_estoque REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_caixas REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_alertas REPLICA IDENTITY FULL;
+
 

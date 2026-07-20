@@ -567,4 +567,30 @@ export const INITIAL_CAIXAS = [
   }
 ];
 
+export const INITIAL_ALERTAS = [
+  {
+    id: "alt_1002",
+    os_id: "o2",
+    os_numero: 1002,
+    cliente_nome: "ROBERTO ALVES MENDES",
+    cliente_telefone: "(64) 99123-8877",
+    equipamento: "Carabina Rossi Dione 5.5",
+    tipo_alerta: "AGUARDANDO APROVAÇÃO", // 'AGUARDANDO APROVAÇÃO' | 'AGUARDANDO RETIRADA'
+    mensagem: "Armeiro concluiu a análise técnica da Carabina Rossi. Orçamento de R$ 280,00 pendente de aprovação do cliente.",
+    status: "PENDENTE", // 'PENDENTE' | 'RESOLVIDO'
+    created_at: new Date(Date.now() - 15 * 60000).toISOString(),
+    tentativas_contato: [
+      {
+        id: "t1",
+        data_hora: "20/07/2026 14:30",
+        operador: "JOÃO SILVA",
+        resultado: "Sem resposta / Deixei recado",
+        observacao: "Liguei no telefone cadastrado mas deu caixa postal. Envei mensagem de WhatsApp."
+      }
+    ],
+    resolucao: null
+  }
+];
+
+
 

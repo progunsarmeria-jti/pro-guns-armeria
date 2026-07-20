@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet } from 'lucide-react'
+import { Home, Bell, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet } from 'lucide-react'
 
 export default function Sidebar({
   activeTab,
@@ -11,7 +11,8 @@ export default function Sidebar({
   ordens = [],
   orcamentos = [],
   estoque = [],
-  caixas = []
+  caixas = [],
+  alertas = []
 }) {
   const permissoes = usuarioLogado?.permissoes || {}
 
@@ -21,9 +22,11 @@ export default function Sidebar({
   const estoqueBaixoCount = (estoque || []).filter(i => (i.quantidade || 0) <= (i.estoque_minimo || 2)).length
   const caixaHoje = (caixas || []).find(c => c.data === new Date().toISOString().split('T')[0])
   const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
+  const alertasPendentesCount = (alertas || []).filter(a => a.status === 'PENDENTE').length
 
   const menuItems = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,       badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
+    { id: 'alertas',       label: 'Painel de Alerta',  icon: Bell,       badgeCount: alertasPendentesCount > 0 ? `${alertasPendentesCount} Novo` : null, reqPerm: 'ver_alertas' },
     { id: 'clientes',      label: 'Clientes',          icon: Users,      badgeCount: null,                                    reqPerm: 'ver_clientes' },
     { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,   badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
     { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator, badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },

@@ -1231,14 +1231,14 @@ export default function ModuloClientes({
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>ÓRGÃO DE REGISTRO</label>
-                    <select
-                      className="input-field"
+                    <CustomSelect
+                      label="ÓRGÃO DE REGISTRO"
                       value={armaForm.orgao_registro}
-                      onChange={e => setArmaForm({...armaForm, orgao_registro: e.target.value})}
-                    >
-                      {ORGAOS_REGISTRO_BASE.map(org => <option key={org} value={org}>{org}</option>)}
-                    </select>
+                      onChange={val => setArmaForm(prev => ({ ...prev, orgao_registro: val }))}
+                      options={ORGAOS_REGISTRO_BASE}
+                      placeholder="Selecione o Órgão..."
+                      allowCustom={false}
+                    />
                   </div>
 
                   <div>

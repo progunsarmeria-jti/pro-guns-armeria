@@ -41,18 +41,23 @@ export default function ModuloOrdens({
   const [valorPecasMaoDeObra, setValorPecasMaoDeObra] = useState('')
 
   const handleMudarStatus = (ordemId, novoStatus) => {
-    const alvo = ordens.find(o => o.id === ordemId)
-    if (alvo) {
-      const atualizada = { ...alvo, status: novoStatus }
-      dbUpsert('ordens', atualizada)
-    }
-    setOrdens(ordens.map(o => o.id === ordemId ? { ...o, status: novoStatus } : o))
+    setOrdens(prev => {
+      const proximo = prev.map(o => {
+        if (o.id === ordemId) {
+          const atualizada = { ...o, status: novoStatus }
+          dbUpsert('ordens', atualizada)
+          return atualizada
+        }
+        return o
+      })
+      return proximo
+    })
   }
 
   const handleIniciarAnalise = (ordem) => {
     const atualizada = { ...ordem, status: 'EM ANÁLISE' }
     dbUpsert('ordens', atualizada)
-    setOrdens(ordens.map(o => o.id === ordem.id ? atualizada : o))
+    setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
     setDiagnosticoArmeiro(ordem.diagnostico_armeiro || '')
     setSolucaoProposta(ordem.solucao_proposta || '')
     setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '')
@@ -71,7 +76,7 @@ export default function ModuloOrdens({
       status: 'AGUARDANDO APROVAÇÃO'
     }
     dbUpsert('ordens', ordemAtualizada)
-    setOrdens(ordens.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
+    setOrdens(prev => prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
     const novaNotificacao = {
       id: `n_${Date.now()}`,
       os_numero: modalLaudoArmeiro.numero_os,
@@ -96,18 +101,20 @@ export default function ModuloOrdens({
   }
 
   const handleAprovarPelaRecepcao = (ordemId) => {
-    const alvo = ordens.find(o => o.id === ordemId)
-    if (alvo) {
-      const atualizada = { ...alvo, status: 'APROVADO' }
-      dbUpsert('ordens', atualizada)
-    }
-    setOrdens(ordens.map(o => o.id === ordemId ? { ...o, status: 'APROVADO' } : o))
+    setOrdens(prev => prev.map(o => {
+      if (o.id === ordemId) {
+        const atualizada = { ...o, status: 'APROVADO' }
+        dbUpsert('ordens', atualizada)
+        return atualizada
+      }
+      return o
+    }))
   }
 
   const handleConcluirERetirar = (ordem) => {
     const atualizada = { ...ordem, status: 'CONCLUÍDO' }
     dbUpsert('ordens', atualizada)
-    setOrdens(ordens.map(o => o.id === ordem.id ? atualizada : o))
+    setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
     if (setFinanceiro && financeiro) {
       const novoLancamento = {
         id: `f_${Date.now()}`,

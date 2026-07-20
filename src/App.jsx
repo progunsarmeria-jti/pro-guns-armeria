@@ -97,6 +97,15 @@ export default function App() {
     setUsuarioLogado(null)
   }
 
+  // ── Sincronização Automática em localStorage ao alterar estados ────────────────
+  useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])
+  useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
+  useEffect(() => { ls.set('PROGUNS_ARMAS', armas) }, [armas])
+  useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])
+  useEffect(() => { ls.set('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
+  useEffect(() => { ls.set('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
+  useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
+
   // Helper de Fusão Inteligente: une os dados do Supabase com os salvos localmente
   const mesclarDados = (remotos, locais, tabela) => {
     if (remotos === null) return locais // Se erro de rede, mantém os locais
@@ -104,14 +113,17 @@ export default function App() {
     const locaisList = Array.isArray(locais) ? locais : []
     const mapa = new Map()
 
-    // Insere primeiro os dados locais
-    locaisList.forEach(item => {
+    // 1. Carrega dados remotos do Supabase
+    remotosList.forEach(item => {
       if (item?.id) mapa.set(String(item.id), item)
     })
 
-    // Insere/atualiza com os dados mais recentes vindo da nuvem (Supabase)
-    remotosList.forEach(item => {
-      if (item?.id) mapa.set(String(item.id), item)
+    // 2. Mescla dados locais (preservando alterações recentes feitas na sessão)
+    locaisList.forEach(item => {
+      if (item?.id) {
+        const existente = mapa.get(String(item.id))
+        mapa.set(String(item.id), { ...existente, ...item })
+      }
     })
 
     const mesclado = Array.from(mapa.values())

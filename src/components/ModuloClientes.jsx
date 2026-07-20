@@ -1428,7 +1428,7 @@ export default function ModuloClientes({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)' }}>
-              <th style={{ padding: '0.85rem 1rem' }}>NOME DO CLIENTE</th>
+              <th style={{ padding: '0.85rem 1rem', minWidth: '220px' }}>NOME DO CLIENTE</th>
               <th style={{ padding: '0.85rem 1rem' }}>CPF</th>
               <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>CONTATO</th>
               <th className="desktop-only" style={{ padding: '0.85rem 1rem' }}>N° DO CR</th>
@@ -1444,7 +1444,7 @@ export default function ModuloClientes({
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
                 onClick={() => setSelectedCliente(cliente)}
               >
-                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'normal', wordBreak: 'break-word', minWidth: '220px' }}>
                   {cliente.nome_completo.toUpperCase()}
                 </td>
                 <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{cliente.cpf}</td>

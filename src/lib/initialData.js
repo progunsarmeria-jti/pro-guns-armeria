@@ -480,3 +480,91 @@ export const INITIAL_LOGS = [
   }
 ];
 
+export const INITIAL_ESTOQUE = [
+  {
+    id: "p1",
+    codigo_sku: "PECA-GLK-01",
+    nome: "Extrator Glock Gen5 9mm",
+    categoria: "Componentes & Peças",
+    preco_custo: 120.00,
+    preco_venda: 250.00,
+    quantidade: 8,
+    estoque_minimo: 3,
+    localizacao: "Gaveta A1 - Armeria"
+  },
+  {
+    id: "p2",
+    codigo_sku: "PECA-GLK-02",
+    nome: "Mola Recuperadora Glock G17 Gen5",
+    categoria: "Componentes & Peças",
+    preco_custo: 80.00,
+    preco_venda: 180.00,
+    quantidade: 2,
+    estoque_minimo: 5, // Estoque baixo em alerta!
+    localizacao: "Gaveta A2 - Armeria"
+  },
+  {
+    id: "p3",
+    codigo_sku: "INS-LUB-01",
+    nome: "Óleo Lubrificante Sintético Tático Pró Guns 100ml",
+    categoria: "Limpeza & Conservação",
+    preco_custo: 18.00,
+    preco_venda: 45.00,
+    quantidade: 25,
+    estoque_minimo: 10,
+    localizacao: "Prateleira C - Balcão"
+  },
+  {
+    id: "p4",
+    codigo_sku: "PECA-TAU-01",
+    nome: "Percussor Taurus T4 / Fuzil 5.56",
+    categoria: "Componentes & Peças",
+    preco_custo: 95.00,
+    preco_venda: 220.00,
+    quantidade: 4,
+    estoque_minimo: 2,
+    localizacao: "Gaveta B3 - Armeria"
+  }
+];
+
+export const INITIAL_CAIXAS = [
+  {
+    id: "cx_20260720",
+    data: "2026-07-20",
+    hora_abertura: "08:00",
+    hora_fechamento: null,
+    operador_abertura: "GUILHERME GOMES (ADMIN)",
+    operador_fechamento: null,
+    saldo_inicial: 200.00, // Fundo de troco inicial
+    status: "ABERTO", // 'ABERTO' | 'FECHADO'
+    movimentacoes: [
+      {
+        id: "mov_1",
+        tipo: "RECEBIMENTO_OS",
+        descricao: "Recebimento parcial OS #1001 (Cliente Carlos Silveira)",
+        forma_pagamento: "PIX",
+        valor: 450.00,
+        hora: "10:15",
+        os_numero: 1001
+      },
+      {
+        id: "mov_2",
+        tipo: "VENDA_BALCAO",
+        descricao: "Venda de 1x Óleo Lubrificante Sintético Tático 100ml",
+        forma_pagamento: "Dinheiro",
+        valor: 45.00,
+        hora: "11:30"
+      }
+    ],
+    conferencia: {
+      dinheiro_informado: 0,
+      cartao_credito_informado: 0,
+      cartao_debito_informado: 0,
+      pix_informado: 0,
+      divergencia: 0,
+      observacoes: ""
+    }
+  }
+];
+
+

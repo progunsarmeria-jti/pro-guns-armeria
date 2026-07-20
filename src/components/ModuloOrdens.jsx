@@ -31,13 +31,18 @@ export default function ModuloOrdens({
   usuarioLogado,
   notificacoes,
   setNotificacoes,
-  config
+  config,
+  filtroInicial
 }) {
   const [showModalOrdem, setShowModalOrdem] = useState(false)
   const [docModalOrdem, setDocModalOrdem] = useState(null)
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
   const [ordemExpandida, setOrdemExpandida] = useState(null)
-  const [filtroStatus, setFiltroStatus] = useState('TODAS')
+  const [filtroStatus, setFiltroStatus] = useState(filtroInicial || 'TODAS')
+
+  React.useEffect(() => {
+    if (filtroInicial) setFiltroStatus(filtroInicial)
+  }, [filtroInicial])
 
   // Form State do Laudo do Armeiro
   const [diagnosticoArmeiro, setDiagnosticoArmeiro] = useState('')

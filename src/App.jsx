@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
+import ModuloHome from './components/ModuloHome'
 import ModuloClientes from './components/ModuloClientes'
 import ModuloOrdens from './components/ModuloOrdens'
 import ModuloOrcamentos from './components/ModuloOrcamentos'
+import ModuloEstoque from './components/ModuloEstoque'
+import ModuloCaixa from './components/ModuloCaixa'
 import ModuloFinanceiro from './components/ModuloFinanceiro'
 import ModuloConfiguracoes from './components/ModuloConfiguracoes'
 import ModuloUsuarios from './components/ModuloUsuarios'
@@ -17,6 +20,8 @@ import {
   INITIAL_ORDENS,
   INITIAL_ORCAMENTOS,
   INITIAL_FINANCEIRO,
+  INITIAL_ESTOQUE,
+  INITIAL_CAIXAS,
   INITIAL_CONFIG,
   INITIAL_LOGS
 } from './lib/initialData'
@@ -55,7 +60,8 @@ const ss = {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('clientes')
+  const [activeTab, setActiveTab] = useState('home') // Default: Home (Tela Inicial)
+  const [filtroStatusOrdens, setFiltroStatusOrdens] = useState('')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [syncStatus, setSyncStatus] = useState('idle') // 'idle' | 'loading' | 'ok' | 'error'
 
@@ -63,7 +69,6 @@ export default function App() {
   const getInitial = (key, fallback) => {
     const saved = ls.get(key, null)
     if (!saved || !Array.isArray(saved)) return fallback
-    // Mescla IDs do fallback para não perder registros novos
     const mapa = new Map()
     fallback.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
     saved.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
@@ -77,12 +82,13 @@ export default function App() {
   const [ordens,     setOrdens]     = useState(() => getInitial('PROGUNS_ORDENS',     INITIAL_ORDENS))
   const [orcamentos, setOrcamentos] = useState(() => getInitial('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS))
   const [financeiro, setFinanceiro] = useState(() => getInitial('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO))
+  const [estoque,    setEstoque]    = useState(() => getInitial('PROGUNS_ESTOQUE',    INITIAL_ESTOQUE))
+  const [caixas,     setCaixas]     = useState(() => getInitial('PROGUNS_CAIXAS',     INITIAL_CAIXAS))
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
-  // Sessão do usuário guardada apenas no sessionStorage para exigir novo login ao fechar aba/GUI
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
-    localStorage.removeItem('PROGUNS_AUTH_USER') // Limpa resquícios antigos do localStorage
+    localStorage.removeItem('PROGUNS_AUTH_USER')
     return ss.get('PROGUNS_AUTH_USER', null)
   })
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
@@ -99,29 +105,26 @@ export default function App() {
     setUsuarioLogado(null)
   }
 
-  // ── Sincronização Automática em localStorage ao alterar estados ────────────────
+  // ── Sincronização Automática em localStorage ──────────────────────────────────
   useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])
   useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
   useEffect(() => { ls.set('PROGUNS_ARMAS', armas) }, [armas])
   useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])
   useEffect(() => { ls.set('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
   useEffect(() => { ls.set('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
+  useEffect(() => { ls.set('PROGUNS_ESTOQUE', estoque) }, [estoque])
+  useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
   useEffect(() => { ls.set('PROGUNS_LOGS', logs) }, [logs])
   useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
 
-  // Helper de Fusão Inteligente: une os dados do Supabase com os salvos localmente
+  // Helper de Fusão Inteligente
   const mesclarDados = (remotos, locais, tabela) => {
-    if (remotos === null) return locais // Se erro de rede, mantém os locais
+    if (remotos === null) return locais
     const remotosList = Array.isArray(remotos) ? remotos : []
     const locaisList = Array.isArray(locais) ? locais : []
     const mapa = new Map()
 
-    // 1. Carrega dados remotos do Supabase
-    remotosList.forEach(item => {
-      if (item?.id) mapa.set(String(item.id), item)
-    })
-
-    // 2. Mescla dados locais (preservando alterações recentes feitas na sessão)
+    remotosList.forEach(item => { if (item?.id) mapa.set(String(item.id), item) })
     locaisList.forEach(item => {
       if (item?.id) {
         const existente = mapa.get(String(item.id)) || {}
@@ -131,18 +134,14 @@ export default function App() {
 
     const mesclado = Array.from(mapa.values())
 
-    // Ordenação determinística estática para evitar oscilação/looping de itens na tela
     if (tabela === 'usuarios') {
       mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
     } else if (tabela === 'clientes') {
       mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
     } else if (tabela === 'ordens') {
       mesclado.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
-    } else if (tabela === 'logs') {
-      mesclado.sort((a, b) => String(b.id || '').localeCompare(String(a.id || '')))
     }
 
-    // Identifica itens locais que ainda não foram para a nuvem e salva no Supabase
     const faltantesNoSupabase = mesclado.filter(m => !remotosList.some(r => String(r.id) === String(m.id)))
     if (faltantesNoSupabase.length > 0 && isSupabaseConfigured()) {
       dbUpsertAll(tabela, faltantesNoSupabase)
@@ -151,18 +150,20 @@ export default function App() {
     return mesclado
   }
 
-  // ─── CARREGAR DADOS DO SUPABASE (ao iniciar ou sincronizar) ──────────────────
+  // ─── CARREGAR DADOS DO SUPABASE ──────────────────────────────────────────────
   const carregarDoSupabase = useCallback(async (silencioso = false) => {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbLogs] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbLogs] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
         dbLoad('financeiro'),
         dbLoad('usuarios'),
         dbLoad('armas'),
+        dbLoad('estoque'),
+        dbLoad('caixas'),
         dbLoad('logs')
       ])
 
@@ -172,6 +173,8 @@ export default function App() {
       const localFinanceiro = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
       const localUsuarios   = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
       const localArmas      = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
+      const localEstoque    = ls.get('PROGUNS_ESTOQUE', INITIAL_ESTOQUE)
+      const localCaixas     = ls.get('PROGUNS_CAIXAS', INITIAL_CAIXAS)
       const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
@@ -180,6 +183,8 @@ export default function App() {
       const finalFinanceiro = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
       const finalUsuarios   = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
       const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
+      const finalEstoque    = mesclarDados(dbEstoque, localEstoque, 'estoque')
+      const finalCaixas     = mesclarDados(dbCaixas, localCaixas, 'caixas')
       const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
 
       setClientes(prev => JSON.stringify(prev) === JSON.stringify(finalClientes) ? prev : finalClientes)
@@ -188,6 +193,8 @@ export default function App() {
       setFinanceiro(prev => JSON.stringify(prev) === JSON.stringify(finalFinanceiro) ? prev : finalFinanceiro)
       setUsuarios(prev => JSON.stringify(prev) === JSON.stringify(finalUsuarios) ? prev : finalUsuarios)
       setArmas(prev => JSON.stringify(prev) === JSON.stringify(finalArmas) ? prev : finalArmas)
+      setEstoque(prev => JSON.stringify(prev) === JSON.stringify(finalEstoque) ? prev : finalEstoque)
+      setCaixas(prev => JSON.stringify(prev) === JSON.stringify(finalCaixas) ? prev : finalCaixas)
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
 
       if (!silencioso) setSyncStatus('ok')
@@ -199,27 +206,17 @@ export default function App() {
     }
   }, [])
 
-  // Carrega ao montar
   useEffect(() => {
     if (isSupabaseConfigured()) {
       carregarDoSupabase()
     }
   }, [carregarDoSupabase])
 
-  // Timer de Polling de 10 segundos + Eventos de Focus/Visibility (garante sincronia total no Tablet)
   useEffect(() => {
-    const handleSync = () => {
-      if (isSupabaseConfigured()) {
-        carregarDoSupabase(true)
-      }
-    }
-
-    // Polling a cada 10 segundos para buscar novas O.S. mesmo se WebSocket vacilar
+    const handleSync = () => { if (isSupabaseConfigured()) carregarDoSupabase(true) }
     const interval = setInterval(handleSync, 10000)
-
     window.addEventListener('focus', handleSync)
     document.addEventListener('visibilitychange', handleSync)
-
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', handleSync)
@@ -227,7 +224,6 @@ export default function App() {
     }
   }, [carregarDoSupabase])
 
-  // ─── REALTIME: escuta mudanças de outros dispositivos ────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured()) return
     const channels = [
@@ -236,13 +232,14 @@ export default function App() {
       subscribeToTable('armas',      () => carregarDoSupabase(true)),
       subscribeToTable('orcamentos', () => carregarDoSupabase(true)),
       subscribeToTable('financeiro', () => carregarDoSupabase(true)),
+      subscribeToTable('estoque',    () => carregarDoSupabase(true)),
+      subscribeToTable('caixas',     () => carregarDoSupabase(true)),
       subscribeToTable('usuarios',   () => carregarDoSupabase(true)),
     ].filter(Boolean)
 
     return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }
   }, [carregarDoSupabase])
 
-  // ─── PERSISTÊNCIA: salva localStorage E Supabase ao mudar estado ─────────────
   useEffect(() => {
     ls.set('PROGUNS_USUARIOS', usuarios)
     if (isSupabaseConfigured()) dbUpsertAll('usuarios', usuarios)
@@ -273,44 +270,20 @@ export default function App() {
     if (isSupabaseConfigured()) dbUpsertAll('financeiro', financeiro)
   }, [financeiro])
 
-  // Sincronização entre abas do mesmo dispositivo
   useEffect(() => {
-    if (isSupabaseConfigured()) return // Supabase já cuida disso
-    let channel
-    try {
-      channel = new BroadcastChannel('PROGUNS_SYNC')
-      channel.onmessage = (event) => {
-        const { key, data } = event.data
-        if (key === 'PROGUNS_ORDENS')     setOrdens(data)
-        if (key === 'PROGUNS_CLIENTES')   setClientes(data)
-        if (key === 'PROGUNS_ORCAMENTOS') setOrcamentos(data)
-        if (key === 'PROGUNS_FINANCEIRO') setFinanceiro(data)
-        if (key === 'PROGUNS_USUARIOS')   setUsuarios(data)
-      }
-    } catch (e) {}
-    return () => { try { channel?.close() } catch (e) {} }
-  }, [])
+    ls.set('PROGUNS_ESTOQUE', estoque)
+    if (isSupabaseConfigured()) dbUpsertAll('estoque', estoque)
+  }, [estoque])
+
+  useEffect(() => {
+    ls.set('PROGUNS_CAIXAS', caixas)
+    if (isSupabaseConfigured()) dbUpsertAll('caixas', caixas)
+  }, [caixas])
 
   const handleAtualizarConfig = (novosDados) => {
     setConfig(novosDados)
     ls.set('PROGUNS_CONFIG', novosDados)
   }
-
-  // Verifica permissões
-  useEffect(() => {
-    if (!usuarioLogado || usuarioLogado.perfil === 'master') return
-    const permissoes = usuarioLogado.permissoes || {}
-    const reqMap = {
-      clientes: 'ver_clientes', ordens: 'ver_ordens', orcamentos: 'ver_orcamentos',
-      financeiro: 'ver_financeiro', usuarios: 'gerenciar_usuarios', configuracoes: 'ver_configuracoes'
-    }
-    const reqPerm = reqMap[activeTab]
-    if (reqPerm && !permissoes[reqPerm]) {
-      const disponiveis = Object.keys(reqMap)
-      const primeiraLivre = disponiveis.find(tab => permissoes[reqMap[tab]]) || 'clientes'
-      setActiveTab(primeiraLivre)
-    }
-  }, [usuarioLogado, activeTab])
 
   if (!usuarioLogado) {
     return (
@@ -344,10 +317,9 @@ export default function App() {
           <span>Erro ao sincronizar. Verifique a conexão Supabase em Configurações.</span>
         </div>
       )
-      return null // sincronizado e idle: sem banner
+      return null
     }
 
-    // Modo local
     return (
       <div style={{ backgroundColor: 'rgba(120,90,20,0.15)', borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '0.35rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', fontSize: '0.73rem', color: '#D4AF37', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -355,14 +327,7 @@ export default function App() {
           <span><strong>MODO LOCAL:</strong> dados salvos apenas neste dispositivo. Para sincronizar entre dispositivos, conecte o Supabase em <strong>Configurações</strong>.</span>
         </div>
         <button
-          onClick={() => {
-            try {
-              const ords = localStorage.getItem('PROGUNS_ORDENS')
-              const clis = localStorage.getItem('PROGUNS_CLIENTES')
-              if (ords) setOrdens(JSON.parse(ords))
-              if (clis) setClientes(JSON.parse(clis))
-            } catch (e) {}
-          }}
+          onClick={() => carregarDoSupabase(false)}
           style={{ background: 'none', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37', padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
         >
           <RefreshCw size={11} /> Recarregar
@@ -397,9 +362,24 @@ export default function App() {
           setMobileOpen={setMobileSidebarOpen}
           ordens={ordens}
           orcamentos={orcamentos}
+          estoque={estoque}
+          caixas={caixas}
         />
 
         <main style={{ flex: 1, overflowY: 'auto' }}>
+          {activeTab === 'home' && (
+            <ModuloHome
+              ordens={ordens}
+              orcamentos={orcamentos}
+              estoque={estoque}
+              caixas={caixas}
+              financeiro={financeiro}
+              clientes={clientes}
+              setActiveTab={setActiveTab}
+              setFiltroStatusOrdens={setFiltroStatusOrdens}
+            />
+          )}
+
           {activeTab === 'clientes' && (
             <ModuloClientes
               clientes={clientes} setClientes={setClientes}
@@ -426,6 +406,7 @@ export default function App() {
               usuarioLogado={usuarioLogado}
               notificacoes={notificacoes} setNotificacoes={setNotificacoes}
               config={config}
+              filtroInicial={filtroStatusOrdens}
             />
           )}
 
@@ -439,9 +420,28 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'estoque' && (
+            <ModuloEstoque
+              estoque={estoque} setEstoque={setEstoque}
+              usuarioLogado={usuarioLogado}
+            />
+          )}
+
+          {activeTab === 'caixa' && (
+            <ModuloCaixa
+              caixas={caixas} setCaixas={setCaixas}
+              ordens={ordens} setOrdens={setOrdens}
+              estoque={estoque} setEstoque={setEstoque}
+              financeiro={financeiro} setFinanceiro={setFinanceiro}
+              usuarioLogado={usuarioLogado}
+              config={config}
+            />
+          )}
+
           {activeTab === 'financeiro' && (
             <ModuloFinanceiro
               financeiro={financeiro} setFinanceiro={setFinanceiro}
+              config={config}
             />
           )}
 

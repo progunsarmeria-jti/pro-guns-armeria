@@ -142,6 +142,33 @@ CREATE TABLE IF NOT EXISTS public.proguns_usuarios (
     status TEXT DEFAULT 'Ativo',
     permissoes JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+-- 8. Tabela de Controle de Estoque
+CREATE TABLE IF NOT EXISTS public.proguns_estoque (
+    id TEXT PRIMARY KEY,
+    codigo_sku TEXT,
+    nome TEXT NOT NULL,
+    categoria TEXT DEFAULT 'Componentes & Peças',
+    preco_custo DECIMAL(10,2) DEFAULT 0.00,
+    preco_venda DECIMAL(10,2) DEFAULT 0.00,
+    quantidade INT DEFAULT 0,
+    estoque_minimo INT DEFAULT 2,
+    localizacao TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 9. Tabela de Controle de Caixas Diários (PDV)
+CREATE TABLE IF NOT EXISTS public.proguns_caixas (
+    id TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    hora_abertura TEXT,
+    hora_fechamento TEXT,
+    operador_abertura TEXT,
+    operador_fechamento TEXT,
+    saldo_inicial DECIMAL(10,2) DEFAULT 0.00,
+    status TEXT DEFAULT 'ABERTO',
+    movimentacoes JSONB DEFAULT '[]'::jsonb,
+    conferencia JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- ==========================================================
@@ -154,6 +181,8 @@ ALTER TABLE public.proguns_ordens DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_orcamentos DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_financeiro DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_estoque DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_caixas DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================================
 -- HABILITAR SUPABASE REALTIME (NOTIFICAÇÕES VIA WEBSOCKET)
@@ -181,6 +210,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_config') THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_config;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_estoque') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_estoque;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_caixas') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_caixas;
+    END IF;
 END $$;
 
 -- Configurar Replica Identity para payload completo em atualizações
@@ -191,3 +226,6 @@ ALTER TABLE public.proguns_ordens REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_orcamentos REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_financeiro REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_usuarios REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_estoque REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_caixas REPLICA IDENTITY FULL;
+

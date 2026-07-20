@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Plus, Users, Shield, Key, Edit, Trash2, Check, X, Lock, Wrench, UserCheck, Search } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 
@@ -7,6 +7,12 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
   const [showModalNovoUsuario, setShowModalNovoUsuario] = useState(false)
   const [editingUsuario, setEditingUsuario] = useState(null)
   const [buscaAudit, setBuscaAudit] = useState('')
+
+  // Ordenação determinística — evita looping/oscilação na lista
+  const usuariosOrdenados = useMemo(
+    () => [...usuarios].sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || '')),
+    [usuarios]
+  )
 
   const [usuarioForm, setUsuarioForm] = useState({
     nome_completo: '',
@@ -171,6 +177,57 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
             Controle de operadores, permissões individuais e registro completo de ações do Gestor.
           </p>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Botões de aba */}
+          <div style={{ display: 'flex', gap: '0.4rem', backgroundColor: 'var(--bg-input)', borderRadius: '8px', padding: '0.3rem' }}>
+            <button
+              onClick={() => setAbaAtiva('equipe')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                backgroundColor: abaAtiva === 'equipe' ? 'var(--red-light)' : 'transparent',
+                color: abaAtiva === 'equipe' ? '#fff' : 'var(--text-muted)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Users size={14} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+              Equipe
+            </button>
+            <button
+              onClick={() => setAbaAtiva('auditoria')}
+              style={{
+                padding: '0.45rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                backgroundColor: abaAtiva === 'auditoria' ? 'var(--gold-accent)' : 'transparent',
+                color: abaAtiva === 'auditoria' ? '#111' : 'var(--text-muted)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Shield size={14} style={{ display: 'inline', marginRight: '0.3rem', verticalAlign: 'middle' }} />
+              Auditoria
+            </button>
+          </div>
+
+          {/* Botão Novo Usuário */}
+          {abaAtiva === 'equipe' && (
+            <button
+              className="btn-primary"
+              onClick={() => { setEditingUsuario(null); resetForm(); setShowModalNovoUsuario(true) }}
+            >
+              <Plus size={16} />
+              <span>Novo Usuário</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ABA 1: EQUIPE DE FUNCIONÁRIOS & PERMISSÕES */}
@@ -190,7 +247,7 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
                 </tr>
               </thead>
               <tbody>
-                {usuarios.map(u => (
+                {usuariosOrdenados.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

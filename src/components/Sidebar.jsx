@@ -1,17 +1,34 @@
 import React from 'react'
-import { Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X } from 'lucide-react'
+import { Home, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet } from 'lucide-react'
 
-export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config, mobileOpen, setMobileOpen, ordens, orcamentos }) {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  usuarioLogado,
+  config,
+  mobileOpen,
+  setMobileOpen,
+  ordens = [],
+  orcamentos = [],
+  estoque = [],
+  caixas = []
+}) {
   const permissoes = usuarioLogado?.permissoes || {}
 
   // Contagens dinâmicas dos badges
   const ordensEmAberto = (ordens || []).filter(o => o.status !== 'CONCLUÍDO').length
   const orcamentosPendentes = (orcamentos || []).filter(o => o.status === 'Pendente').length
+  const estoqueBaixoCount = (estoque || []).filter(i => (i.quantidade || 0) <= (i.estoque_minimo || 2)).length
+  const caixaHoje = (caixas || []).find(c => c.data === new Date().toISOString().split('T')[0])
+  const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
 
   const menuItems = [
-    { id: 'clientes',      label: 'Clientes',          icon: Users,     badgeCount: null,                                    reqPerm: 'ver_clientes' },
-    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,  badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
+    { id: 'home',          label: 'Home (Início)',     icon: Home,       badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
+    { id: 'clientes',      label: 'Clientes',          icon: Users,      badgeCount: null,                                    reqPerm: 'ver_clientes' },
+    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,   badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
     { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator, badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
+    { id: 'estoque',       label: 'Estoque',            icon: Package,    badgeCount: estoqueBaixoCount > 0 ? `${estoqueBaixoCount} Alerta` : null, reqPerm: 'ver_estoque' },
+    { id: 'caixa',         label: 'Caixa',              icon: Wallet,     badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
     { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign, badgeCount: null,                                  reqPerm: 'ver_financeiro' },
     { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,  badgeCount: null,                                  reqPerm: 'gerenciar_usuarios' },
     { id: 'configuracoes', label: 'Configurações',      icon: Settings,   badgeCount: null,                                  reqPerm: 'ver_configuracoes' },
@@ -20,6 +37,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
   const itemsFiltrados = menuItems.filter(item => {
     if (usuarioLogado?.perfil === 'master') return true
     if (!item.reqPerm) return true
+    if (item.id === 'home') return true // Home sempre visível para todos
     return permissoes[item.reqPerm] === true
   })
 
@@ -96,7 +114,7 @@ export default function Sidebar({ activeTab, setActiveTab, usuarioLogado, config
                     fontSize: '0.68rem',
                     padding: '0.12rem 0.42rem',
                     borderRadius: '10px',
-                    backgroundColor: isActive ? 'var(--red-tactical)' : 'var(--border-color)',
+                    backgroundColor: item.badgeCount === 'ABERTO' ? '#10B981' : isActive ? 'var(--red-tactical)' : 'var(--border-color)',
                     color: '#FFFFFF',
                     fontWeight: '700',
                     lineHeight: '1.4'

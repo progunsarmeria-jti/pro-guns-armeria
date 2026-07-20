@@ -22,6 +22,11 @@ import {
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 
+const fmtBRL = (val) => {
+  const num = parseFloat(val)
+  return (isNaN(num) ? 0 : num).toFixed(2)
+}
+
 export default function ModuloCaixa({
   caixas = [],
   setCaixas,
@@ -362,7 +367,7 @@ export default function ModuloCaixa({
           <div className="card" style={{ borderLeft: '4px solid #F59E0B' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VALOR EM VENDAS ¹</div>
             <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#F59E0B', marginTop: '0.2rem' }}>
-              R$ {valorTotalVendasGeradas.toFixed(2)}
+              R$ {fmtBRL(valorTotalVendasGeradas)}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Valor bruto total em vendas</div>
           </div>
@@ -370,7 +375,7 @@ export default function ModuloCaixa({
           <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>PAGOS RECEBIDOS ²</div>
             <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#34D399', marginTop: '0.2rem' }}>
-              R$ {totalPagosRecebidos.toFixed(2)}
+              R$ {fmtBRL(totalPagosRecebidos)}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{qtdTotalPagamentos} pagamentos efetuados</div>
           </div>
@@ -378,7 +383,7 @@ export default function ModuloCaixa({
           <div className="card" style={{ borderLeft: '4px solid var(--gold-primary)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>SALDO FINAL EM DINHEIRO ⁴</div>
             <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--gold-primary)', marginTop: '0.2rem' }}>
-              R$ {saldoFinalDinheiroGaveta.toFixed(2)}
+              R$ {fmtBRL(saldoFinalDinheiroGaveta)}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Disponível em espécie na gaveta</div>
           </div>
@@ -431,7 +436,7 @@ export default function ModuloCaixa({
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Movimentações Registradas no Caixa Atual ({movimentacoes.length})</span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Recebido: R$ {totalPagosRecebidos.toFixed(2)}</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Recebido: R$ {fmtBRL(totalPagosRecebidos)}</span>
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
@@ -473,7 +478,7 @@ export default function ModuloCaixa({
                     </span>
                   </td>
                   <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: m.tipo === 'SANGRIA' ? '#F87171' : '#34D399' }}>
-                    {m.tipo === 'SANGRIA' ? '-' : '+'} R$ {m.valor.toFixed(2)}
+                    {m.tipo === 'SANGRIA' ? '-' : '+'} R$ {fmtBRL(m.valor)}
                   </td>
                 </tr>
               ))
@@ -507,7 +512,7 @@ export default function ModuloCaixa({
                   <td style={{ padding: '0.75rem' }}>{cx.operador_abertura}</td>
                   <td style={{ padding: '0.75rem' }}>{cx.hora_abertura}</td>
                   <td style={{ padding: '0.75rem' }}>{cx.hora_fechamento || '-'}</td>
-                  <td style={{ padding: '0.75rem' }}>R$ {cx.saldo_inicial.toFixed(2)}</td>
+                  <td style={{ padding: '0.75rem' }}>R$ {fmtBRL(cx.saldo_inicial)}</td>
                   <td style={{ padding: '0.75rem' }}>
                     <span className={`badge ${cx.status === 'ABERTO' ? 'badge-green' : 'badge-gray'}`}>
                       {cx.status}
@@ -605,7 +610,7 @@ export default function ModuloCaixa({
                     <option value="">-- Selecione a O.S --</option>
                     {ordens.filter(o => o.status !== 'CONCLUÍDO').map(o => (
                       <option key={o.id} value={o.id}>
-                        OS #{o.numero_os} - {o.cliente_nome} ({o.marca_arma} {o.modelo_arma}) - R$ {(o.valor_servico || 0).toFixed(2)}
+                        OS #{o.numero_os} - {o.cliente_nome} ({o.marca_arma} {o.modelo_arma}) - R$ {fmtBRL(o.valor_servico)}
                       </option>
                     ))}
                   </select>
@@ -624,14 +629,14 @@ export default function ModuloCaixa({
                         setPecaSelecionadaId(id)
                         const p = estoque.find(item => String(item.id) === String(id))
                         if (p) {
-                          setValorLancamento((p.preco_venda * (parseInt(qtdPeca) || 1)).toFixed(2))
+                          setValorLancamento(fmtBRL(p.preco_venda * (parseInt(qtdPeca) || 1)))
                         }
                       }}
                     >
                       <option value="">-- Escolha da lista --</option>
                       {estoque.map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.nome} (Qtd: {p.quantidade}) - R$ {p.preco_venda.toFixed(2)}
+                          {p.nome} (Qtd: {p.quantidade}) - R$ {fmtBRL(p.preco_venda)}
                         </option>
                       ))}
                     </select>
@@ -645,7 +650,7 @@ export default function ModuloCaixa({
                         const q = e.target.value
                         setQtdPeca(q)
                         const p = estoque.find(item => String(item.id) === String(pecaSelecionadaId))
-                        if (p) setValorLancamento((p.preco_venda * (parseInt(q) || 1)).toFixed(2))
+                        if (p) setValorLancamento(fmtBRL(p.preco_venda * (parseInt(q) || 1)))
                       }}
                     />
                   </div>
@@ -683,7 +688,7 @@ export default function ModuloCaixa({
                   <div>
                     <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Troco a Devolver (R$)</label>
                     <div style={{ fontSize: '1.2rem', fontWeight: '800', color: trocoCalculado > 0 ? '#F59E0B' : '#FFFFFF', paddingTop: '0.4rem' }}>
-                      R$ {trocoCalculado.toFixed(2)}
+                      R$ {fmtBRL(trocoCalculado)}
                     </div>
                   </div>
                 </div>
@@ -713,22 +718,22 @@ export default function ModuloCaixa({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#34D399' }}>Contagem Dinheiro Gaveta (R$) *</label>
-                  <input required type="number" step="0.01" className="input-field" value={dinheiroInformado} onChange={e => setDinheiroInformado(e.target.value)} placeholder={`Esperado R$ ${saldoFinalDinheiroGaveta.toFixed(2)}`} />
+                  <input required type="number" step="0.01" className="input-field" value={dinheiroInformado} onChange={e => setDinheiroInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(saldoFinalDinheiroGaveta)}`} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#60A5FA' }}>Total Extrato PIX (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={pixInformado} onChange={e => setPixInformado(e.target.value)} placeholder={`Esperado R$ ${totalPix.toFixed(2)}`} />
+                  <input type="number" step="0.01" className="input-field" value={pixInformado} onChange={e => setPixInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalPix)}`} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#A78BFA' }}>Cartão Crédito Máquina (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={creditoInformado} onChange={e => setCreditoInformado(e.target.value)} placeholder={`Esperado R$ ${totalCredito.toFixed(2)}`} />
+                  <input type="number" step="0.01" className="input-field" value={creditoInformado} onChange={e => setCreditoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalCredito)}`} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#F59E0B' }}>Cartão Débito Máquina (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={debitoInformado} onChange={e => setDebitoInformado(e.target.value)} placeholder={`Esperado R$ ${totalDebito.toFixed(2)}`} />
+                  <input type="number" step="0.01" className="input-field" value={debitoInformado} onChange={e => setDebitoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalDebito)}`} />
                 </div>
               </div>
 
@@ -774,15 +779,15 @@ export default function ModuloCaixa({
               </div>
               <div style={{ border: '1px solid #D1D5DB', borderRadius: '6px', padding: '0.75rem 0.5rem', textAlign: 'center', backgroundColor: '#F9FAFB' }}>
                 <div style={{ fontSize: '0.7rem', color: '#4B5563', fontWeight: '600' }}>Valor em Vendas ¹</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {relData.totalVendas.toFixed(2)}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {fmtBRL(relData.totalVendas)}</div>
               </div>
               <div style={{ border: '1px solid #D1D5DB', borderRadius: '6px', padding: '0.75rem 0.5rem', textAlign: 'center', backgroundColor: '#F9FAFB' }}>
                 <div style={{ fontSize: '0.7rem', color: '#4B5563', fontWeight: '600' }}>Pagos Recebidos ²</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {relData.totalPagos.toFixed(2)}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {fmtBRL(relData.totalPagos)}</div>
               </div>
               <div style={{ border: '1px solid #D1D5DB', borderRadius: '6px', padding: '0.75rem 0.5rem', textAlign: 'center', backgroundColor: '#F9FAFB' }}>
                 <div style={{ fontSize: '0.7rem', color: '#4B5563', fontWeight: '600' }}>Saldo Final ⁴</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {relData.saldoFinalDin.toFixed(2)}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827' }}>R$ {fmtBRL(relData.saldoFinalDin)}</div>
               </div>
             </div>
 
@@ -814,7 +819,7 @@ export default function ModuloCaixa({
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem', color: '#4B5563' }}>Saldo Inicial em Dinheiro</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {relData.saldoIni.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(relData.saldoIni)}</td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem', color: '#4B5563' }}>Diferença de Abertura</td>
@@ -822,7 +827,7 @@ export default function ModuloCaixa({
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB', backgroundColor: '#F9FAFB' }}>
                   <td style={{ padding: '0.5rem', fontWeight: '700' }}>Saldo Final em Dinheiro</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '800', fontSize: '0.92rem' }}>R$ {relData.saldoFinalDin.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '800', fontSize: '0.92rem' }}>R$ {fmtBRL(relData.saldoFinalDin)}</td>
                 </tr>
               </tbody>
             </table>
@@ -842,27 +847,27 @@ export default function ModuloCaixa({
               <tbody>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem' }}>Dinheiro</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {relData.totDin.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(relData.totDin)}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{relData.qtdDin}</td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem' }}>Cartão de Crédito na máquina</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {relData.totCred.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(relData.totCred)}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{relData.qtdCred}</td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem' }}>Cartão de Débito na máquina</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {relData.totDeb.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(relData.totDeb)}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{relData.qtdDeb}</td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
                   <td style={{ padding: '0.5rem' }}>PIX</td>
-                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {relData.totPix.toFixed(2)}</td>
+                  <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(relData.totPix)}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{relData.qtdPix}</td>
                 </tr>
                 <tr style={{ borderBottom: '2px solid #111827', fontWeight: '800', backgroundColor: '#F9FAFB' }}>
                   <td style={{ padding: '0.55rem' }}>Total</td>
-                  <td style={{ padding: '0.55rem' }}>R$ {relData.totalPagos.toFixed(2)}</td>
+                  <td style={{ padding: '0.55rem' }}>R$ {fmtBRL(relData.totalPagos)}</td>
                   <td style={{ padding: '0.55rem', textAlign: 'right' }}>{relData.qtdDin + relData.qtdCred + relData.qtdDeb + relData.qtdPix}</td>
                 </tr>
               </tbody>
@@ -889,7 +894,7 @@ export default function ModuloCaixa({
                   {relData.sangrias.map(s => (
                     <tr key={s.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
                       <td style={{ padding: '0.5rem' }}>{s.hora}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {s.valor.toFixed(2)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(s.valor)}</td>
                       <td style={{ padding: '0.5rem' }}>{s.descricao}</td>
                     </tr>
                   ))}
@@ -918,7 +923,7 @@ export default function ModuloCaixa({
                   {relData.reforcos.map(r => (
                     <tr key={r.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
                       <td style={{ padding: '0.5rem' }}>{r.hora}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {r.valor.toFixed(2)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(r.valor)}</td>
                       <td style={{ padding: '0.5rem' }}>{r.descricao}</td>
                     </tr>
                   ))}

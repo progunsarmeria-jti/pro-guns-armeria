@@ -173,6 +173,37 @@ export default function App() {
     return fallback.filter(item => item?.id && !deletedIds.includes(String(item.id)))
   }
 
+  // ─── Migração Automática: Purga de Dados de Demonstração Obsoletos ────────────
+  // Quando a versão do app muda, dados demo hardcoded antigos são removidos do localStorage
+  const APP_DATA_VERSION = '2.1.0'
+  if (ls.get('PROGUNS_DATA_VERSION', null) !== APP_DATA_VERSION) {
+    // IDs de dados de demonstração que devem ser removidos se ainda existirem
+    const DEMO_IDS_CAIXAS   = ['cx_20260720']
+    const DEMO_IDS_ALERTAS  = ['alt_1002']
+    const DEMO_IDS_ORDENS   = ['o1', 'o2', 'o3', 'o4']
+    const DEMO_IDS_CLIENTES = ['c1', 'c2', 'c3', 'c4']
+    const DEMO_IDS_ARMAS    = ['a1', 'a2', 'a3', 'a4', 'a5']
+    const DEMO_IDS_ORCAMENTOS = ['orc_1', 'orc_2']
+    const DEMO_IDS_FINANCEIRO = ['fin_1', 'fin_2', 'fin_3']
+
+    const purgarDemo = (lsKey, demoIds) => {
+      const saved = ls.get(lsKey, null)
+      if (Array.isArray(saved)) {
+        const purged = saved.filter(item => item?.id && !demoIds.includes(String(item.id)))
+        if (purged.length !== saved.length) ls.set(lsKey, purged)
+      }
+    }
+    purgarDemo('PROGUNS_CAIXAS',    DEMO_IDS_CAIXAS)
+    purgarDemo('PROGUNS_ALERTAS',   DEMO_IDS_ALERTAS)
+    purgarDemo('PROGUNS_ORDENS',    DEMO_IDS_ORDENS)
+    purgarDemo('PROGUNS_CLIENTES',  DEMO_IDS_CLIENTES)
+    purgarDemo('PROGUNS_ARMAS',     DEMO_IDS_ARMAS)
+    purgarDemo('PROGUNS_ORCAMENTOS', DEMO_IDS_ORCAMENTOS)
+    purgarDemo('PROGUNS_FINANCEIRO', DEMO_IDS_FINANCEIRO)
+
+    ls.set('PROGUNS_DATA_VERSION', APP_DATA_VERSION)
+  }
+
   // ── Estados com fallback localStorage ─────────────────────────────────────
   const [usuarios,   setUsuarios]   = useState(() => getInitial('PROGUNS_USUARIOS',   INITIAL_USUARIOS))
   const [clientes,   setClientes]   = useState(() => getInitial('PROGUNS_CLIENTES',   INITIAL_CLIENTES))
@@ -194,11 +225,7 @@ export default function App() {
   })
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
 
-  const [notificacoes, setNotificacoes] = useState([{
-    id: 'n1', os_numero: 1002, cliente_nome: 'ROBERTO ALVES MENDES',
-    mensagem: 'Armeiro concluiu o laudo técnico da Carabina Rossi.',
-    tipo: 'LAUDO_PRONTO', lida: false, created_at: 'Há 10 min'
-  }])
+  const [notificacoes, setNotificacoes] = useState([])
 
   const handleLogoff = () => {
     ss.remove('PROGUNS_AUTH_USER')

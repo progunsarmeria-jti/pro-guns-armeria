@@ -51,14 +51,14 @@ export default function Sidebar({
 
   const sidebarContent = (
     <aside style={{
-      width: '240px',
+      width: '265px',
       backgroundColor: 'var(--bg-card)',
       borderRight: '1px solid var(--border-color)',
       display: 'flex',
       flexDirection: 'column',
       height: '100%'
     }}>
-      <div style={{ padding: '1.25rem 1rem 1rem 1rem' }}>
+      <div style={{ padding: '1.25rem 0.85rem 1rem 0.85rem' }}>
         {/* Mobile Header com Botão Fechar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{
@@ -94,7 +94,7 @@ export default function Sidebar({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   width: '100%',
-                  padding: '0.7rem 0.9rem',
+                  padding: '0.65rem 0.75rem',
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: isActive ? 'rgba(139, 38, 42, 0.18)' : 'transparent',
@@ -102,14 +102,14 @@ export default function Sidebar({
                   borderLeft: isActive ? '3px solid var(--red-light)' : '3px solid transparent',
                   fontWeight: isActive ? '600' : '400',
                   cursor: 'pointer',
-                  fontSize: '0.88rem',
+                  fontSize: '0.85rem',
                   transition: 'all 0.15s ease',
-                  gap: '0.5rem'
+                  gap: '0.4rem'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', overflow: 'hidden', flex: 1, minWidth: 0 }}>
                   <Icon size={17} color={isActive ? '#F87171' : '#8E96A0'} style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
                 </div>
                 {item.badgeCount && (
                   <span style={{
@@ -179,7 +179,7 @@ export default function Sidebar({
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ height: '100%', width: '260px', backgroundColor: 'var(--bg-card)' }}
+            style={{ height: '100%', width: '275px', backgroundColor: 'var(--bg-card)' }}
           >
             {sidebarContent}
           </div>

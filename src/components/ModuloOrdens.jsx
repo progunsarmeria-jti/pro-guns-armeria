@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
+import { dbUpsert } from '../lib/supabase'
 
 const STATUS_CONFIG = {
   'NÃO INICIADO':        { color: '#9CA3AF', bg: 'rgba(156,163,175,0.15)' },
@@ -38,15 +39,22 @@ export default function ModuloOrdens({
   const [valorPecasMaoDeObra, setValorPecasMaoDeObra] = useState('')
 
   const handleMudarStatus = (ordemId, novoStatus) => {
+    const alvo = ordens.find(o => o.id === ordemId)
+    if (alvo) {
+      const atualizada = { ...alvo, status: novoStatus }
+      dbUpsert('ordens', atualizada)
+    }
     setOrdens(ordens.map(o => o.id === ordemId ? { ...o, status: novoStatus } : o))
   }
 
   const handleIniciarAnalise = (ordem) => {
-    setOrdens(ordens.map(o => o.id === ordem.id ? { ...o, status: 'EM ANÁLISE' } : o))
+    const atualizada = { ...ordem, status: 'EM ANÁLISE' }
+    dbUpsert('ordens', atualizada)
+    setOrdens(ordens.map(o => o.id === ordem.id ? atualizada : o))
     setDiagnosticoArmeiro(ordem.diagnostico_armeiro || '')
     setSolucaoProposta(ordem.solucao_proposta || '')
     setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '')
-    setModalLaudoArmeiro({ ...ordem, status: 'EM ANÁLISE' })
+    setModalLaudoArmeiro(atualizada)
   }
 
   const handleSalvarLaudoArmeiro = (e) => {
@@ -60,6 +68,7 @@ export default function ModuloOrdens({
       valor_servico: valorTotal,
       status: 'AGUARDANDO APROVAÇÃO'
     }
+    dbUpsert('ordens', ordemAtualizada)
     setOrdens(ordens.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
     const novaNotificacao = {
       id: `n_${Date.now()}`,
@@ -85,11 +94,18 @@ export default function ModuloOrdens({
   }
 
   const handleAprovarPelaRecepcao = (ordemId) => {
+    const alvo = ordens.find(o => o.id === ordemId)
+    if (alvo) {
+      const atualizada = { ...alvo, status: 'APROVADO' }
+      dbUpsert('ordens', atualizada)
+    }
     setOrdens(ordens.map(o => o.id === ordemId ? { ...o, status: 'APROVADO' } : o))
   }
 
   const handleConcluirERetirar = (ordem) => {
-    setOrdens(ordens.map(o => o.id === ordem.id ? { ...o, status: 'CONCLUÍDO' } : o))
+    const atualizada = { ...ordem, status: 'CONCLUÍDO' }
+    dbUpsert('ordens', atualizada)
+    setOrdens(ordens.map(o => o.id === ordem.id ? atualizada : o))
     if (setFinanceiro && financeiro) {
       const novoLancamento = {
         id: `f_${Date.now()}`,
@@ -103,6 +119,7 @@ export default function ModuloOrdens({
         forma_pagamento: 'PIX'
       }
       setFinanceiro([novoLancamento, ...financeiro])
+      dbUpsert('financeiro', novoLancamento)
     }
     alert(`OS #${ordem.numero_os} concluída! Receita lançada no Financeiro.`)
   }

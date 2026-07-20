@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package } from 'lucide-react'
+import { dbUpsert } from '../lib/supabase'
 
 export default function ModalNovaOSArmeria({
   clienteInicial,
@@ -100,6 +101,7 @@ export default function ModalNovaOSArmeria({
     }
 
     setOrdens([novaOSObj, ...ordens])
+    dbUpsert('ordens', novaOSObj)
     alert(`Entrada registrada pela Recepção! Ordem de Serviço #${novaOSObj.numero_os} em 'NÃO INICIADO' guardada no armário de entrada.`)
     onClose()
   }

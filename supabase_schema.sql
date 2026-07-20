@@ -1,170 +1,192 @@
--- ==========================================
--- SCRIPT DE BANCO DE DADOS - PRÓ GUNS ARMERIA
--- COPIE E EXECUTE NO 'SQL EDITOR' DO SUPABASE
--- ==========================================
+-- ==========================================================
+-- SCRIPT DE BANCO DE DADOS COMPLETO - PRÓ GUNS ARMERIA
+-- EXECUTE ESTE SCRIPT NO 'SQL EDITOR' DO SEU SUPABASE
+-- ==========================================================
 
 -- 1. Tabela de Configuração da Armeria
 CREATE TABLE IF NOT EXISTS public.empresa_config (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     nome_fantasia TEXT NOT NULL DEFAULT 'Pró Guns Armeria',
     razao_social TEXT,
     cnpj TEXT,
     cr_armeria TEXT,
-    validade_cr DATE,
+    validade_cr TEXT,
     rm_armeria TEXT DEFAULT '2ª RM',
     telefone TEXT,
     whatsapp TEXT,
     email TEXT,
     endereco TEXT,
     cidade TEXT,
-    uf VARCHAR(2),
+    uf VARCHAR(10),
     logo_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- Inserir registro padrão se não existir
-INSERT INTO public.empresa_config (nome_fantasia, cr_armeria, telefone, email)
-SELECT 'Pró Guns Armeria', 'CR-00000', '(00) 00000-0000', 'contato@proguns.com.br'
-WHERE NOT EXISTS (SELECT 1 FROM public.empresa_config);
-
 -- 2. Tabela de Clientes CACs
 CREATE TABLE IF NOT EXISTS public.clientes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     nome_completo TEXT NOT NULL,
-    cpf TEXT UNIQUE NOT NULL,
+    cpf TEXT,
     rg TEXT,
     orgao_emissor TEXT,
-    data_nascimento DATE,
+    data_nascimento TEXT,
     profissao TEXT,
     email TEXT,
-    telefone TEXT NOT NULL,
+    telefone TEXT,
     cep TEXT,
     endereco TEXT,
     numero TEXT,
     bairro TEXT,
     cidade TEXT,
-    uf VARCHAR(2),
-    
-    -- Dados de CAC
+    uf VARCHAR(10),
     numero_cr TEXT,
-    validade_cr DATE,
+    validade_cr TEXT,
     regiao_militar TEXT DEFAULT '2ª RM',
-    categorias TEXT[], -- Ex: ['Atirador', 'Caçador', 'Colecionador']
+    categorias JSONB DEFAULT '[]'::jsonb,
     clube_filiado TEXT,
-    
-    status TEXT DEFAULT 'Ativo', -- Ativo, Inativo, Bloqueado
+    status TEXT DEFAULT 'Ativo',
     observacoes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- 3. Tabela de Acervo de Armas do Cliente
-CREATE TABLE IF NOT EXISTS public.cliente_armas (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    cliente_id UUID REFERENCES public.clientes(id) ON DELETE CASCADE,
-    tipo TEXT NOT NULL, -- Pistola, Fuzil, Espingarda, Carabina, Revólver
+CREATE TABLE IF NOT EXISTS public.armas (
+    id TEXT PRIMARY KEY,
+    cliente_id TEXT,
+    tipo TEXT,
     especie TEXT,
-    marca TEXT NOT NULL,
-    modelo TEXT NOT NULL,
-    calibre TEXT NOT NULL,
-    numero_serie TEXT NOT NULL,
+    marca TEXT,
+    modelo TEXT,
+    calibre TEXT,
+    numero_serie TEXT,
     numero_sigma_sinarm TEXT,
-    orgao_registro TEXT DEFAULT 'SIGMA', -- SIGMA ou SINARM
+    orgao_registro TEXT DEFAULT 'SIGMA',
     numero_craf TEXT,
-    validade_craf DATE,
+    validade_craf TEXT,
     capacidade INT,
     acessorios TEXT,
-    status TEXT DEFAULT 'Regular', -- Regular, Em Transferência, Vencida
+    status TEXT DEFAULT 'Regular',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 4. Tabela de Ordens de Serviço (Processos de Despachantaria)
-CREATE TABLE IF NOT EXISTS public.ordens_servico (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero_os SERIAL UNIQUE,
-    cliente_id UUID REFERENCES public.clientes(id) ON DELETE RESTRICT,
-    tipo_servico TEXT NOT NULL, -- Concessão CR, Renovação CR, Autorização Compra, CRAF, GT, Transferência, Apostilamento
-    orgao_destino TEXT DEFAULT 'Exército', -- Exército ou Polícia Federal
-    numero_protocolo TEXT,
-    data_protocolo DATE,
+-- 4. Tabela de Ordens de Serviço (Armeria)
+CREATE TABLE IF NOT EXISTS public.ordens (
+    id TEXT PRIMARY KEY,
+    numero_os INT,
+    cliente_id TEXT,
+    cliente_nome TEXT,
+    categoria_arma TEXT,
+    tipo_arma TEXT,
+    marca_arma TEXT,
+    modelo_arma TEXT,
+    calibre_arma TEXT,
+    numero_serie_arma TEXT,
+    problema_relatado TEXT,
+    acessorios_acompanhantes TEXT,
+    gt_protocolo TEXT,
+    gt_data_emissao TEXT,
+    gt_data_vencimento TEXT,
+    tipo_servico TEXT,
     valor_servico DECIMAL(10,2) DEFAULT 0.00,
     valor_taxamento DECIMAL(10,2) DEFAULT 0.00,
-    status TEXT DEFAULT 'Em Aberto', -- Em Aberto, Aguardando Doc, Protocolado, Em Análise, Exigência, Deferido, Concluído, Cancelado
-    detalhes TEXT,
-    previsao_conclusao DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
--- 5. Histórico de Etapas da OS
-CREATE TABLE IF NOT EXISTS public.ordem_historico (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ordem_id UUID REFERENCES public.ordens_servico(id) ON DELETE CASCADE,
-    status_anterior TEXT,
-    novo_status TEXT NOT NULL,
-    observacao TEXT,
-    criado_por TEXT DEFAULT 'Sistema',
+    status TEXT DEFAULT 'NÃO INICIADO',
+    diagnostico_armeiro TEXT,
+    solucao_proposta TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 6. Tabela de Orçamentos
+-- 5. Tabela de Orçamentos
 CREATE TABLE IF NOT EXISTS public.orcamentos (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    numero_orcamento SERIAL UNIQUE,
-    cliente_id UUID REFERENCES public.clientes(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    numero_orcamento INT,
+    cliente_id TEXT,
+    cliente_nome TEXT,
     valor_total DECIMAL(10,2) DEFAULT 0.00,
     desconto DECIMAL(10,2) DEFAULT 0.00,
     valor_final DECIMAL(10,2) DEFAULT 0.00,
     forma_pagamento TEXT,
     validade_dias INT DEFAULT 15,
-    status TEXT DEFAULT 'Pendente', -- Pendente, Aprovado, Rejeitado, Convertido em OS
+    status TEXT DEFAULT 'Pendente',
+    itens JSONB DEFAULT '[]'::jsonb,
     observacoes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 7. Itens do Orçamento
-CREATE TABLE IF NOT EXISTS public.orcamento_itens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    orcamento_id UUID REFERENCES public.orcamentos(id) ON DELETE CASCADE,
+-- 6. Tabela do Módulo Financeiro
+CREATE TABLE IF NOT EXISTS public.financeiro (
+    id TEXT PRIMARY KEY,
     descricao TEXT NOT NULL,
-    quantidade INT DEFAULT 1,
-    valor_unitario DECIMAL(10,2) DEFAULT 0.00,
-    valor_subtotal DECIMAL(10,2) DEFAULT 0.00
-);
-
--- 8. Tabela do Módulo Financeiro
-CREATE TABLE IF NOT EXISTS public.financeiro_lancamentos (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    descricao TEXT NOT NULL,
-    tipo TEXT NOT NULL, -- 'Receita' ou 'Despesa'
-    categoria TEXT DEFAULT 'Serviço', -- Serviço, Venda, Taxa, Custo Fixo, Insumo
+    tipo TEXT NOT NULL,
+    categoria TEXT DEFAULT 'Serviço Armeria',
     valor DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    data_vencimento DATE NOT NULL,
-    data_pagamento DATE,
-    status TEXT DEFAULT 'Pendente', -- Pendente, Pago, Atrasado, Cancelado
-    forma_pagamento TEXT, -- PIX, Cartão, Boleto, Dinheiro
-    cliente_id UUID REFERENCES public.clientes(id) ON DELETE SET NULL,
-    ordem_id UUID REFERENCES public.ordens_servico(id) ON DELETE SET NULL,
-    orcamento_id UUID REFERENCES public.orcamentos(id) ON DELETE SET NULL,
+    data_vencimento TEXT,
+    data_pagamento TEXT,
+    status TEXT DEFAULT 'Pendente',
+    forma_pagamento TEXT,
+    cliente_id TEXT,
+    ordem_id TEXT,
+    orcamento_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- Habilitar RLS e Permissões de Leitura/Escrita Pública para desenvolvimento inicial
-ALTER TABLE public.empresa_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cliente_armas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ordens_servico ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ordem_historico ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orcamentos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orcamento_itens ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.financeiro_lancamentos ENABLE ROW LEVEL SECURITY;
+-- 7. Tabela de Usuários do Sistema
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    id TEXT PRIMARY KEY,
+    nome_completo TEXT NOT NULL,
+    cpf TEXT,
+    email TEXT,
+    senha_pessoal TEXT,
+    cargo TEXT,
+    perfil TEXT DEFAULT 'recepcao',
+    status TEXT DEFAULT 'Ativo',
+    permissoes JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
 
--- Políticas de acesso livre anon/authenticated para protótipo inicial
-CREATE POLICY "Permitir leitura em empresa_config" ON public.empresa_config FOR SELECT USING (true);
-CREATE POLICY "Permitir tudo em clientes" ON public.clientes FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em cliente_armas" ON public.cliente_armas FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em ordens_servico" ON public.ordens_servico FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em ordem_historico" ON public.ordem_historico FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em orcamentos" ON public.orcamentos FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em orcamento_itens" ON public.orcamento_itens FOR ALL USING (true);
-CREATE POLICY "Permitir tudo em financeiro_lancamentos" ON public.financeiro_lancamentos FOR ALL USING (true);
+-- ==========================================================
+-- DESATIVAR RLS PARA ACESSO DIRETO VIA CHAVE ANÔNIMA
+-- ==========================================================
+ALTER TABLE public.empresa_config DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clientes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.armas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ordens DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orcamentos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financeiro DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usuarios DISABLE ROW LEVEL SECURITY;
+
+-- ==========================================================
+-- HABILITAR SUPABASE REALTIME (NOTIFICAÇÕES VIA WEBSOCKET)
+-- ==========================================================
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'ordens') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.ordens;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'clientes') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.clientes;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'armas') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.armas;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'orcamentos') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.orcamentos;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'financeiro') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.financeiro;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'usuarios') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.usuarios;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'empresa_config') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.empresa_config;
+    END IF;
+END $$;
+
+-- Configurar Replica Identity para payload completo em atualizações
+ALTER TABLE public.empresa_config REPLICA IDENTITY FULL;
+ALTER TABLE public.clientes REPLICA IDENTITY FULL;
+ALTER TABLE public.armas REPLICA IDENTITY FULL;
+ALTER TABLE public.ordens REPLICA IDENTITY FULL;
+ALTER TABLE public.orcamentos REPLICA IDENTITY FULL;
+ALTER TABLE public.financeiro REPLICA IDENTITY FULL;
+ALTER TABLE public.usuarios REPLICA IDENTITY FULL;

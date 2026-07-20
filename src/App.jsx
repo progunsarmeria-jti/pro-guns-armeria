@@ -93,36 +93,39 @@ export default function App() {
     const locaisList = Array.isArray(locais) ? locais : []
     const mapa = new Map()
 
+    // Insere primeiro os dados locais
     locaisList.forEach(item => {
       if (item?.id) mapa.set(String(item.id), item)
     })
 
+    // Insere/atualiza com os dados mais recentes vindo da nuvem (Supabase)
     remotosList.forEach(item => {
       if (item?.id) mapa.set(String(item.id), item)
     })
 
     const mesclado = Array.from(mapa.values())
 
-    // Envia para o Supabase qualquer item local que ainda não estava na nuvem
+    // Identifica itens locais que ainda não foram para a nuvem e salva no Supabase
     const faltantesNoSupabase = mesclado.filter(m => !remotosList.some(r => String(r.id) === String(m.id)))
-    if (faltantesNoSupabase.length > 0) {
+    if (faltantesNoSupabase.length > 0 && isSupabaseConfigured()) {
       dbUpsertAll(tabela, faltantesNoSupabase)
     }
 
     return mesclado
   }
 
-  // ─── CARREGAR DADOS DO SUPABASE (ao iniciar) ────────────────────────────────
+  // ─── CARREGAR DADOS DO SUPABASE (ao iniciar ou sincronizar) ──────────────────
   const carregarDoSupabase = useCallback(async (silencioso = false) => {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
         dbLoad('financeiro'),
         dbLoad('usuarios'),
+        dbLoad('armas')
       ])
 
       const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
@@ -130,18 +133,21 @@ export default function App() {
       const localOrcamentos = ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS)
       const localFinanceiro = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
       const localUsuarios   = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
+      const localArmas      = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
       const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')
       const finalOrcamentos = mesclarDados(dbOrcamentos, localOrcamentos, 'orcamentos')
       const finalFinanceiro = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
       const finalUsuarios   = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
+      const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
 
       setClientes(finalClientes);     ls.set('PROGUNS_CLIENTES',   finalClientes)
       setOrdens(finalOrdens);         ls.set('PROGUNS_ORDENS',     finalOrdens)
       setOrcamentos(finalOrcamentos); ls.set('PROGUNS_ORCAMENTOS', finalOrcamentos)
       setFinanceiro(finalFinanceiro); ls.set('PROGUNS_FINANCEIRO', finalFinanceiro)
       setUsuarios(finalUsuarios);     ls.set('PROGUNS_USUARIOS',   finalUsuarios)
+      setArmas(finalArmas);           ls.set('PROGUNS_ARMAS',      finalArmas)
 
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)
@@ -159,27 +165,25 @@ export default function App() {
     }
   }, [carregarDoSupabase])
 
-  // Recarrega ao focar a janela (voltar ao app no tablet/celular)
+  // Timer de Polling de 10 segundos + Eventos de Focus/Visibility (garante sincronia total no Tablet)
   useEffect(() => {
-    const handleFocus = () => {
+    const handleSync = () => {
       if (isSupabaseConfigured()) {
         carregarDoSupabase(true)
-      } else {
-        // Fallback localStorage entre abas
-        try {
-          const ords = localStorage.getItem('PROGUNS_ORDENS')
-          const clis = localStorage.getItem('PROGUNS_CLIENTES')
-          const orcs = localStorage.getItem('PROGUNS_ORCAMENTOS')
-          const fins = localStorage.getItem('PROGUNS_FINANCEIRO')
-          if (ords) setOrdens(JSON.parse(ords))
-          if (clis) setClientes(JSON.parse(clis))
-          if (orcs) setOrcamentos(JSON.parse(orcs))
-          if (fins) setFinanceiro(JSON.parse(fins))
-        } catch (e) {}
       }
     }
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+
+    // Polling a cada 10 segundos para buscar novas O.S. mesmo se WebSocket vacilar
+    const interval = setInterval(handleSync, 10000)
+
+    window.addEventListener('focus', handleSync)
+    document.addEventListener('visibilitychange', handleSync)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleSync)
+      document.removeEventListener('visibilitychange', handleSync)
+    }
   }, [carregarDoSupabase])
 
   // ─── REALTIME: escuta mudanças de outros dispositivos ────────────────────────
@@ -188,9 +192,12 @@ export default function App() {
     const channels = [
       subscribeToTable('ordens',     () => carregarDoSupabase(true)),
       subscribeToTable('clientes',   () => carregarDoSupabase(true)),
+      subscribeToTable('armas',      () => carregarDoSupabase(true)),
       subscribeToTable('orcamentos', () => carregarDoSupabase(true)),
       subscribeToTable('financeiro', () => carregarDoSupabase(true)),
+      subscribeToTable('usuarios',   () => carregarDoSupabase(true)),
     ].filter(Boolean)
+
     return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }
   }, [carregarDoSupabase])
 
@@ -207,6 +214,7 @@ export default function App() {
 
   useEffect(() => {
     ls.set('PROGUNS_ARMAS', armas)
+    if (isSupabaseConfigured()) dbUpsertAll('armas', armas)
   }, [armas])
 
   useEffect(() => {

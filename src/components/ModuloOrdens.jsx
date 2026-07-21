@@ -971,7 +971,7 @@ export default function ModuloOrdens({
               {/* TÍTULO DA ORDEM DE SERVIÇO */}
               <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
                 <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>
-                  COMPROVANTE DE ENTRADA — ORDEM DE SERVIÇO #{docModalOrdem.numero_os}
+                  ABERTURA DE ORDEM DE SERVIÇO #{docModalOrdem.numero_os}
                 </h2>
                 <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', marginTop: '0.15rem' }}>
                   Status Atual: <strong style={{ color: '#111827' }}>{docModalOrdem.status}</strong>
@@ -1084,7 +1084,7 @@ export default function ModuloOrdens({
                   const cliObj = (clientes || []).find(c => String(c.id) === String(docModalOrdem.cliente_id) || c.nome_completo === docModalOrdem.cliente_nome)
                   const tel = (cliObj?.telefone || '').replace(/\D/g, '')
                   const numTel = tel.length === 10 || tel.length === 11 ? `55${tel}` : tel
-                  const msg = `Olá *${docModalOrdem.cliente_nome}*, tudo bem?\n\nAqui é da recepção da *${config?.nome_fantasia || 'Pró Guns Armeria'}*.\n\n*COMPROVANTE DE ENTRADA — O.S. #${docModalOrdem.numero_os}*\nEquipamento: ${docModalOrdem.marca_arma} ${docModalOrdem.modelo_arma} (${docModalOrdem.calibre_arma})\nN° de Série: ${docModalOrdem.numero_serie_arma || docModalOrdem.numero_serie || 'N/A'}\nStatus Atual: *${docModalOrdem.status}*\nQueixa/Serviço: "${docModalOrdem.problema_relatado}"\n${docModalOrdem.valor_servico > 0 ? `Valor Orçado: R$ ${parseFloat(docModalOrdem.valor_servico).toFixed(2)}\n` : ''}\nPara qualquer dúvida, entre em contato!`
+                  const msg = `Olá *${docModalOrdem.cliente_nome}*, tudo bem?\n\nAqui é da recepção da *${config?.nome_fantasia || 'Pró Guns Armeria'}*.\n\n*ABERTURA DE ORDEM DE SERVIÇO — O.S. #${docModalOrdem.numero_os}*\nEquipamento: ${docModalOrdem.marca_arma} ${docModalOrdem.modelo_arma} (${docModalOrdem.calibre_arma})\nN° de Série: ${docModalOrdem.numero_serie_arma || docModalOrdem.numero_serie || 'N/A'}\nStatus Atual: *${docModalOrdem.status}*\nQueixa/Serviço: "${docModalOrdem.problema_relatado}"\n${docModalOrdem.valor_servico > 0 ? `Valor Orçado: R$ ${parseFloat(docModalOrdem.valor_servico).toFixed(2)}\n` : ''}\nPara qualquer dúvida, entre em contato!`
                   window.open(`https://wa.me/${numTel}?text=${encodeURIComponent(msg)}`, '_blank')
                 }}
               >
@@ -1113,7 +1113,7 @@ export default function ModuloOrdens({
                 onClick={() => window.print()}
               >
                 <Printer size={15} />
-                <span>Imprimir Comprovante</span>
+                <span>Imprimir Abertura de O.S.</span>
               </button>
             </div>
           </div>

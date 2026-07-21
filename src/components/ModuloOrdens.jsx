@@ -22,6 +22,7 @@ export default function ModuloOrdens({
   ordens,
   setOrdens,
   clientes,
+  setClientes,
   armas,
   setArmas,
   financeiro,
@@ -674,10 +675,13 @@ export default function ModuloOrdens({
       {showModalOrdem && (
         <ModalNovaOSArmeria
           clientes={clientes}
+          setClientes={setClientes}
           ordens={ordens}
           setOrdens={setOrdens}
           armas={armas}
           setArmas={setArmas}
+          setLogs={setLogs}
+          usuarioLogado={usuarioLogado}
           onClose={() => setShowModalOrdem(false)}
         />
       )}

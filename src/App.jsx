@@ -642,7 +642,7 @@ export default function App() {
             {activeTab === 'ordens' && (
               <ModuloOrdens
                 ordens={ordens} setOrdens={setOrdens}
-                clientes={clientes}
+                clientes={clientes} setClientes={setClientes}
                 armas={armas} setArmas={setArmas}
                 financeiro={financeiro} setFinanceiro={setFinanceiro}
                 caixas={caixas} setCaixas={setCaixas}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle } from 'lucide-react'
+import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search } from 'lucide-react'
 import { dbUpsert } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 import { hojeISO } from '../lib/dates'
@@ -7,8 +7,9 @@ import CustomSelect from './CustomSelect'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
 export default function ModalNovaOSArmeria({
-  clienteInicial,
+  clienteInicial = null,
   clientes = [],
+  setClientes,
   ordens = [],
   setOrdens,
   armas = [],
@@ -18,18 +19,22 @@ export default function ModalNovaOSArmeria({
   usuarioLogado,
   onClose
 }) {
-  const [clienteId, setClienteId] = useState(clienteInicial?.id || clientes[0]?.id || '')
+  // Se houver clienteInicial, usa ele; senão inicia vazio sem nenhum cliente pré-selecionado
+  const [clienteId, setClienteId] = useState(clienteInicial?.id || '')
 
-  const clienteAtual = clientes.find(c => c.id === clienteId) || clienteInicial || {
-    id: 'c1',
-    nome_completo: 'CARLOS EDUARDO SILVEIRA',
-    cpf: '123.456.789-00',
-    telefone: '(11) 98765-4321',
-    numero_cr: '123456/2ª RM'
-  }
+  const clienteAtual = (clientes || []).find(c => String(c.id) === String(clienteId)) || clienteInicial || null
+
+  // Cadastro Rápido de Novo Cliente Inline
+  const [showNovoClienteForm, setShowNovoClienteForm] = useState(false)
+  const [novoClienteData, setNovoClienteData] = useState({
+    nome_completo: '',
+    cpf: '',
+    telefone: '',
+    numero_cr: ''
+  })
 
   // Lista de armas no acervo deste cliente
-  const armasDoCliente = (armas || []).filter(a => a.cliente_id === clienteAtual?.id)
+  const armasDoCliente = clienteAtual ? (armas || []).filter(a => String(a.cliente_id) === String(clienteAtual.id)) : []
   const [armaSelecionadaId, setArmaSelecionadaId] = useState('')
   const [salvarNoAcervo, setSalvarNoAcervo] = useState(true)
 
@@ -60,7 +65,7 @@ export default function ModalNovaOSArmeria({
   // Órgão de Registro ('SINARM' | 'SIGMA' | 'Não requer registro')
   const [orgaoRegistro, setOrgaoRegistro] = useState('SIGMA')
 
-  // Avisos de Duplicidade
+  // Avisos de Duplicidade / Sucesso
   const [avisoDuplicidade, setAvisoDuplicidade] = useState('')
 
   // Número de Série
@@ -69,9 +74,10 @@ export default function ModalNovaOSArmeria({
   // Problema Relatado
   const [problemaRelatado, setProblemaRelatado] = useState('')
 
-  // ACESSÓRIOS ACOMPANHANTES
+  // ACESSÓRIOS ACOMPANHANTES (CHECKLIST)
+  const [temCarregadores, setTemCarregadores] = useState(false)
   const [qtdCarregadores, setQtdCarregadores] = useState(1)
-  const [temCaseRigido, setTemCaseRigido] = useState(false)
+  const [temCase, setTemCase] = useState(false)
   const [temLunetaRedDot, setTemLunetaRedDot] = useState(false)
   const [descricaoLuneta, setDescricaoLuneta] = useState('')
   const [acessoriosAdicionais, setAcessoriosAdicionais] = useState('')
@@ -81,12 +87,42 @@ export default function ModalNovaOSArmeria({
   const [gtDataEmissao, setGtDataEmissao] = useState(hojeISO())
   const [gtDataVencimento, setGtDataVencimento] = useState('')
 
+  // Handler para cadastrar novo cliente diretamente pela tela de Entrada de O.S.
+  const handleCadastrarNovoCliente = (e) => {
+    if (e) e.preventDefault()
+    if (!novoClienteData.nome_completo || !novoClienteData.cpf) {
+      alert('Por favor, informe pelo menos o Nome Completo e o CPF do cliente!')
+      return
+    }
+
+    const novoCliente = {
+      id: `c_${Date.now()}`,
+      nome_completo: novoClienteData.nome_completo.trim().toUpperCase(),
+      cpf: novoClienteData.cpf.trim(),
+      telefone: novoClienteData.telefone.trim(),
+      numero_cr: novoClienteData.numero_cr.trim(),
+      status: 'Ativo',
+      created_at: hojeISO()
+    }
+
+    if (typeof setClientes === 'function') {
+      setClientes(prev => [novoCliente, ...prev])
+    }
+    dbUpsert('clientes', novoCliente)
+
+    setClienteId(novoCliente.id)
+    setShowNovoClienteForm(false)
+    setNovoClienteData({ nome_completo: '', cpf: '', telefone: '', numero_cr: '' })
+    setAvisoDuplicidade(`✅ Cliente "${novoCliente.nome_completo}" cadastrado e selecionado com sucesso!`)
+    setTimeout(() => setAvisoDuplicidade(''), 4000)
+  }
+
   // Seleção de Arma do Acervo -> Auto-preenche os dados
   const handleSelecionarArmaAcervo = (armaId) => {
     setArmaSelecionadaId(armaId)
     if (!armaId) return
 
-    const arma = armasDoCliente.find(a => a.id === armaId)
+    const arma = armasDoCliente.find(a => String(a.id) === String(armaId))
     if (arma) {
       setCategoriaArma(arma.categoria || 'Arma de Fogo')
       setTipoArma(arma.tipo || 'Pistola')
@@ -104,60 +140,13 @@ export default function ModalNovaOSArmeria({
     }
   }, [armaInicial])
 
-  // --- VERIFICADOR DE DUPLICIDADE E CADASTRO DE NOVOS ITENS ---
-  const handleAddMarcaCustom = () => {
-    const val = customMarcaInput.trim().toUpperCase()
-    if (!val) return
-    const jaExiste = listMarcas.find(m => m.toUpperCase() === val)
-    if (jaExiste) {
-      setAvisoDuplicidade(`⚠️ A marca "${jaExiste}" já existe na lista e foi selecionada!`)
-      setMarcaArma(jaExiste)
-      setCustomMarcaInput('')
-    } else {
-      setListMarcas(prev => [...prev, val])
-      setMarcaArma(val)
-      setCustomMarcaInput('')
-      setAvisoDuplicidade(`✅ Nova marca "${val}" adicionada à lista com sucesso!`)
-    }
-    setTimeout(() => setAvisoDuplicidade(''), 4000)
-  }
-
-  const handleAddModeloCustom = () => {
-    const val = customModeloInput.trim().toUpperCase()
-    if (!val) return
-    const jaExiste = listModelos.find(m => m.toUpperCase() === val)
-    if (jaExiste) {
-      setAvisoDuplicidade(`⚠️ O modelo "${jaExiste}" já existe na lista e foi selecionado!`)
-      setModeloArma(jaExiste)
-      setCustomModeloInput('')
-    } else {
-      setListModelos(prev => [...prev, val])
-      setModeloArma(val)
-      setCustomModeloInput('')
-      setAvisoDuplicidade(`✅ Novo modelo "${val}" adicionado à lista com sucesso!`)
-    }
-    setTimeout(() => setAvisoDuplicidade(''), 4000)
-  }
-
-  const handleAddCalibreCustom = () => {
-    const val = customCalibreInput.trim()
-    if (!val) return
-    const jaExiste = listCalibres.find(c => c.toLowerCase() === val.toLowerCase())
-    if (jaExiste) {
-      setAvisoDuplicidade(`⚠️ O calibre "${jaExiste}" já existe na lista e foi selecionado!`)
-      setCalibreArma(jaExiste)
-      setCustomCalibreInput('')
-    } else {
-      setListCalibres(prev => [...prev, val])
-      setCalibreArma(val)
-      setCustomCalibreInput('')
-      setAvisoDuplicidade(`✅ Novo calibre "${val}" adicionado à lista com sucesso!`)
-    }
-    setTimeout(() => setAvisoDuplicidade(''), 4000)
-  }
-
   const handleSalvarEntradaOS = (e) => {
     e.preventDefault()
+
+    if (!clienteAtual) {
+      alert('Por favor, selecione ou cadastre o Cliente Requerente antes de registrar a O.S.!')
+      return
+    }
 
     const marcaFinal = marcaArma === '__NOVA__' ? (customMarcaInput.trim().toUpperCase() || 'DESCONHECIDA') : marcaArma
     const modeloFinal = modeloArma === '__NOVO__' ? (customModeloInput.trim().toUpperCase() || 'DESCONHECIDO') : modeloArma
@@ -176,11 +165,11 @@ export default function ModalNovaOSArmeria({
 
     // Monta string formatada de Acessórios
     const acessoriosFormatados = [
-      `${qtdCarregadores} carregador(es)`,
-      temCaseRigido ? 'Maleta/Case Rígido' : null,
+      temCarregadores ? `${qtdCarregadores} carregador(es)` : null,
+      temCase ? 'Maleta / Case' : null,
       temLunetaRedDot ? `Óptica: ${descricaoLuneta || 'Red Dot / Luneta'}` : null,
       acessoriosAdicionais ? `Outros: ${acessoriosAdicionais}` : null
-    ].filter(Boolean).join(' | ')
+    ].filter(Boolean).join(' | ') || 'Nenhum acessório acompanhante'
 
     const maxOS = (ordens || []).reduce((max, o) => Math.max(max, Number(o.numero_os) || 1000), 1000)
     const novaOSObj = {
@@ -271,29 +260,115 @@ export default function ModalNovaOSArmeria({
 
         <form onSubmit={handleSalvarEntradaOS} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           {/* DADOS DO CLIENTE */}
-          <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.9rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-              CLIENTE REQUERENTE
-            </label>
-            {!clienteInicial && clientes && clientes.length > 0 ? (
-              <CustomSelect
-                label=""
-                value={
-                  clienteAtual
-                    ? `${clienteAtual.nome_completo.toUpperCase()} (${clienteAtual.cpf}) - CR: ${clienteAtual.numero_cr || 'Sem CR'}`
-                    : ''
-                }
-                onChange={val => {
-                  const c = clientes.find(item => `${item.nome_completo.toUpperCase()} (${item.cpf}) - CR: ${item.numero_cr || 'Sem CR'}` === val)
-                  if (c) {
-                    setClienteId(c.id)
-                    setArmaSelecionadaId('')
+          <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.9rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>
+                CLIENTE REQUERENTE *
+              </label>
+              {!clienteInicial && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', color: 'var(--gold-primary)', borderColor: 'var(--gold-primary)' }}
+                  onClick={() => setShowNovoClienteForm(!showNovoClienteForm)}
+                >
+                  <UserPlus size={14} />
+                  <span>{showNovoClienteForm ? 'Cancelar Cadastro' : '+ Cadastrar Novo Cliente'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Formulário Inline de Cadastro Rápido de Novo Cliente */}
+            {showNovoClienteForm && (
+              <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--gold-primary)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <UserPlus size={16} /> Cadastro Rápido de Cliente Requerente
+                </div>
+                <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Nome Completo *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="Nome Completo..."
+                      value={novoClienteData.nome_completo}
+                      onChange={e => setNovoClienteData({ ...novoClienteData, nome_completo: e.target.value })}
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>CPF *</label>
+                    <input
+                      required
+                      className="input-field"
+                      placeholder="000.000.000-00"
+                      value={novoClienteData.cpf}
+                      onChange={e => setNovoClienteData({ ...novoClienteData, cpf: e.target.value })}
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Telefone / WhatsApp</label>
+                    <input
+                      className="input-field"
+                      placeholder="(00) 00000-0000"
+                      value={novoClienteData.telefone}
+                      onChange={e => setNovoClienteData({ ...novoClienteData, telefone: e.target.value })}
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>N° CR (Se houver)</label>
+                    <input
+                      className="input-field"
+                      placeholder="Ex: 123456/2ª RM"
+                      value={novoClienteData.numero_cr}
+                      onChange={e => setNovoClienteData({ ...novoClienteData, numero_cr: e.target.value })}
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-gold"
+                    style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    onClick={handleCadastrarNovoCliente}
+                  >
+                    <CheckCircle2 size={14} /> Salvar e Selecionar Cliente
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!clienteInicial ? (
+              <div>
+                <CustomSelect
+                  label=""
+                  value={
+                    clienteAtual
+                      ? `${clienteAtual.nome_completo.toUpperCase()} (${clienteAtual.cpf}) - CR: ${clienteAtual.numero_cr || 'Sem CR'}`
+                      : ''
                   }
-                }}
-                options={clientes.map(c => `${c.nome_completo.toUpperCase()} (${c.cpf}) - CR: ${c.numero_cr || 'Sem CR'}`)}
-                placeholder="Selecione o Cliente..."
-                allowCustom={false}
-              />
+                  onChange={val => {
+                    const c = (clientes || []).find(item => `${item.nome_completo.toUpperCase()} (${item.cpf}) - CR: ${item.numero_cr || 'Sem CR'}` === val)
+                    if (c) {
+                      setClienteId(c.id)
+                      setArmaSelecionadaId('')
+                    } else {
+                      setClienteId('')
+                    }
+                  }}
+                  options={(clientes || []).map(c => `${c.nome_completo.toUpperCase()} (${c.cpf}) - CR: ${c.numero_cr || 'Sem CR'}`)}
+                  placeholder="🔍 Pesquisar e Selecionar Cliente..."
+                  allowCustom={false}
+                />
+                {!clienteAtual && (
+                  <div style={{ fontSize: '0.78rem', color: '#F87171', marginTop: '0.3rem', fontWeight: '600' }}>
+                    ⚠️ Nenhum cliente selecionado. Pesquise na lista acima ou clique em "+ Cadastrar Novo Cliente".
+                  </div>
+                )}
+              </div>
             ) : (
               <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>
                 {clienteAtual.nome_completo.toUpperCase()} — CPF: {clienteAtual.cpf} — CR: {clienteAtual.numero_cr || 'N/A'}
@@ -309,7 +384,7 @@ export default function ModalNovaOSArmeria({
                 value={
                   armaSelecionadaId
                     ? (() => {
-                        const a = armasDoCliente.find(item => item.id === armaSelecionadaId)
+                        const a = armasDoCliente.find(item => String(item.id) === String(armaSelecionadaId))
                         return a ? `${a.marca} ${a.modelo} (${a.calibre}) - SÉRIE: ${a.numero_serie}`.toUpperCase() : ''
                       })()
                     : ''
@@ -532,27 +607,51 @@ export default function ModalNovaOSArmeria({
               <span>CHECKLIST DE ENTRADA: ACESSÓRIOS ACOMPANHANTES</span>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', fontSize: '0.78rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem', alignItems: 'center', fontSize: '0.78rem' }}>
+              {/* Opção 1: Carregadores */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span>Carregadores:</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={10}
-                  className="input-field"
-                  style={{ width: '60px', padding: '0.2rem 0.4rem', textAlign: 'center' }}
-                  value={qtdCarregadores}
-                  onChange={e => setQtdCarregadores(parseInt(e.target.value) || 0)}
-                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '600' }}>
+                  <input
+                    type="checkbox"
+                    checked={temCarregadores}
+                    onChange={e => setTemCarregadores(e.target.checked)}
+                  />
+                  <span>Carregadores</span>
+                </label>
+
+                {temCarregadores && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.2rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Qtd:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      className="input-field"
+                      style={{ width: '55px', padding: '0.15rem 0.35rem', textAlign: 'center', fontSize: '0.8rem' }}
+                      value={qtdCarregadores}
+                      onChange={e => setQtdCarregadores(Math.max(1, parseInt(e.target.value) || 1))}
+                    />
+                  </div>
+                )}
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={temCaseRigido} onChange={e => setTemCaseRigido(e.target.checked)} />
-                <span>Maleta/Case Rígido</span>
+              {/* Opção 2: Maleta / Case */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '600' }}>
+                <input
+                  type="checkbox"
+                  checked={temCase}
+                  onChange={e => setTemCase(e.target.checked)}
+                />
+                <span>Maleta / Case</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={temLunetaRedDot} onChange={e => setTemLunetaRedDot(e.target.checked)} />
+              {/* Opção 3: Óptica (Red Dot / Luneta) */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontWeight: '600' }}>
+                <input
+                  type="checkbox"
+                  checked={temLunetaRedDot}
+                  onChange={e => setTemLunetaRedDot(e.target.checked)}
+                />
                 <span>Óptica (Red Dot / Luneta)</span>
               </label>
             </div>

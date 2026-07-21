@@ -509,7 +509,7 @@ export default function ModuloCaixa({
           <Clock size={16} />
           <span>Histórico de Caixas Anteriores</span>
           <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-            {caixas.length}
+            {caixas.filter(c => c.data !== hojeStr).length}
           </span>
         </button>
       </div>
@@ -555,46 +555,64 @@ export default function ModuloCaixa({
           )}
 
           {/* CARD DE STATUS DO CAIXA DO DIA */}
-          <div className="card" style={{
-            backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-            borderColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '10px',
-                  backgroundColor: caixaAtual?.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Wallet size={22} color={caixaAtual?.status === 'ABERTO' ? '#34D399' : '#F87171'} />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                      Caixa Recepção ({formatarData(hojeStr)})
-                    </span>
-                    <span className={`badge ${caixaAtual?.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
-                      {caixaAtual?.status === 'ABERTO' ? 'ABERTO' : 'FECHADO'}
-                    </span>
+          {caixaAtual ? (
+            <div className="card" style={{
+              backgroundColor: caixaAtual.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+              borderColor: caixaAtual.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '10px',
+                    backgroundColor: caixaAtual.status === 'ABERTO' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <Wallet size={22} color={caixaAtual.status === 'ABERTO' ? '#34D399' : '#F87171'} />
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    {caixaAtual ? (
-                      <>Aberto em: <strong>{caixaAtual.hora_abertura}</strong> | Aberto por: <strong>{caixaAtual.operador_abertura}</strong></>
-                    ) : (
-                      <>Caixa atualmente encerrado. Para iniciar os recebimentos do dia, clique em "Abrir Caixa do Dia".</>
-                    )}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                        Caixa Recepção ({formatarData(hojeStr)})
+                      </span>
+                      <span className={`badge ${caixaAtual.status === 'ABERTO' ? 'badge-green' : 'badge-red'}`}>
+                        {caixaAtual.status === 'ABERTO' ? 'ABERTO' : 'FECHADO'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Aberto em: <strong>{caixaAtual.hora_abertura}</strong> | Aberto por: <strong>{caixaAtual.operador_abertura}</strong>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {caixaAtual && (
                 <button className="btn-secondary" onClick={() => setModalRelatorioIntegra(caixaAtual)} style={{ fontSize: '0.82rem' }}>
                   <Printer size={16} />
                   <span>Ver Íntegra do Caixa</span>
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Nenhum caixa aberto/registrado hoje — exibe orientação limpa sem induzir erro */
+            <div className="card" style={{
+              backgroundColor: 'rgba(96, 165, 250, 0.05)',
+              borderColor: 'rgba(96, 165, 250, 0.25)',
+              display: 'flex', alignItems: 'center', gap: '1rem'
+            }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '10px',
+                backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Unlock size={22} color="#60A5FA" />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                  Nenhum caixa aberto hoje ({formatarData(hojeStr)})
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Nenhum caixa foi iniciado para o dia de hoje. Clique em <strong style={{ color: '#60A5FA' }}>"Abrir Caixa do Dia"</strong> para começar.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TABELA DE MOVIMENTAÇÕES DO CAIXA DO DIA */}
           <div className="card" style={{ padding: 0, overflowX: 'auto' }}>

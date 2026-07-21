@@ -22,9 +22,13 @@ export default function ModuloHome({
   caixas = [],
   financeiro = [],
   clientes = [],
+  usuarioLogado,
   setActiveTab,
   setFiltroStatusOrdens
 }) {
+  const permissoes = usuarioLogado?.permissoes || {}
+  const isMaster = usuarioLogado?.perfil === 'master'
+
   // Contagens dos balões informativos (Badges estilo Shooting House)
   const osAguardandoAprovacao = ordens.filter(o => o.status === 'AGUARDANDO APROVAÇÃO').length
   const osAguardandoRetirada  = ordens.filter(o => o.status === 'AGUARDANDO RETIRADA').length
@@ -47,15 +51,16 @@ export default function ModuloHome({
     setActiveTab('ordens')
   }
 
-  // Definição dos blocos de atalho estilo Shooting House
-  const statusBlocks = [
+  // Definição dos blocos de atalho estilo Shooting House (filtrados por permissão)
+  const allStatusBlocks = [
     {
       id: 'aguardando_aprovacao',
       title: 'O.S. Aguardando Aprovação',
       badgeCount: osAguardandoAprovacao,
       badgeColor: '#F59E0B', // Amarelo/Laranja
       icon: Clock,
-      onClick: () => handleNavegarOrdens('AGUARDANDO APROVAÇÃO')
+      onClick: () => handleNavegarOrdens('AGUARDANDO APROVAÇÃO'),
+      reqPerm: 'ver_ordens'
     },
     {
       id: 'aguardando_retirada',
@@ -63,7 +68,8 @@ export default function ModuloHome({
       badgeCount: osAguardandoRetirada,
       badgeColor: '#10B981', // Verde
       icon: CheckCircle2,
-      onClick: () => handleNavegarOrdens('AGUARDANDO RETIRADA')
+      onClick: () => handleNavegarOrdens('AGUARDANDO RETIRADA'),
+      reqPerm: 'ver_ordens'
     },
     {
       id: 'em_analise',
@@ -71,7 +77,8 @@ export default function ModuloHome({
       badgeCount: osEmAnalise,
       badgeColor: '#3B82F6', // Azul
       icon: FileText,
-      onClick: () => handleNavegarOrdens('EM ANÁLISE')
+      onClick: () => handleNavegarOrdens('EM ANÁLISE'),
+      reqPerm: 'ver_ordens'
     },
     {
       id: 'nao_iniciado',
@@ -79,7 +86,8 @@ export default function ModuloHome({
       badgeCount: osNaoIniciado,
       badgeColor: '#8B5CF6', // Roxo/Cinza
       icon: AlertCircle,
-      onClick: () => handleNavegarOrdens('NÃO INICIADO')
+      onClick: () => handleNavegarOrdens('NÃO INICIADO'),
+      reqPerm: 'ver_ordens'
     },
     {
       id: 'em_manutencao',
@@ -87,7 +95,8 @@ export default function ModuloHome({
       badgeCount: osEmManutencao,
       badgeColor: '#06B6D4', // Ciano
       icon: Wrench,
-      onClick: () => handleNavegarOrdens('EM MANUTENÇÃO')
+      onClick: () => handleNavegarOrdens('EM MANUTENÇÃO'),
+      reqPerm: 'ver_ordens'
     },
     {
       id: 'bloco_estoque',
@@ -96,7 +105,8 @@ export default function ModuloHome({
       badgeColor: estoqueBaixoCount > 0 ? '#EF4444' : '#3B82F6',
       icon: Package,
       subtitle: `${estoque.length} peças cadastradas`,
-      onClick: () => setActiveTab('estoque')
+      onClick: () => setActiveTab('estoque'),
+      reqPerm: 'ver_estoque'
     },
     {
       id: 'bloco_caixa',
@@ -105,7 +115,8 @@ export default function ModuloHome({
       badgeColor: caixaStatus === 'ABERTO' ? '#10B981' : '#6B7280',
       icon: Wallet,
       subtitle: caixaHoje ? `${caixaHoje.movimentacoes?.length || 0} mov. hoje` : 'Sem caixa aberto',
-      onClick: () => setActiveTab('caixa')
+      onClick: () => setActiveTab('caixa'),
+      reqPerm: 'ver_caixa'
     },
     {
       id: 'bloco_financeiro',
@@ -114,9 +125,23 @@ export default function ModuloHome({
       badgeColor: '#D4AF37', // Dourado
       icon: DollarSign,
       subtitle: 'Receitas acumuladas',
-      onClick: () => setActiveTab('financeiro')
+      onClick: () => setActiveTab('financeiro'),
+      reqPerm: 'ver_financeiro'
     }
   ]
+
+  const statusBlocks = allStatusBlocks.filter(block => {
+    if (isMaster) return true
+    if (!block.reqPerm) return true
+    if (block.reqPerm === 'ver_ordens') return permissoes.ver_ordens !== false
+    if (block.reqPerm === 'ver_estoque') return permissoes.ver_estoque !== false
+    return permissoes[block.reqPerm] === true
+  })
+
+  const podeDarEntradaOS = isMaster || (permissoes.dar_entrada_os !== false && permissoes.ver_ordens !== false)
+  const podeAbrirCaixa = isMaster || (permissoes.ver_caixa === true || permissoes.gerenciar_caixa === true)
+  const podeVerClientes = isMaster || (permissoes.ver_clientes !== false)
+  const podeVerFinanceiroOuCaixa = isMaster || (permissoes.ver_financeiro === true || permissoes.ver_caixa === true)
 
   return (
     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -154,14 +179,18 @@ export default function ModuloHome({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button className="btn-gold" onClick={() => setActiveTab('ordens')}>
-            <Plus size={18} />
-            <span>Nova O.S. Armeria</span>
-          </button>
-          <button className="btn-secondary" onClick={() => setActiveTab('caixa')}>
-            <Wallet size={18} />
-            <span>Abrir Caixa</span>
-          </button>
+          {podeDarEntradaOS && (
+            <button className="btn-gold" onClick={() => setActiveTab('ordens')}>
+              <Plus size={18} />
+              <span>Nova O.S. Armeria</span>
+            </button>
+          )}
+          {podeAbrirCaixa && (
+            <button className="btn-secondary" onClick={() => setActiveTab('caixa')}>
+              <Wallet size={18} />
+              <span>Abrir Caixa</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -268,58 +297,64 @@ export default function ModuloHome({
         </div>
       </div>
 
-      {/* Resumo Rápido Operacional */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-        {/* Card Resumo de Clientes e Acervo */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Users size={18} />
-              <span>Clientes & Acervo Registrado</span>
+      {/* Resumo Rápido Operacional (Filtrado por Permissões) */}
+      {(podeVerClientes || podeVerFinanceiroOuCaixa) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {/* Card Resumo de Clientes e Acervo */}
+          {podeVerClientes && (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Users size={18} />
+                  <span>Clientes & Acervo Registrado</span>
+                </div>
+                <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('clientes')}>
+                  Ver Clientes
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CLIENTES CADASTRADOS</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{clientes.length}</div>
+                </div>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ORÇAMENTOS PENDENTES</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#F59E0B' }}>{orcamentosPendentes}</div>
+                </div>
+              </div>
             </div>
-            <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('clientes')}>
-              Ver Clientes
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CLIENTES CADASTRADOS</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{clientes.length}</div>
-            </div>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ORÇAMENTOS PENDENTES</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#F59E0B' }}>{orcamentosPendentes}</div>
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Card Resumo Financeiro Rápido */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <TrendingUp size={18} />
-              <span>Caixa & Fluxo Financeiro</span>
-            </div>
-            <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('financeiro')}>
-              Ver Financeiro
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>STATUS DO CAIXA</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
-                {caixaStatus === 'ABERTO' ? '● ABERTO' : '○ FECHADO'}
+          {/* Card Resumo Financeiro Rápido */}
+          {podeVerFinanceiroOuCaixa && (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <TrendingUp size={18} />
+                  <span>Caixa & Fluxo Financeiro</span>
+                </div>
+                <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('financeiro')}>
+                  Ver Financeiro
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>STATUS DO CAIXA</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
+                    {caixaStatus === 'ABERTO' ? '● ABERTO' : '○ FECHADO'}
+                  </div>
+                </div>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEITAS DO MÊS</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#34D399' }}>
+                    R$ {receitasMes.toFixed(2)}
+                  </div>
+                </div>
               </div>
             </div>
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEITAS DO MÊS</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#34D399' }}>
-                R$ {receitasMes.toFixed(2)}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

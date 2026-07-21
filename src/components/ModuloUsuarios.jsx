@@ -35,8 +35,15 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
       ver_orcamentos: true,
       criar_orcamentos: true,
       excluir_orcamentos: false,
+      ver_estoque: true,
+      gerenciar_estoque: false,
+      ver_caixa: true,
+      gerenciar_caixa: true,
+      ver_vendas: true,
+      lancar_vendas: true,
       ver_financeiro: false,
       lancar_financeiro: true,
+      ver_alertas: true,
       ver_configuracoes: false,
       gerenciar_usuarios: false
     }
@@ -50,24 +57,33 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: true,
         ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: true, aprovar_os: true, concluir_retirada: true, excluir_os: true,
         ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: true,
+        ver_estoque: true, gerenciar_estoque: true,
+        ver_caixa: true, gerenciar_caixa: true,
+        ver_vendas: true, lancar_vendas: true,
         ver_financeiro: true, lancar_financeiro: true,
-        ver_configuracoes: true, gerenciar_usuarios: true
+        ver_alertas: true, ver_configuracoes: true, gerenciar_usuarios: true
       }
     } else if (novoPerfil === 'recepcao') {
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
         ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
         ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_estoque: true, gerenciar_estoque: false,
+        ver_caixa: true, gerenciar_caixa: true,
+        ver_vendas: true, lancar_vendas: true,
         ver_financeiro: false, lancar_financeiro: true,
-        ver_configuracoes: false, gerenciar_usuarios: false
+        ver_alertas: true, ver_configuracoes: false, gerenciar_usuarios: false
       }
     } else if (novoPerfil === 'armeiro') {
       permissoesPadrao = {
         ver_clientes: true, criar_clientes: false, editar_clientes: false, excluir_clientes: false,
         ver_ordens: true, dar_entrada_os: false, preencher_laudo_armeiro: true, aprovar_os: false, concluir_retirada: false, excluir_os: false,
         ver_orcamentos: true, criar_orcamentos: false, excluir_orcamentos: false,
+        ver_estoque: true, gerenciar_estoque: true,
+        ver_caixa: false, gerenciar_caixa: false,
+        ver_vendas: false, lancar_vendas: false,
         ver_financeiro: false, lancar_financeiro: false,
-        ver_configuracoes: false, gerenciar_usuarios: false
+        ver_alertas: true, ver_configuracoes: false, gerenciar_usuarios: false
       }
     }
     setUsuarioForm(prev => ({
@@ -118,8 +134,11 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
         ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
         ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_estoque: true, gerenciar_estoque: false,
+        ver_caixa: true, gerenciar_caixa: true,
+        ver_vendas: true, lancar_vendas: true,
         ver_financeiro: false, lancar_financeiro: true,
-        ver_configuracoes: false, gerenciar_usuarios: false
+        ver_alertas: true, ver_configuracoes: false, gerenciar_usuarios: false
       }
     })
     setShowModalNovoUsuario(true)
@@ -137,8 +156,11 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
         ver_clientes: true, criar_clientes: true, editar_clientes: true, excluir_clientes: false,
         ver_ordens: true, dar_entrada_os: true, preencher_laudo_armeiro: false, aprovar_os: true, concluir_retirada: true, excluir_os: false,
         ver_orcamentos: true, criar_orcamentos: true, excluir_orcamentos: false,
+        ver_estoque: true, gerenciar_estoque: false,
+        ver_caixa: true, gerenciar_caixa: true,
+        ver_vendas: true, lancar_vendas: true,
         ver_financeiro: false, lancar_financeiro: true,
-        ver_configuracoes: false, gerenciar_usuarios: false
+        ver_alertas: true, ver_configuracoes: false, gerenciar_usuarios: false
       }
     })
   }
@@ -446,10 +468,17 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
                     { key: 'excluir_os', label: 'Excluir Ordens de Serviço' },
                     { key: 'ver_orcamentos', label: 'Ver Módulo Orçamentos' },
                     { key: 'criar_orcamentos', label: 'Criar Novos Orçamentos' },
+                    { key: 'ver_estoque', label: 'Ver Módulo Estoque' },
+                    { key: 'gerenciar_estoque', label: 'Cadastrar / Baixa no Estoque' },
+                    { key: 'ver_caixa', label: 'Ver Módulo Caixa' },
+                    { key: 'gerenciar_caixa', label: 'Abrir / Fechar Caixa' },
+                    { key: 'ver_vendas', label: 'Ver Módulo Vendas (PDV)' },
+                    { key: 'lancar_vendas', label: 'Realizar Vendas de Balcão' },
                     { key: 'ver_financeiro', label: 'Ver Módulo Financeiro' },
                     { key: 'lancar_financeiro', label: 'Lançar Receitas / Despesas' },
+                    { key: 'ver_alertas', label: 'Ver Painel de Alerta' },
                     { key: 'ver_configuracoes', label: 'Ver Módulo Configurações' },
-                    { key: 'gerenciar_usuarios', label: 'Acessar Aba Usuários' }
+                    { key: 'gerenciar_usuarios', label: 'Acessar Aba Usuários & Auditoria' }
                   ].map(p => {
                     const isChecked = usuarioForm.permissoes[p.key]
                     return (

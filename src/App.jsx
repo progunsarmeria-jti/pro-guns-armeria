@@ -692,6 +692,8 @@ export default function App() {
             {activeTab === 'financeiro' && (
               <ModuloFinanceiro
                 financeiro={financeiro} setFinanceiro={setFinanceiro}
+                usuarioLogado={usuarioLogado}
+                usuarios={usuarios}
                 config={config}
               />
             )}

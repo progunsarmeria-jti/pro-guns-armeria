@@ -144,50 +144,50 @@ export default function ModuloHome({
   const podeVerFinanceiroOuCaixa = isMaster || (permissoes.ver_financeiro === true || permissoes.ver_caixa === true)
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header do Painel Principal */}
       <div style={{
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '1rem',
+        gap: '0.75rem',
         backgroundColor: 'var(--bg-card)',
-        padding: '1.25rem 1.5rem',
-        borderRadius: '12px',
+        padding: '0.85rem 1.1rem',
+        borderRadius: '10px',
         border: '1px solid var(--border-color)'
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.1rem' }}>
             <span style={{
               backgroundColor: 'rgba(212, 175, 55, 0.15)',
               color: 'var(--gold-primary)',
-              padding: '0.2rem 0.6rem',
-              borderRadius: '6px',
-              fontSize: '0.72rem',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '4px',
+              fontSize: '0.68rem',
               fontWeight: '700',
               textTransform: 'uppercase',
               letterSpacing: '0.5px'
             }}>
               Painel de Gestão
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Shooting House Style</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Shooting House Style</span>
           </div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>
             Tela Inicial & Atalhos
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           {podeDarEntradaOS && (
-            <button className="btn-gold" onClick={() => setActiveTab('ordens')}>
-              <Plus size={18} />
+            <button className="btn-gold" onClick={() => setActiveTab('ordens')} style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}>
+              <Plus size={15} />
               <span>Nova O.S. Armeria</span>
             </button>
           )}
           {podeAbrirCaixa && (
-            <button className="btn-secondary" onClick={() => setActiveTab('caixa')}>
-              <Wallet size={18} />
+            <button className="btn-secondary" onClick={() => setActiveTab('caixa')} style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}>
+              <Wallet size={15} />
               <span>Abrir Caixa</span>
             </button>
           )}
@@ -196,15 +196,15 @@ export default function ModuloHome({
 
       {/* Seção Atalhos e Blocos de Status (Estilo Shooting House) */}
       <div>
-        <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--gold-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Clock size={20} />
+        <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--gold-primary)', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Clock size={16} />
           <span>Status das Ordens de Serviço & Módulos</span>
         </div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-          gap: '1.2rem'
+          gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+          gap: '0.75rem'
         }}>
           {statusBlocks.map(block => {
             const IconComponent = block.icon
@@ -215,20 +215,20 @@ export default function ModuloHome({
                 style={{
                   position: 'relative',
                   backgroundColor: 'var(--bg-card)',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   border: '1px solid var(--border-color)',
-                  padding: '1.25rem 1rem',
+                  padding: '0.75rem 0.85rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '1rem',
+                  gap: '0.75rem',
                   cursor: 'pointer',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                  transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
                   userSelect: 'none'
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-3px)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
                   e.currentTarget.style.borderColor = block.badgeColor
-                  e.currentTarget.style.boxShadow = `0 6px 16px ${block.badgeColor}22`
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${block.badgeColor}22`
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.transform = 'translateY(0)'
@@ -239,26 +239,26 @@ export default function ModuloHome({
                 {/* Balão Informativo de Notificação / Contagem no Canto Superior Direito */}
                 <div style={{
                   position: 'absolute',
-                  top: '-10px',
-                  right: '12px',
+                  top: '-8px',
+                  right: '10px',
                   backgroundColor: block.badgeColor,
                   color: '#FFFFFF',
-                  fontSize: '0.72rem',
+                  fontSize: '0.68rem',
                   fontWeight: '800',
-                  padding: '0.2rem 0.65rem',
-                  borderRadius: '14px',
-                  boxShadow: `0 2px 8px ${block.badgeColor}66`,
+                  padding: '0.12rem 0.5rem',
+                  borderRadius: '12px',
+                  boxShadow: `0 2px 6px ${block.badgeColor}66`,
                   border: '2px solid var(--bg-card)',
-                  letterSpacing: '0.3px'
+                  letterSpacing: '0.2px'
                 }}>
                   {block.badgeCount}
                 </div>
 
                 {/* Ícone */}
                 <div style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '10px',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
                   backgroundColor: `${block.badgeColor}18`,
                   border: `1px solid ${block.badgeColor}44`,
                   display: 'flex',
@@ -266,28 +266,28 @@ export default function ModuloHome({
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
-                  <IconComponent size={24} color={block.badgeColor} />
+                  <IconComponent size={18} color={block.badgeColor} />
                 </div>
 
                 {/* Texto do Bloco */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: '0.92rem',
+                    fontSize: '0.82rem',
                     fontWeight: '700',
                     color: 'var(--text-main)',
-                    lineHeight: '1.3',
-                    marginBottom: '0.2rem'
+                    lineHeight: '1.2',
+                    marginBottom: '0.15rem'
                   }}>
                     {block.title}
                   </div>
                   {block.subtitle ? (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       {block.subtitle}
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                       <span>Clique para filtrar</span>
-                      <ArrowRight size={12} />
+                      <ArrowRight size={11} />
                     </div>
                   )}
                 </div>
@@ -299,27 +299,27 @@ export default function ModuloHome({
 
       {/* Resumo Rápido Operacional (Filtrado por Permissões) */}
       {(podeVerClientes || podeVerFinanceiroOuCaixa) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
           {/* Card Resumo de Clientes e Acervo */}
           {podeVerClientes && (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Users size={18} />
+                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Users size={16} />
                   <span>Clientes & Acervo Registrado</span>
                 </div>
-                <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('clientes')}>
+                <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('clientes')}>
                   Ver Clientes
                 </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CLIENTES CADASTRADOS</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>{clientes.length}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>CLIENTES CADASTRADOS</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)' }}>{clientes.length}</div>
                 </div>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ORÇAMENTOS PENDENTES</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#F59E0B' }}>{orcamentosPendentes}</div>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>ORÇAMENTOS PENDENTES</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#F59E0B' }}>{orcamentosPendentes}</div>
                 </div>
               </div>
             </div>
@@ -327,26 +327,26 @@ export default function ModuloHome({
 
           {/* Card Resumo Financeiro Rápido */}
           {podeVerFinanceiroOuCaixa && (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <TrendingUp size={18} />
+                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <TrendingUp size={16} />
                   <span>Caixa & Fluxo Financeiro</span>
                 </div>
-                <button className="btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }} onClick={() => setActiveTab('financeiro')}>
+                <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('financeiro')}>
                   Ver Financeiro
                 </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>STATUS DO CAIXA</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>STATUS DO CAIXA</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '800', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
                     {caixaStatus === 'ABERTO' ? '● ABERTO' : '○ FECHADO'}
                   </div>
                 </div>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>RECEITAS DO MÊS</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#34D399' }}>
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>RECEITAS DO MÊS</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#34D399' }}>
                     R$ {receitasMes.toFixed(2)}
                   </div>
                 </div>

@@ -3,8 +3,9 @@ import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
-import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
+import { isSupabaseConfigured, dbUpsert, dbDelete } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
+import { INITIAL_CONFIG } from '../lib/initialData'
 
 const STATUS_CONFIG = {
   'NÃO INICIADO':        { color: '#9CA3AF', bg: 'rgba(156,163,175,0.15)' },
@@ -64,6 +65,7 @@ export default function ModuloOrdens({
   const [observacoesArmeiro, setObservacoesArmeiro] = useState('')
 
   // Form State para inclusão de itens no laudo
+  const [servicoSelecionadoId, setServicoSelecionadoId] = useState('')
   const [servicoSelecionadoLaudo, setServicoSelecionadoLaudo] = useState('')
   const [customServicoNome, setCustomServicoNome] = useState('')
   const [precoServicoInput, setPrecoServicoInput] = useState('')
@@ -85,6 +87,7 @@ export default function ModuloOrdens({
     setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '0')
     setItensLaudo(ordem.itens_laudo || [])
     setObservacoesArmeiro(ordem.observacoes_armeiro || '')
+    setServicoSelecionadoId('')
     setServicoSelecionadoLaudo('')
     setCustomServicoNome('')
     setPrecoServicoInput('')
@@ -93,7 +96,7 @@ export default function ModuloOrdens({
   }
 
   const handleAdicionarServicoLaudo = () => {
-    const nomeServico = servicoSelecionadoLaudo === '__CUSTOM__' ? customServicoNome.trim() : servicoSelecionadoLaudo
+    const nomeServico = servicoSelecionadoId === '__CUSTOM__' ? customServicoNome.trim() : servicoSelecionadoLaudo
     if (!nomeServico) {
       alert('Selecione ou digite o nome do serviço!')
       return
@@ -110,6 +113,7 @@ export default function ModuloOrdens({
     const proximaLista = [...itensLaudo, novoItem]
     setItensLaudo(proximaLista)
     recalcularTotalLaudo(proximaLista)
+    setServicoSelecionadoId('')
     setServicoSelecionadoLaudo('')
     setCustomServicoNome('')
     setPrecoServicoInput('')
@@ -904,26 +908,33 @@ export default function ModuloOrdens({
 
                 {/* Adicionar Serviço */}
                 <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#60A5FA' }}>+ ADICIONAR SERVIÇO DE ARMERIA</div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#60A5FA' }}>+ ADICIONAR SERVIÇO DE ARMERIA (DO CATÁLOGO & TABELA DE VALORES)</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.5rem', alignItems: 'center' }}>
                     <select
                       className="input-field"
-                      value={servicoSelecionadoLaudo}
-                      onChange={e => setServicoSelecionadoLaudo(e.target.value)}
+                      value={servicoSelecionadoId}
+                      onChange={e => {
+                        const val = e.target.value
+                        setServicoSelecionadoId(val)
+                        if (val === '__CUSTOM__') {
+                          setServicoSelecionadoLaudo('')
+                          setPrecoServicoInput('')
+                        } else {
+                          const lista = (config?.catalogo_servicos?.length > 0 ? config.catalogo_servicos : INITIAL_CONFIG.catalogo_servicos)
+                          const srvObj = lista.find(s => String(s.id) === String(val) || s.nome === val)
+                          if (srvObj) {
+                            setServicoSelecionadoLaudo(srvObj.nome)
+                            setPrecoServicoInput(srvObj.valor ? srvObj.valor.toString() : '0')
+                          }
+                        }
+                      }}
                       style={{ fontSize: '0.8rem' }}
                     >
-                      <option value="">-- Selecione o Serviço Pré-Cadastrado --</option>
-                      {(config?.categorias_servicos || [
-                        "MANUTENÇÃO PREVENTIVA",
-                        "LIMPEZA ULTRASSÔNICA",
-                        "CUSTOMIZAÇÃO",
-                        "POLIMENTO DE RAMPA DE ALIMENTAÇÃO",
-                        "AJUSTE DE GATILHO",
-                        "DESMONTAGEM E LUBRIFICAÇÃO ESTATÍSTICA",
-                        "REPARO TÉCNICO",
-                        "PINTURA & CERAKOTE"
-                      ]).map((srv, idx) => (
-                        <option key={idx} value={srv}>{srv}</option>
+                      <option value="">-- Selecione o Serviço do Catálogo / Tabela de Valores --</option>
+                      {(config?.catalogo_servicos?.length > 0 ? config.catalogo_servicos : INITIAL_CONFIG.catalogo_servicos).map((srv, idx) => (
+                        <option key={srv.id || idx} value={srv.id || srv.nome}>
+                          {srv.nome} — R$ {(parseFloat(srv.valor) || 0).toFixed(2)} ({srv.categoria || 'Geral'})
+                        </option>
                       ))}
                       <option value="__CUSTOM__">+ Outro Serviço Customizado...</option>
                     </select>
@@ -948,7 +959,7 @@ export default function ModuloOrdens({
                     </button>
                   </div>
 
-                  {servicoSelecionadoLaudo === '__CUSTOM__' && (
+                  {servicoSelecionadoId === '__CUSTOM__' && (
                     <input
                       className="input-field"
                       placeholder="Digite o nome do serviço customizado..."

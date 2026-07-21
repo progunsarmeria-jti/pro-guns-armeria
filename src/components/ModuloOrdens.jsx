@@ -1140,22 +1140,82 @@ export default function ModuloOrdens({
                 />
               </div>
 
-              {/* 4. VALOR TOTAL */}
-              <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
-                  VALOR TOTAL CALCULADO (PEÇAS + SERVIÇOS) R$ *
-                </label>
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  className="input-field"
-                  value={valorPecasMaoDeObra}
-                  onChange={e => setValorPecasMaoDeObra(e.target.value)}
-                  placeholder="0.00"
-                  style={{ fontSize: '1rem', fontWeight: '800', color: '#34D399' }}
-                />
-              </div>
+              {/* 4. PAINEL INTELIGENTE DE CÁLCULO AUTOMÁTICO & APLICAÇÃO DE DESCONTO */}
+              {(() => {
+                const somaItens = (itensLaudo || []).reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0)
+                const subtotalBase = somaItens > 0 ? somaItens : (parseFloat(valorPecasMaoDeObra) || 0)
+
+                const aplicarDescontoRapido = (tipo, val) => {
+                  let valorFinal = subtotalBase
+                  if (tipo === 'PERCENT') {
+                    const descR$ = subtotalBase * (val / 100)
+                    valorFinal = Math.max(0, subtotalBase - descR$)
+                  } else if (tipo === 'FIXED') {
+                    valorFinal = Math.max(0, subtotalBase - val)
+                  } else if (tipo === 'NONE') {
+                    valorFinal = subtotalBase
+                  }
+                  setValorPecasMaoDeObra(valorFinal.toFixed(2))
+                }
+
+                const valorFinalNum = parseFloat(valorPecasMaoDeObra) || 0
+                const valorDesconto = Math.max(0, subtotalBase - valorFinalNum)
+                const percentualDesconto = subtotalBase > 0 ? ((valorDesconto / subtotalBase) * 100).toFixed(1) : 0
+
+                return (
+                  <div style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--gold-accent)', borderRadius: '8px', padding: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        🧮 CALCULADORA INTELIGENTE DE SOMA & DESCONTO
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Soma Bruta dos Itens: <strong style={{ color: 'var(--text-main)' }}>R$ {subtotalBase.toFixed(2)}</strong>
+                      </span>
+                    </div>
+
+                    {/* Atalhos de Desconto Rápido */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '0.3rem' }}>
+                        APLICAR DESCONTO RÁPIDO NA O.S.:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        <button type="button" onClick={() => aplicarDescontoRapido('NONE', 0)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: '700' }}>Integral (0%)</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('PERCENT', 5)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.18)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-5%</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('PERCENT', 10)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.18)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-10%</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('PERCENT', 15)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.18)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-15%</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('PERCENT', 20)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.18)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-20%</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('FIXED', 50)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.18)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$ 50</button>
+                        <button type="button" onClick={() => aplicarDescontoRapido('FIXED', 100)} style={{ fontSize: '0.72rem', padding: '0.22rem 0.55rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.18)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$ 100</button>
+                      </div>
+                    </div>
+
+                    {/* Resumo de Cálculo Final */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.3fr', gap: '0.6rem', backgroundColor: 'var(--bg-card)', padding: '0.6rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', alignItems: 'center', border: '1px solid var(--border-color)' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', display: 'block' }}>Soma Itens:</span>
+                        <strong style={{ color: 'var(--text-main)' }}>R$ {subtotalBase.toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#F87171', display: 'block' }}>Desconto:</span>
+                        <strong style={{ color: '#F87171' }}>- R$ {valorDesconto.toFixed(2)} ({percentualDesconto}%)</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#34D399', display: 'block', fontWeight: '800' }}>VALOR TOTAL FINAL R$:</span>
+                        <input
+                          required
+                          type="number"
+                          step="0.01"
+                          className="input-field"
+                          value={valorPecasMaoDeObra}
+                          onChange={e => setValorPecasMaoDeObra(e.target.value)}
+                          placeholder="0.00"
+                          style={{ fontSize: '1.05rem', fontWeight: '800', color: '#34D399', padding: '0.3rem 0.5rem', marginTop: '0.15rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalLaudoArmeiro(null)}>Cancelar</button>
@@ -1302,6 +1362,18 @@ export default function ModuloOrdens({
                     CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
                   </div>
 
+                  {/* 5º.1: Endereço Institucional da Armeria */}
+                  {(config?.endereco || config?.cidade) && (
+                    <div style={{ fontSize: '0.78rem', color: '#374151', margin: '0.1rem 0' }}>
+                      📍 {config?.endereco || 'Av. das Armas, 1000 - Centro'}{config?.cidade ? ` — ${config.cidade}/${config.uf || ''}` : ''}
+                    </div>
+                  )}
+
+                  {/* 5º.2: Contatos Institucionais (Telefone, WhatsApp, Email) */}
+                  <div style={{ fontSize: '0.78rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                    📞 Tel: {config?.telefone || '(11) 3344-5566'} | 📱 WhatsApp: {config?.whatsapp || '(11) 98888-7777'}{config?.email ? ` | ✉️ ${config.email}` : ''}
+                  </div>
+
                   {/* 6º: Data e Hora de Abertura (Lado Esquerdo) */}
                   <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
                     Data e Hora de Abertura: {formatarDataHora(activeDoc.created_at || activeDoc.data_abertura)}
@@ -1324,22 +1396,36 @@ export default function ModuloOrdens({
                 {/* CORPO DO DOCUMENTO DA O.S. (DADOS ORGANIZADOS & FORMATADOS) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.85rem', color: '#1F2937' }}>
                   {/* BLOCO 1: DADOS DO CLIENTE REQUERENTE */}
-                  <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
-                      CLIENTE REQUERENTE
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
-                      <div><strong>Nome:</strong> {activeDoc.cliente_nome?.toUpperCase()}</div>
-                      <div>
-                        <strong>CPF / CR:</strong> {
-                          (() => {
-                            const c = (clientes || []).find(item => String(item.id) === String(activeDoc.cliente_id) || item.nome_completo === activeDoc.cliente_nome)
-                            return c ? `${c.cpf} | CR: ${c.numero_cr || 'N/A'}` : 'Cadastrado'
-                          })()
-                        }
+                  {(() => {
+                    const c = (clientes || []).find(item =>
+                      String(item.id) === String(activeDoc.cliente_id) ||
+                      (item.nome_completo && item.nome_completo.trim().toLowerCase() === (activeDoc.cliente_nome || '').trim().toLowerCase())
+                    )
+                    const telCliente = c?.telefone || activeDoc.cliente_telefone || 'Não informado'
+                    const emailCliente = c?.email || 'Não informado'
+                    const endCliente = (c?.logradouro || c?.endereco)
+                      ? `${c.logradouro || c.endereco}${c.numero ? ', ' + c.numero : ''}${c.cidade ? ' - ' + c.cidade + '/' + (c.uf || '') : ''}`
+                      : null
+
+                    return (
+                      <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
+                          CLIENTE REQUERENTE & CONTATO
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem' }}>
+                          <div><strong>Nome:</strong> {activeDoc.cliente_nome?.toUpperCase()}</div>
+                          <div>
+                            <strong>CPF / CR:</strong> {c ? `${c.cpf || 'N/A'} | CR: ${c.numero_cr || 'N/A'}` : 'Cadastrado'}
+                          </div>
+                          <div><strong>Contato / WhatsApp:</strong> <span style={{ fontWeight: '700', color: '#111827' }}>{telCliente}</span></div>
+                          <div><strong>E-mail:</strong> {emailCliente}</div>
+                          {endCliente && (
+                            <div style={{ gridColumn: 'span 2' }}><strong>Endereço do Cliente:</strong> {endCliente}</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )
+                  })()}
 
                   {/* BLOCO 2: DADOS DO EQUIPAMENTO / ARMA */}
                   <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>

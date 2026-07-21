@@ -593,7 +593,10 @@ export default function ModuloVendas({
                 />
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>DESCONTO (R$)</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>DESCONTO (R$)</label>
+                    <span style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: '700' }}>🧮 CÁLCULO INTELIGENTE</span>
+                  </div>
                   <input
                     type="number"
                     step="0.01"
@@ -602,6 +605,17 @@ export default function ModuloVendas({
                     onChange={e => setDescontoVenda(e.target.value)}
                     placeholder="0.00"
                   />
+                  {/* Atalhos Rápidos de Desconto na Venda de Balcão */}
+                  {valorSubtotalCarrinho > 0 && (
+                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setDescontoVenda(0)} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #4B5563', background: '#1F2937', color: '#D1D5DB', cursor: 'pointer', fontWeight: '700' }}>0%</button>
+                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.05).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-5%</button>
+                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.10).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-10%</button>
+                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.15).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-15%</button>
+                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.20).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-20%</button>
+                      <button type="button" onClick={() => setDescontoVenda(50)} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.15)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$ 50</button>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -242,12 +242,12 @@ export default function Navbar({
           fontSize: '0.72rem',
           padding: '0.3rem 0.65rem',
           borderRadius: '20px',
-          backgroundColor: isSupabaseConfigured ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-          border: `1px solid ${isSupabaseConfigured ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-          color: isSupabaseConfigured ? '#34D399' : '#FBBF24'
+          backgroundColor: isSupabaseConfigured() ? 'rgba(52, 211, 153, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+          border: `1px solid ${isSupabaseConfigured() ? 'rgba(52, 211, 153, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+          color: isSupabaseConfigured() ? '#34D399' : '#FBBF24'
         }}>
           <Database size={12} />
-          <span>{isSupabaseConfigured ? 'Supabase' : 'Local'}</span>
+          <span>{isSupabaseConfigured() ? 'Supabase' : 'Local'}</span>
         </div>
 
         {/* 3°: BOTÃO DE SAIR (LOGOFF) */}

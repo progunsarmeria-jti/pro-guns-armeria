@@ -479,15 +479,21 @@ export default function App() {
         if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
           // Busca no mapa local por ID ou por numero_os
           let localObj = mapa.get(String(item.id))
+          let localKey = String(item.id)
           if (!localObj && item.numero_os && tabela === 'ordens') {
             for (const [k, v] of mapa.entries()) {
               if (Number(v.numero_os) === Number(item.numero_os)) {
                 localObj = v
+                localKey = k
                 break
               }
             }
           }
           if (!localObj) localObj = {}
+
+          if (localKey !== String(item.id) && localKey !== 'undefined') {
+            mapa.delete(localKey)
+          }
 
           if (tabela === 'ordens' && localObj.status && item.status) {
             const prioLocal  = STATUS_ORDEM_PRIORIDADE.indexOf(localObj.status)

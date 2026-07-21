@@ -320,23 +320,65 @@ export default function App() {
       return prevOrdens
     })
 
-    // 1. Purga Alertas Órfãos de O.S. ou Clientes excluídos
+    // 1. Purga e Auto-resolução de Alertas cuja O.S. já mudou de status ou foi excluída
     setAlertas(prevAlertas => {
-      const novos = (prevAlertas || []).filter(alerta => {
+      let alterado = false
+      const novos = (prevAlertas || []).map(alerta => {
         if (alerta.ordem_id || alerta.os_numero) {
-          const osExiste = (ordens || []).some(o => 
+          const os = (ordens || []).find(o => 
             String(o.id) === String(alerta.ordem_id) || 
             Number(o.numero_os) === Number(alerta.os_numero)
           )
-          if (!osExiste) return false
+          if (!os) return null // Purga órfão
+          
+          // Se o alerta está PENDENTE, vamos verificar se a O.S. já avançou
+          if (alerta.status === 'PENDENTE') {
+            let deveResolver = false
+            
+            if ((alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || alerta.tipo_alerta === 'Pendente') && os.status !== 'AGUARDANDO APROVAÇÃO') {
+              deveResolver = true
+            } else if (alerta.tipo_alerta === 'AGUARDANDO RETIRADA' && os.status === 'CONCLUÍDO') {
+              deveResolver = true
+            } else if ((alerta.tipo_alerta === 'APROVADO' || alerta.tipo_alerta === 'EM MANUTENÇÃO') && 
+                       (os.status === 'AGUARDANDO RETIRADA' || os.status === 'CONCLUÍDO')) {
+              deveResolver = true
+            }
+
+            if (deveResolver) {
+              alterado = true
+              const resolvido = {
+                ...alerta,
+                status: 'RESOLVIDO',
+                resolucao: {
+                  data_hora: new Date().toLocaleString('pt-BR'),
+                  operador: 'Sistema (Auto-Resolução)',
+                  conseguiu_falar: 'SIM',
+                  resultado_acordo: `Auto-resolvido: O.S. avançou para status '${os.status}'`,
+                  detalhes: `O alerta foi encerrado automaticamente pelo sistema pois o status da O.S. foi atualizado para '${os.status}'.`
+                }
+              }
+              if (isSupabaseConfigured()) {
+                dbUpdate('alertas', alerta.id, {
+                  status: 'RESOLVIDO',
+                  resolucao: resolvido.resolucao
+                }, resolvido)
+              }
+              return resolvido
+            }
+          }
         }
         if (alerta.cliente_id) {
           const clienteExiste = (clientes || []).some(c => String(c.id) === String(alerta.cliente_id))
-          if (!clienteExiste) return false
+          if (!clienteExiste) return null // Purga órfão
         }
-        return true
-      })
-      return novos.length !== (prevAlertas || []).length ? novos : prevAlertas
+        return alerta
+      }).filter(Boolean)
+
+      if (alterado || novos.length !== (prevAlertas || []).length) {
+        try { localStorage.setItem('PROGUNS_ALERTAS', JSON.stringify(novos)) } catch(e) {}
+        return novos
+      }
+      return prevAlertas
     })
 
     // 2. Purga Notificações Órfãs de O.S. excluídas

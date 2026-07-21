@@ -252,6 +252,18 @@ export const INITIAL_CONFIG = {
       tom_som: 'alerta_medio',
       mensagem_padrao: 'Serviço em andamento na oficina pelo armeiro.'
     }
+  ],
+  blocos_home: [
+    { id: 'aguardando_aprovacao', titulo: 'O.S. Aguardando Aprovação', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'aguardando_retirada', titulo: 'O.S. Aguardando Retirada', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'em_analise', titulo: 'O.S. Em Análise', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'nao_iniciado', titulo: 'O.S. Não Iniciado', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'em_manutencao', titulo: 'O.S. Em Manutenção', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'bloco_estoque', titulo: 'Estoque de Peças & Insumos', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'bloco_caixa', titulo: 'Caixa da Recepção', perfis: ['master', 'recepcao'], ativado: true },
+    { id: 'bloco_financeiro', titulo: 'Controle Financeiro & DRE', perfis: ['master', 'recepcao'], ativado: true },
+    { id: 'bloco_clientes_resumo', titulo: 'Resumo de Clientes & Acervo', perfis: ['master', 'recepcao'], ativado: true },
+    { id: 'bloco_fluxo_resumo', titulo: 'Resumo Caixa & Fluxo Financeiro', perfis: ['master', 'recepcao'], ativado: true }
   ]
 };
 

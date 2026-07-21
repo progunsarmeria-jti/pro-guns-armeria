@@ -708,6 +708,8 @@ export default function App() {
                 caixas={caixas}
                 financeiro={financeiro}
                 clientes={clientes}
+                usuarioLogado={usuarioLogado}
+                config={config}
                 setActiveTab={setActiveTab}
                 setFiltroStatusOrdens={setFiltroStatusOrdens}
               />

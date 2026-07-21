@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Bell, Volume2 } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Bell, Volume2, LayoutGrid, Home } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
@@ -357,6 +357,30 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
 
         <button
           type="button"
+          onClick={() => setAbaConfigAtiva('blocos_home')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'blocos_home' ? '3px solid #60A5FA' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'blocos_home' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'blocos_home' ? '#60A5FA' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <LayoutGrid size={16} />
+          <span>Blocos do Home</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setAbaConfigAtiva('categorias')}
           style={{
             padding: '0.65rem 1.1rem',
@@ -673,6 +697,103 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
                           placeholder="Digite a mensagem do chamado..."
                           style={{ fontSize: '0.78rem', padding: '0.25rem 0.5rem' }}
                         />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          CONTEÚDO DA ABA: BLOCOS DO HOME
+      ========================================== */}
+      {abaConfigAtiva === 'blocos_home' && (
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <LayoutGrid size={20} color="#60A5FA" />
+              <span>Personalização dos Blocos da Tela Inicial (Home)</span>
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>
+              Escolha quais blocos e atalhos ficam visíveis na Tela Inicial e selecione quais perfis de usuário têm permissão para visualizar cada bloco.
+            </p>
+          </div>
+
+          <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>BLOCO / ATALHO DO HOME</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>VISÍVEL NO HOME?</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>PERFIS PERMITIDOS (QUEM PODE VER)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(formData.blocos_home || INITIAL_CONFIG.blocos_home).map((bloco) => {
+                  const perfisAtuais = bloco.perfis || ['master', 'armeiro', 'recepcao']
+
+                  const handleTogglePerfil = (perfilId) => {
+                    const novoPerfis = perfisAtuais.includes(perfilId)
+                      ? perfisAtuais.filter(p => p !== perfilId)
+                      : [...perfisAtuais, perfilId]
+                    
+                    const blocosAtualizados = (formData.blocos_home || INITIAL_CONFIG.blocos_home).map(b => 
+                      b.id === bloco.id ? { ...b, perfis: novoPerfis } : b
+                    )
+                    atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
+                  }
+
+                  const handleToggleAtivado = (val) => {
+                    const blocosAtualizados = (formData.blocos_home || INITIAL_CONFIG.blocos_home).map(b => 
+                      b.id === bloco.id ? { ...b, ativado: val } : b
+                    )
+                    atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
+                  }
+
+                  return (
+                    <tr key={bloco.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>
+                        {bloco.titulo}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={bloco.ativado !== false}
+                          onChange={e => handleToggleAtivado(e.target.checked)}
+                        />
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', color: perfisAtuais.includes('master') ? '#34D399' : 'var(--text-muted)' }}>
+                            <input
+                              type="checkbox"
+                              checked={perfisAtuais.includes('master')}
+                              onChange={() => handleTogglePerfil('master')}
+                            />
+                            👑 Master / ADM
+                          </label>
+
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', color: perfisAtuais.includes('armeiro') ? '#60A5FA' : 'var(--text-muted)' }}>
+                            <input
+                              type="checkbox"
+                              checked={perfisAtuais.includes('armeiro')}
+                              onChange={() => handleTogglePerfil('armeiro')}
+                            />
+                            🛠️ Armeiro (Oficina)
+                          </label>
+
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', color: perfisAtuais.includes('recepcao') ? '#F59E0B' : 'var(--text-muted)' }}>
+                            <input
+                              type="checkbox"
+                              checked={perfisAtuais.includes('recepcao')}
+                              onChange={() => handleTogglePerfil('recepcao')}
+                            />
+                            🏢 Recepção
+                          </label>
+                        </div>
                       </td>
                     </tr>
                   )

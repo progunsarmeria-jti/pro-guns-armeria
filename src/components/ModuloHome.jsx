@@ -23,11 +23,14 @@ export default function ModuloHome({
   financeiro = [],
   clientes = [],
   usuarioLogado,
+  config,
   setActiveTab,
   setFiltroStatusOrdens
 }) {
   const permissoes = usuarioLogado?.permissoes || {}
   const isMaster = usuarioLogado?.perfil === 'master'
+  const perfilAtual = usuarioLogado?.perfil || 'recepcao'
+  const regrasBlocos = config?.blocos_home || INITIAL_CONFIG?.blocos_home || []
 
   // Contagens dos balões informativos (Badges estilo Shooting House)
   const osAguardandoAprovacao = ordens.filter(o => o.status === 'AGUARDANDO APROVAÇÃO').length
@@ -51,7 +54,7 @@ export default function ModuloHome({
     setActiveTab('ordens')
   }
 
-  // Definição dos blocos de atalho estilo Shooting House (filtrados por permissão)
+  // Definição dos blocos de atalho estilo Shooting House (filtrados por permissão e configuração do ADM)
   const allStatusBlocks = [
     {
       id: 'aguardando_aprovacao',
@@ -130,18 +133,31 @@ export default function ModuloHome({
     }
   ]
 
-  const statusBlocks = allStatusBlocks.filter(block => {
+  // Função auxiliar para verificar permissão do bloco pelo perfil do usuário e configuração do ADM
+  const isBlocoPermitidoNoHome = (blockId, reqPermDefault) => {
+    const cfg = regrasBlocos.find(b => b.id === blockId)
+    if (cfg) {
+      if (cfg.ativado === false) return false
+      if (Array.isArray(cfg.perfis) && cfg.perfis.length > 0) {
+        if (!cfg.perfis.includes(perfilAtual) && perfilAtual !== 'master') {
+          return false
+        }
+      }
+    }
+
     if (isMaster) return true
-    if (!block.reqPerm) return true
-    if (block.reqPerm === 'ver_ordens') return permissoes.ver_ordens !== false
-    if (block.reqPerm === 'ver_estoque') return permissoes.ver_estoque !== false
-    return permissoes[block.reqPerm] === true
-  })
+    if (!reqPermDefault) return true
+    if (reqPermDefault === 'ver_ordens') return permissoes.ver_ordens !== false
+    if (reqPermDefault === 'ver_estoque') return permissoes.ver_estoque !== false
+    return permissoes[reqPermDefault] === true
+  }
+
+  const statusBlocks = allStatusBlocks.filter(block => isBlocoPermitidoNoHome(block.id, block.reqPerm))
 
   const podeDarEntradaOS = isMaster || (permissoes.dar_entrada_os !== false && permissoes.ver_ordens !== false)
   const podeAbrirCaixa = isMaster || (permissoes.ver_caixa === true || permissoes.gerenciar_caixa === true)
-  const podeVerClientes = isMaster || (permissoes.ver_clientes !== false)
-  const podeVerFinanceiroOuCaixa = isMaster || (permissoes.ver_financeiro === true || permissoes.ver_caixa === true)
+  const podeVerClientes = isBlocoPermitidoNoHome('bloco_clientes_resumo', 'ver_clientes') && (isMaster || permissoes.ver_clientes !== false)
+  const podeVerFinanceiroOuCaixa = isBlocoPermitidoNoHome('bloco_fluxo_resumo', 'ver_financeiro') && (isMaster || permissoes.ver_financeiro === true || permissoes.ver_caixa === true)
 
   return (
     <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>

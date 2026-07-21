@@ -173,33 +173,43 @@ export default function App() {
     return fallback.filter(item => item?.id && !deletedIds.includes(String(item.id)))
   }
 
-  // ─── Migração Automática: Purga de Dados de Demonstração Obsoletos ────────────
-  // Quando a versão do app muda, dados demo hardcoded antigos são removidos do localStorage
-  const APP_DATA_VERSION = '2.2.0'
+  // ─── Migração Automática: Purga Completa de Dados de Demonstração ────────────────
+  const APP_DATA_VERSION = '3.0.0'
   if (ls.get('PROGUNS_DATA_VERSION', null) !== APP_DATA_VERSION) {
-    // IDs de dados de demonstração que devem ser removidos se ainda existirem
-    const DEMO_IDS_CAIXAS   = ['cx_20260720']
-    const DEMO_IDS_ALERTAS  = ['alt_1002']
-    const DEMO_IDS_ORDENS   = ['o1', 'o2', 'o3', 'o4']
-    const DEMO_IDS_CLIENTES = ['c1', 'c2', 'c3', 'c4']
-    const DEMO_IDS_ARMAS    = ['a1', 'a2', 'a3', 'a4', 'a5']
-    const DEMO_IDS_ORCAMENTOS = ['orc_1', 'orc_2']
-    const DEMO_IDS_FINANCEIRO = ['fin_1', 'fin_2', 'fin_3', 'f1']
+    const DEMO_IDS_ALL = ['c1', 'c2', 'c3', 'c4', 'a1', 'a2', 'a3', 'a4', 'a5', 'o1', 'o2', 'o3', 'o4', 'orc1', 'orc_1', 'orc_2', 'fin_1', 'fin_2', 'fin_3', 'f1', 'log_1001', 'log_1002', 'alt_1002', 'cx_20260720']
 
-    const purgarDemo = (lsKey, demoIds) => {
+    const purgarDemo = (lsKey) => {
       const saved = ls.get(lsKey, null)
       if (Array.isArray(saved)) {
-        const purged = saved.filter(item => item?.id && !demoIds.includes(String(item.id)))
-        if (purged.length !== saved.length) ls.set(lsKey, purged)
+        const purged = saved.filter(item => item?.id && !DEMO_IDS_ALL.includes(String(item.id)))
+        ls.set(lsKey, purged)
+      } else {
+        ls.set(lsKey, [])
       }
     }
-    purgarDemo('PROGUNS_CAIXAS',    DEMO_IDS_CAIXAS)
-    purgarDemo('PROGUNS_ALERTAS',   DEMO_IDS_ALERTAS)
-    purgarDemo('PROGUNS_ORDENS',    DEMO_IDS_ORDENS)
-    purgarDemo('PROGUNS_CLIENTES',  DEMO_IDS_CLIENTES)
-    purgarDemo('PROGUNS_ARMAS',     DEMO_IDS_ARMAS)
-    purgarDemo('PROGUNS_ORCAMENTOS', DEMO_IDS_ORCAMENTOS)
-    purgarDemo('PROGUNS_FINANCEIRO', DEMO_IDS_FINANCEIRO)
+
+    purgarDemo('PROGUNS_CAIXAS')
+    purgarDemo('PROGUNS_ALERTAS')
+    purgarDemo('PROGUNS_ORDENS')
+    purgarDemo('PROGUNS_CLIENTES')
+    purgarDemo('PROGUNS_ARMAS')
+    purgarDemo('PROGUNS_ORCAMENTOS')
+    purgarDemo('PROGUNS_FINANCEIRO')
+    purgarDemo('PROGUNS_LOGS')
+
+    // Se Supabase estiver configurado, envia a deleção dos IDs demo
+    if (isSupabaseConfigured()) {
+      DEMO_IDS_ALL.forEach(id => {
+        dbDelete('ordens', id)
+        dbDelete('clientes', id)
+        dbDelete('armas', id)
+        dbDelete('orcamentos', id)
+        dbDelete('financeiro', id)
+        dbDelete('caixas', id)
+        dbDelete('alertas', id)
+        dbDelete('logs', id)
+      })
+    }
 
     ls.set('PROGUNS_DATA_VERSION', APP_DATA_VERSION)
   }
@@ -311,21 +321,23 @@ export default function App() {
 
   // Helper de Fusão Inteligente
   const mesclarDados = (remotos, locais, tabela) => {
-    if (remotos === null) return locais
     const remotosList = Array.isArray(remotos) ? remotos : []
     const locaisList = Array.isArray(locais) ? locais : []
     const deletedIds = ls.get(`PROGUNS_DELETED_${tabela.toUpperCase()}`, [])
+    const demoIdsToIgnore = ['c1', 'c2', 'c3', 'c4', 'a1', 'a2', 'a3', 'a4', 'a5', 'o1', 'o2', 'o3', 'o4', 'orc1', 'orc_1', 'orc_2', 'fin_1', 'fin_2', 'fin_3', 'f1', 'log_1001', 'log_1002', 'alt_1002', 'cx_20260720']
 
     const mapa = new Map()
 
-    remotosList.forEach(item => {
-      if (item?.id && !deletedIds.includes(String(item.id))) {
-        mapa.set(String(item.id), item)
-      }
-    })
+    if (remotos !== null) {
+      remotosList.forEach(item => {
+        if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
+          mapa.set(String(item.id), item)
+        }
+      })
+    }
 
     locaisList.forEach(item => {
-      if (item?.id && !deletedIds.includes(String(item.id))) {
+      if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
         const existente = mapa.get(String(item.id)) || {}
         mapa.set(String(item.id), { ...existente, ...item })
       }

@@ -25,6 +25,8 @@ export default function ModuloOrdens({
   setClientes,
   armas,
   setArmas,
+  estoque = [],
+  setEstoque,
   financeiro,
   setFinanceiro,
   caixas,
@@ -54,9 +56,105 @@ export default function ModuloOrdens({
   const [ordemExpandida, setOrdemExpandida] = useState(null)
   const [filtroStatus, setFiltroStatus] = useState(filtroInicial || 'TODAS')
 
+  // Form State do Laudo do Armeiro
+  const [diagnosticoArmeiro, setDiagnosticoArmeiro] = useState('')
+  const [solucaoProposta, setSolucaoProposta] = useState('')
+  const [valorPecasMaoDeObra, setValorPecasMaoDeObra] = useState('')
+  const [itensLaudo, setItensLaudo] = useState([])
+  const [observacoesArmeiro, setObservacoesArmeiro] = useState('')
+
+  // Form State para inclusão de itens no laudo
+  const [servicoSelecionadoLaudo, setServicoSelecionadoLaudo] = useState('')
+  const [customServicoNome, setCustomServicoNome] = useState('')
+  const [precoServicoInput, setPrecoServicoInput] = useState('')
+  const [pecaEstoqueSelecionadaId, setPecaEstoqueSelecionadaId] = useState('')
+
   React.useEffect(() => {
     if (filtroInicial) setFiltroStatus(filtroInicial)
   }, [filtroInicial])
+
+  // Recalcula valor total automaticamente a partir de itensLaudo
+  const recalcularTotalLaudo = (lista) => {
+    const soma = lista.reduce((acc, it) => acc + (Number(it.subtotal) || 0), 0)
+    setValorPecasMaoDeObra(soma.toFixed(2))
+  }
+
+  const handleAbrirLaudoArmeiroModal = (ordem) => {
+    setDiagnosticoArmeiro(ordem.diagnostico_armeiro || '')
+    setSolucaoProposta(ordem.solucao_proposta || '')
+    setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '0')
+    setItensLaudo(ordem.itens_laudo || [])
+    setObservacoesArmeiro(ordem.observacoes_armeiro || '')
+    setServicoSelecionadoLaudo('')
+    setCustomServicoNome('')
+    setPrecoServicoInput('')
+    setPecaEstoqueSelecionadaId('')
+    setModalLaudoArmeiro(ordem)
+  }
+
+  const handleAdicionarServicoLaudo = () => {
+    const nomeServico = servicoSelecionadoLaudo === '__CUSTOM__' ? customServicoNome.trim() : servicoSelecionadoLaudo
+    if (!nomeServico) {
+      alert('Selecione ou digite o nome do serviço!')
+      return
+    }
+    const unit = parseFloat(precoServicoInput) || 0
+    const novoItem = {
+      id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      tipo: 'SERVICO',
+      nome: nomeServico,
+      quantidade: 1,
+      valor_unitario: unit,
+      subtotal: unit
+    }
+    const proximaLista = [...itensLaudo, novoItem]
+    setItensLaudo(proximaLista)
+    recalcularTotalLaudo(proximaLista)
+    setServicoSelecionadoLaudo('')
+    setCustomServicoNome('')
+    setPrecoServicoInput('')
+  }
+
+  const handleAdicionarPecaEstoqueLaudo = (estoqueId) => {
+    if (!estoqueId) return
+    const peca = (estoque || []).find(p => String(p.id) === String(estoqueId))
+    if (!peca) return
+    const unit = parseFloat(peca.preco_venda) || 0
+    const novoItem = {
+      id: `peca_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      tipo: 'PECA',
+      estoque_id: peca.id,
+      nome: `${peca.nome} (${peca.codigo_sku || 'S/SKU'})`,
+      quantidade: 1,
+      valor_unitario: unit,
+      subtotal: unit
+    }
+    const proximaLista = [...itensLaudo, novoItem]
+    setItensLaudo(proximaLista)
+    recalcularTotalLaudo(proximaLista)
+    setPecaEstoqueSelecionadaId('')
+  }
+
+  const handleAtualizarItemLaudo = (id, campo, val) => {
+    const proximaLista = itensLaudo.map(it => {
+      if (it.id === id) {
+        const mod = { ...it, [campo]: val }
+        const qtd = Number(mod.quantidade) || 1
+        const unit = parseFloat(mod.valor_unitario) || 0
+        mod.subtotal = qtd * unit
+        return mod
+      }
+      return it
+    })
+    setItensLaudo(proximaLista)
+    recalcularTotalLaudo(proximaLista)
+  }
+
+  const handleRemoverItemLaudo = (id) => {
+    const proximaLista = itensLaudo.filter(it => it.id !== id)
+    setItensLaudo(proximaLista)
+    recalcularTotalLaudo(proximaLista)
+  }
 
   // Helper para tocar som de notificação apenas quando a O.S. passa para AGUARDANDO APROVAÇÃO ou AGUARDANDO RETIRADA
   const tocarSomNotificacao = () => {
@@ -97,11 +195,6 @@ export default function ModuloOrdens({
     setAlertas(prev => [novoAlerta, ...(prev || [])])
     if (isSupabaseConfigured()) dbUpsert('alertas', novoAlerta)
   }
-
-  // Form State do Laudo do Armeiro
-  const [diagnosticoArmeiro, setDiagnosticoArmeiro] = useState('')
-  const [solucaoProposta, setSolucaoProposta] = useState('')
-  const [valorPecasMaoDeObra, setValorPecasMaoDeObra] = useState('')
 
   const handleMudarStatus = (ordemId, novoStatus) => {
     setOrdens(prev => {
@@ -150,23 +243,28 @@ export default function ModuloOrdens({
       osNumero: ordem.numero_os,
       setLogs
     })
-    setDiagnosticoArmeiro(ordem.diagnostico_armeiro || '')
-    setSolucaoProposta(ordem.solucao_proposta || '')
-    setValorPecasMaoDeObra(ordem.valor_servico ? ordem.valor_servico.toString() : '')
-    setModalLaudoArmeiro(atualizada)
+    handleAbrirLaudoArmeiroModal(atualizada)
   }
 
   const handleSalvarLaudoArmeiro = (e) => {
     e.preventDefault()
     if (!modalLaudoArmeiro) return
+
     const valorTotal = parseFloat(valorPecasMaoDeObra) || 0
+    const resumoSolucao = itensLaudo.length > 0
+      ? itensLaudo.map(it => `${it.quantidade}x ${it.nome} (R$ ${(it.subtotal || 0).toFixed(2)})`).join(' | ')
+      : (solucaoProposta || 'Serviços técnicos de armaria.')
+
     const ordemAtualizada = {
       ...modalLaudoArmeiro,
       diagnostico_armeiro: diagnosticoArmeiro,
-      solucao_proposta: solucaoProposta,
+      solucao_proposta: resumoSolucao,
+      itens_laudo: itensLaudo,
+      observacoes_armeiro: observacoesArmeiro,
       valor_servico: valorTotal,
       status: 'AGUARDANDO APROVAÇÃO'
     }
+
     dbUpsert('ordens', ordemAtualizada)
     setOrdens(prev => prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
     registrarLog({
@@ -646,7 +744,7 @@ export default function ModuloOrdens({
                     {/* BOTÃO: Armeiro preenche laudo */}
                     {perfilOperador === 'armeiro' && ordem.status === 'EM ANÁLISE' && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setDiagnosticoArmeiro(ordem.diagnostico_armeiro || ''); setSolucaoProposta(ordem.solucao_proposta || ''); setValorPecasMaoDeObra(ordem.valor_servico?.toString() || ''); setModalLaudoArmeiro(ordem) }}
+                        onClick={(e) => { e.stopPropagation(); handleAbrirLaudoArmeiroModal(ordem) }}
                         style={{ backgroundColor: 'rgba(245,158,11,0.2)', border: '1px solid #F59E0B', color: '#FBBF24', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                       >
                         <FileText size={13} /> Preencher Laudo & Orçamento
@@ -764,51 +862,213 @@ export default function ModuloOrdens({
       {/* ── MODAL LAUDO DO ARMEIRO ── */}
       {modalLaudoArmeiro && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.1rem', color: '#FBBF24', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800' }}>
-                <Wrench size={18} /> Laudo Técnico — OS #{modalLaudoArmeiro.numero_os}
+              <h3 style={{ fontSize: '1.15rem', color: '#FBBF24', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', margin: 0 }}>
+                <Wrench size={20} /> Laudo Técnico & Orçamento — OS #{modalLaudoArmeiro.numero_os}
               </h3>
               <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalLaudoArmeiro(null)}>
                 <X size={20} />
               </button>
             </div>
 
-            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Cliente:</strong> {modalLaudoArmeiro.cliente_nome}</div>
-              <div><strong style={{ color: 'var(--text-muted)' }}>Equipamento:</strong> {modalLaudoArmeiro.marca_arma} {modalLaudoArmeiro.modelo_arma} ({modalLaudoArmeiro.calibre_arma}) · S/N: {modalLaudoArmeiro.numero_serie_arma || modalLaudoArmeiro.numero_serie}</div>
+            <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.75rem 0.9rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', border: '1px solid var(--border-color)' }}>
+              <div><strong style={{ color: 'var(--text-muted)' }}>CLIENTE:</strong> <span style={{ color: 'var(--text-main)', fontWeight: '700' }}>{modalLaudoArmeiro.cliente_nome?.toUpperCase()}</span></div>
+              <div><strong style={{ color: 'var(--text-muted)' }}>EQUIPAMENTO:</strong> {modalLaudoArmeiro.marca_arma} {modalLaudoArmeiro.modelo_arma} ({modalLaudoArmeiro.calibre_arma}) · S/N: {modalLaudoArmeiro.numero_serie_arma || modalLaudoArmeiro.numero_serie || '—'}</div>
               {modalLaudoArmeiro.problema_relatado && (
-                <div style={{ color: '#F87171', fontStyle: 'italic' }}>Queixa: "{modalLaudoArmeiro.problema_relatado}"</div>
+                <div style={{ color: '#F87171', fontStyle: 'italic', marginTop: '0.1rem' }}>Queixa: "{modalLaudoArmeiro.problema_relatado}"</div>
               )}
             </div>
 
-            <form onSubmit={handleSalvarLaudoArmeiro} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <form onSubmit={handleSalvarLaudoArmeiro} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              {/* 1. DIAGNÓSTICO TÉCNICO */}
               <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>DIAGNÓSTICO TÉCNICO *</label>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  DIAGNÓSTICO TÉCNICO *
+                </label>
                 <textarea
                   required
                   className="input-field"
                   rows="3"
                   value={diagnosticoArmeiro}
                   onChange={e => setDiagnosticoArmeiro(e.target.value)}
-                  placeholder="Ex: Extrator desgastado, mola enfraquecida e resíduos na câmara..."
+                  placeholder="Ex: Extrator desgastado, mola enfraquecida e resíduos acumulados na câmara..."
                 />
               </div>
 
+              {/* 2. SERVIÇOS & PEÇAS PRE-CADASTRADAS DO ESTOQUE */}
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--gold-accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.4rem' }}>
+                  <Package size={16} /> SOLUÇÃO PROPOSTA: SELEÇÃO DE SERVIÇOS & PEÇAS DO ESTOQUE
+                </div>
+
+                {/* Adicionar Serviço */}
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#60A5FA' }}>+ ADICIONAR SERVIÇO DE ARMERIA</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                    <select
+                      className="input-field"
+                      value={servicoSelecionadoLaudo}
+                      onChange={e => setServicoSelecionadoLaudo(e.target.value)}
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      <option value="">-- Selecione o Serviço Pré-Cadastrado --</option>
+                      {(config?.categorias_servicos || [
+                        "MANUTENÇÃO PREVENTIVA",
+                        "LIMPEZA ULTRASSÔNICA",
+                        "CUSTOMIZAÇÃO",
+                        "POLIMENTO DE RAMPA DE ALIMENTAÇÃO",
+                        "AJUSTE DE GATILHO",
+                        "DESMONTAGEM E LUBRIFICAÇÃO ESTATÍSTICA",
+                        "REPARO TÉCNICO",
+                        "PINTURA & CERAKOTE"
+                      ]).map((srv, idx) => (
+                        <option key={idx} value={srv}>{srv}</option>
+                      ))}
+                      <option value="__CUSTOM__">+ Outro Serviço Customizado...</option>
+                    </select>
+
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="input-field"
+                      placeholder="Valor R$"
+                      value={precoServicoInput}
+                      onChange={e => setPrecoServicoInput(e.target.value)}
+                      style={{ fontSize: '0.8rem' }}
+                    />
+
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={handleAdicionarServicoLaudo}
+                      style={{ fontSize: '0.75rem', padding: '0.42rem 0.8rem', backgroundColor: 'rgba(96, 165, 250, 0.15)', borderColor: '#60A5FA', color: '#93C5FD', fontWeight: '700' }}
+                    >
+                      + Incluir Serviço
+                    </button>
+                  </div>
+
+                  {servicoSelecionadoLaudo === '__CUSTOM__' && (
+                    <input
+                      className="input-field"
+                      placeholder="Digite o nome do serviço customizado..."
+                      value={customServicoNome}
+                      onChange={e => setCustomServicoNome(e.target.value)}
+                      style={{ marginTop: '0.3rem', fontSize: '0.8rem' }}
+                    />
+                  )}
+                </div>
+
+                {/* Adicionar Peça do Estoque */}
+                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#F59E0B' }}>+ ADICIONAR PEÇA / COMPONENTE DO ESTOQUE</div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select
+                      className="input-field"
+                      value={pecaEstoqueSelecionadaId}
+                      onChange={e => {
+                        setPecaEstoqueSelecionadaId(e.target.value)
+                        handleAdicionarPecaEstoqueLaudo(e.target.value)
+                      }}
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      <option value="">-- Selecione uma peça cadastrada no Estoque --</option>
+                      {(estoque || []).map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.nome} ({item.codigo_sku || 'S/SKU'}) — R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)} [{item.quantidade} un. disponíveis]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* TABELA DE ITENS INCLUÍDOS */}
+                <div style={{ marginTop: '0.3rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                    ITENS E SERVIÇOS SELECIONADOS PARA ESTA O.S.:
+                  </div>
+
+                  {itensLaudo.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '0.5rem', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '6px' }}>
+                      Nenhum serviço ou peça selecionada ainda. Escolha acima para incluir no orçamento.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {itensLaudo.map(item => (
+                        <div key={item.id} style={{ display: 'grid', gridTemplateColumns: 'auto 1.8fr 70px 100px 90px auto', gap: '0.5rem', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.78rem' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: '800', padding: '0.15rem 0.4rem', borderRadius: '4px', backgroundColor: item.tipo === 'SERVICO' ? 'rgba(96,165,250,0.2)' : 'rgba(245,158,11,0.2)', color: item.tipo === 'SERVICO' ? '#93C5FD' : '#FBBF24' }}>
+                            {item.tipo === 'SERVICO' ? 'SERVIÇO' : 'PEÇA'}
+                          </span>
+
+                          <input
+                            className="input-field"
+                            value={item.nome}
+                            onChange={e => handleAtualizarItemLaudo(item.id, 'nome', e.target.value)}
+                            style={{ fontSize: '0.78rem', padding: '0.2rem 0.4rem' }}
+                          />
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Qtd:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              className="input-field"
+                              value={item.quantidade}
+                              onChange={e => handleAtualizarItemLaudo(item.id, 'quantidade', e.target.value)}
+                              style={{ fontSize: '0.78rem', padding: '0.2rem 0.4rem', textAlign: 'center' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>R$:</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="input-field"
+                              value={item.valor_unitario}
+                              onChange={e => handleAtualizarItemLaudo(item.id, 'valor_unitario', e.target.value)}
+                              style={{ fontSize: '0.78rem', padding: '0.2rem 0.4rem' }}
+                            />
+                          </div>
+
+                          <div style={{ fontWeight: '800', color: '#34D399', textAlign: 'right' }}>
+                            R$ {(item.subtotal || 0).toFixed(2)}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverItemLaudo(item.id)}
+                            style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
+                            title="Remover Item"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. OBSERVAÇÕES ADICIONAIS DO ARMEIRO */}
               <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>SOLUÇÃO PROPOSTA & SERVIÇOS *</label>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  OBSERVAÇÕES ADICIONAIS DO ARMEIRO (OPCIONAL)
+                </label>
                 <textarea
-                  required
                   className="input-field"
                   rows="2"
-                  value={solucaoProposta}
-                  onChange={e => setSolucaoProposta(e.target.value)}
-                  placeholder="Ex: Substituição do extrator, troca da mola e limpeza ultrassônica."
+                  value={observacoesArmeiro}
+                  onChange={e => setObservacoesArmeiro(e.target.value)}
+                  placeholder="Digite aqui recomendações técnicas, observações de conservação ou orientações..."
                 />
               </div>
 
+              {/* 4. VALOR TOTAL */}
               <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>VALOR TOTAL (PEÇAS + MÃO DE OBRA) R$ *</label>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>
+                  VALOR TOTAL CALCULADO (PEÇAS + SERVIÇOS) R$ *
+                </label>
                 <input
                   required
                   type="number"
@@ -816,11 +1076,12 @@ export default function ModuloOrdens({
                   className="input-field"
                   value={valorPecasMaoDeObra}
                   onChange={e => setValorPecasMaoDeObra(e.target.value)}
-                  placeholder="350.00"
+                  placeholder="0.00"
+                  style={{ fontSize: '1rem', fontWeight: '800', color: '#34D399' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.3rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalLaudoArmeiro(null)}>Cancelar</button>
                 <button type="submit" className="btn-gold">
                   <Send size={15} />
@@ -1038,11 +1299,47 @@ export default function ModuloOrdens({
                     {docModalOrdem.diagnostico_armeiro && (
                       <div><strong>Laudo Técnico do Armeiro:</strong> {docModalOrdem.diagnostico_armeiro}</div>
                     )}
-                    {docModalOrdem.solucao_proposta && (
-                      <div><strong>Serviços Executados / Propostos:</strong> {docModalOrdem.solucao_proposta}</div>
+
+                    {docModalOrdem.itens_laudo && docModalOrdem.itens_laudo.length > 0 ? (
+                      <div style={{ marginTop: '0.4rem' }}>
+                        <div style={{ fontWeight: '700', marginBottom: '0.2rem' }}>Serviços Executados & Peças Utilizadas:</div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', marginTop: '0.2rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid #D1D5DB', textAlign: 'left' }}>
+                              <th style={{ padding: '0.25rem 0' }}>TIPO</th>
+                              <th style={{ padding: '0.25rem 0' }}>ITEM / SERVIÇO</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'center' }}>QTD</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'right' }}>VALOR UNIT.</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'right' }}>SUBTOTAL</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {docModalOrdem.itens_laudo.map((it, idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                <td style={{ padding: '0.25rem 0', fontWeight: '700', fontSize: '0.72rem' }}>{it.tipo === 'SERVICO' ? 'SERVIÇO' : 'PEÇA'}</td>
+                                <td style={{ padding: '0.25rem 0' }}>{it.nome}</td>
+                                <td style={{ padding: '0.25rem 0', textAlign: 'center', fontWeight: '700' }}>{it.quantidade}</td>
+                                <td style={{ padding: '0.25rem 0', textAlign: 'right' }}>R$ {(parseFloat(it.valor_unitario) || 0).toFixed(2)}</td>
+                                <td style={{ padding: '0.25rem 0', textAlign: 'right', fontWeight: '700' }}>R$ {(parseFloat(it.subtotal) || 0).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      docModalOrdem.solucao_proposta && (
+                        <div><strong>Serviços Executados / Propostos:</strong> {docModalOrdem.solucao_proposta}</div>
+                      )
                     )}
+
+                    {docModalOrdem.observacoes_armeiro && (
+                      <div style={{ marginTop: '0.3rem', fontStyle: 'italic', color: '#4B5563' }}>
+                        <strong>Observações do Armeiro:</strong> {docModalOrdem.observacoes_armeiro}
+                      </div>
+                    )}
+
                     {docModalOrdem.valor_servico > 0 && (
-                      <div><strong>Valor Total Orçado:</strong> <span style={{ fontWeight: '800', color: '#111827' }}>R$ {parseFloat(docModalOrdem.valor_servico).toFixed(2)}</span></div>
+                      <div style={{ marginTop: '0.3rem' }}><strong>Valor Total Orçado:</strong> <span style={{ fontWeight: '800', color: '#111827' }}>R$ {parseFloat(docModalOrdem.valor_servico).toFixed(2)}</span></div>
                     )}
                   </div>
                 </div>

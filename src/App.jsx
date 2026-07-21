@@ -634,6 +634,7 @@ export default function App() {
                 ordens={ordens} setOrdens={setOrdens}
                 clientes={clientes} setClientes={setClientes}
                 armas={armas} setArmas={setArmas}
+                estoque={estoque} setEstoque={setEstoque}
                 financeiro={financeiro} setFinanceiro={setFinanceiro}
                 caixas={caixas} setCaixas={setCaixas}
                 alertas={alertas} setAlertas={setAlertas}

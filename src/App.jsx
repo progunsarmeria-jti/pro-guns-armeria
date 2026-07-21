@@ -175,7 +175,7 @@ export default function App() {
 
   // ─── Migração Automática: Purga de Dados de Demonstração Obsoletos ────────────
   // Quando a versão do app muda, dados demo hardcoded antigos são removidos do localStorage
-  const APP_DATA_VERSION = '2.1.0'
+  const APP_DATA_VERSION = '2.2.0'
   if (ls.get('PROGUNS_DATA_VERSION', null) !== APP_DATA_VERSION) {
     // IDs de dados de demonstração que devem ser removidos se ainda existirem
     const DEMO_IDS_CAIXAS   = ['cx_20260720']
@@ -184,7 +184,7 @@ export default function App() {
     const DEMO_IDS_CLIENTES = ['c1', 'c2', 'c3', 'c4']
     const DEMO_IDS_ARMAS    = ['a1', 'a2', 'a3', 'a4', 'a5']
     const DEMO_IDS_ORCAMENTOS = ['orc_1', 'orc_2']
-    const DEMO_IDS_FINANCEIRO = ['fin_1', 'fin_2', 'fin_3']
+    const DEMO_IDS_FINANCEIRO = ['fin_1', 'fin_2', 'fin_3', 'f1']
 
     const purgarDemo = (lsKey, demoIds) => {
       const saved = ls.get(lsKey, null)

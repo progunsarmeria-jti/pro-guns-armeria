@@ -360,19 +360,7 @@ export const INITIAL_ORCAMENTOS = [
   }
 ];
 
-export const INITIAL_FINANCEIRO = [
-  {
-    id: "f1",
-    descricao: "Entrada OS #1001 - Manutenção Glock G17",
-    tipo: "Receita",
-    categoria: "Serviço Armeria",
-    valor: 450.00,
-    data_vencimento: "2026-07-16",
-    data_pagamento: "2026-07-16",
-    status: "Pago",
-    forma_pagamento: "PIX"
-  }
-];
+export const INITIAL_FINANCEIRO = [];
 
 export const INITIAL_CONFIG = {
   nome_fantasia: "Pró Guns Armeria",

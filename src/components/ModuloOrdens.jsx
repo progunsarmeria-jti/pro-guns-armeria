@@ -527,14 +527,22 @@ export default function ModuloOrdens({
                   {ordem.valor_servico ? `R$ ${parseFloat(ordem.valor_servico).toFixed(2)}` : '—'}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.3rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', alignItems: 'center' }}>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setDocModalOrdem(ordem) }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
-                    title="Ficha / Comprovante"
+                    style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.25rem' }}
+                    title="Visualizar / Imprimir O.S."
                   >
-                    <Printer size={14} />
+                    <Printer size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setModalEditarOS(ordem) }}
+                    style={{ background: 'none', border: 'none', color: '#FBBF24', cursor: 'pointer', padding: '0.25rem' }}
+                    title="Editar O.S."
+                  >
+                    <Edit3 size={16} />
                   </button>
                   <button
                     type="button"
@@ -544,13 +552,13 @@ export default function ModuloOrdens({
                       setSenhaMasterInput('')
                       setErroSenhaMaster('')
                     }}
-                    style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
+                    style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.25rem' }}
                     title="Excluir O.S. (Requer Senha Master)"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                   <ChevronDown
-                    size={15}
+                    size={16}
                     color="var(--text-muted)"
                     style={{ transform: expandida ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
                   />
@@ -591,6 +599,24 @@ export default function ModuloOrdens({
 
                   {/* Linha 2: Ações Operacionais */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                    {/* BOTÃO EXPLICITO: ABRIR / VISUALIZAR / IMPRIMIR O.S. */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setDocModalOrdem(ordem) }}
+                      style={{ backgroundColor: 'rgba(96,165,250,0.18)', border: '1px solid #60A5FA', color: '#93C5FD', padding: '0.35rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <Printer size={14} /> Abrir / Imprimir O.S.
+                    </button>
+
+                    {/* BOTÃO EXPLICITO: EDITAR O.S. */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setModalEditarOS(ordem) }}
+                      style={{ backgroundColor: 'rgba(245,158,11,0.18)', border: '1px solid #F59E0B', color: '#FBBF24', padding: '0.35rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <Edit3 size={14} /> Editar O.S.
+                    </button>
+
                     {/* ALTERAR STATUS MANUAL (CUSTOM SELECT ESCURO) */}
                     <div style={{ minWidth: '220px' }} onClick={e => e.stopPropagation()}>
                       <CustomSelect
@@ -1137,6 +1163,10 @@ export default function ModuloOrdens({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL EDITAR ORDEM DE SERVIÇO ── */}
       {modalEditarOS && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>

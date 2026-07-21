@@ -244,6 +244,26 @@ export default function App() {
 
   // ── Sincronização Automática em localStorage ──────────────────────────────────
   useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])
+
+  // ── Sincronização em Tempo Real das Permissões do Usuário Logado ────────────────
+  useEffect(() => {
+    if (usuarioLogado?.id && usuarios && usuarios.length > 0) {
+      const uAtualizado = usuarios.find(u => String(u.id) === String(usuarioLogado.id) || u.email === usuarioLogado.email)
+      if (uAtualizado) {
+        if (
+          JSON.stringify(uAtualizado.permissoes) !== JSON.stringify(usuarioLogado.permissoes) ||
+          uAtualizado.perfil !== usuarioLogado.perfil ||
+          uAtualizado.status !== usuarioLogado.status ||
+          uAtualizado.cargo !== usuarioLogado.cargo
+        ) {
+          const novoUsuarioLogado = { ...usuarioLogado, ...uAtualizado }
+          setUsuarioLogado(novoUsuarioLogado)
+          ss.set('PROGUNS_AUTH_USER', novoUsuarioLogado)
+        }
+      }
+    }
+  }, [usuarios, usuarioLogado])
+
   useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
   useEffect(() => { ls.set('PROGUNS_ARMAS', armas) }, [armas])
   useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])

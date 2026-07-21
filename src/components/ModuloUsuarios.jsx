@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { Plus, Users, Shield, Key, Edit, Trash2, Check, X, Lock, Wrench, UserCheck, Search } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { dbUpsert, isSupabaseConfigured } from '../lib/supabase'
 
 export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, logs = [], setLogs }) {
   const [abaAtiva, setAbaAtiva] = useState('equipe') // 'equipe' | 'auditoria'
@@ -106,7 +107,9 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
   const handleSalvarUsuario = (e) => {
     e.preventDefault()
     if (editingUsuario) {
-      setUsuarios(usuarios.map(u => u.id === editingUsuario.id ? { ...u, ...usuarioForm } : u))
+      const uAtualizado = { ...editingUsuario, ...usuarioForm }
+      setUsuarios(usuarios.map(u => u.id === editingUsuario.id ? uAtualizado : u))
+      if (isSupabaseConfigured()) dbUpsert('usuarios', uAtualizado)
       alert(`Permissões do usuário ${usuarioForm.nome_completo} salvas com sucesso!`)
     } else {
       const novoUsuario = {
@@ -114,6 +117,7 @@ export default function ModuloUsuarios({ usuarios, setUsuarios, usuarioLogado, l
         ...usuarioForm
       }
       setUsuarios([...usuarios, novoUsuario])
+      if (isSupabaseConfigured()) dbUpsert('usuarios', novoUsuario)
       alert(`Novo operador ${usuarioForm.nome_completo} cadastrado com sucesso!`)
     }
     setShowModalNovoUsuario(false)

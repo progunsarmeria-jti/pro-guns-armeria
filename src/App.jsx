@@ -299,10 +299,14 @@ export default function App() {
     setOrdens(prevOrdens => {
       if (!Array.isArray(prevOrdens) || prevOrdens.length === 0) return prevOrdens
       let alterado = false
+      const agora = new Date().toISOString()
       const corrigidos = prevOrdens.map(o => {
         if (o.status === 'EM ANÁLISE' && ((Array.isArray(o.itens_laudo) && o.itens_laudo.length > 0) || o.diagnostico_armeiro || (o.valor_servico && parseFloat(o.valor_servico) > 0))) {
           alterado = true
-          return { ...o, status: 'AGUARDANDO APROVAÇÃO' }
+          const corrigida = { ...o, status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }
+          // Também corrige no Supabase para evitar que o sync reverta
+          if (isSupabaseConfigured()) dbUpsert('ordens', corrigida)
+          return corrigida
         }
         return o
       })
@@ -379,6 +383,12 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_LOGS', logs) }, [logs])
   useEffect(() => { ls.set('PROGUNS_CONFIG', config) }, [config])
 
+  // Hierarquia de status de O.S. para merge inteligente (maior índice = mais avançado)
+  const STATUS_ORDEM_PRIORIDADE = [
+    'NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO',
+    'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
+  ]
+
   // Helper de Fusão Inteligente
   const mesclarDados = (remotos, locais, tabela) => {
     const remotosList = Array.isArray(remotos) ? remotos : []
@@ -405,10 +415,39 @@ export default function App() {
     })
 
     // 2º Se Supabase retornou dados (remotos !== null), os dados remotos atualizados SOBRESCREVEM o cache local antigo
+    // EXCEÇÃO CRÍTICA para O.S.: se o local tem status mais avançado no fluxo, ele vence
     if (remotos !== null) {
       remotosList.forEach(item => {
         if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
           const localObj = mapa.get(String(item.id)) || {}
+
+          if (tabela === 'ordens' && localObj.status && item.status) {
+            // Verifica qual status é mais avançado no fluxo de trabalho
+            const prioLocal  = STATUS_ORDEM_PRIORIDADE.indexOf(localObj.status)
+            const prioRemoto = STATUS_ORDEM_PRIORIDADE.indexOf(item.status)
+
+            if (prioLocal > prioRemoto) {
+              // Local está mais avançado: mesclamos campos remotos mas mantemos o status/itens locais
+              // e reforçamos o upsert do local para o Supabase para corrigir a divergência
+              const merged = { ...item, ...localObj }
+              mapa.set(String(item.id), merged)
+              // Re-envia para o Supabase para corrigir a divergência
+              if (isSupabaseConfigured()) dbUpsert('ordens', merged)
+              return
+            }
+
+            if (prioLocal === prioRemoto && localObj.updated_at && item.updated_at) {
+              // Mesmo nível de status: usa updated_at como desempate
+              if (localObj.updated_at > item.updated_at) {
+                // Local é mais recente
+                const merged = { ...item, ...localObj }
+                mapa.set(String(item.id), merged)
+                if (isSupabaseConfigured()) dbUpsert('ordens', merged)
+                return
+              }
+            }
+          }
+
           mapa.set(String(item.id), { ...localObj, ...item })
         }
       })

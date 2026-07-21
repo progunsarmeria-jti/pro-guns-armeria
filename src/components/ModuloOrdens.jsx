@@ -265,7 +265,7 @@ export default function ModuloOrdens({
     handleAbrirLaudoArmeiroModal(atualizada)
   }
 
-  const handleSalvarLaudoArmeiro = (e) => {
+  const handleSalvarLaudoArmeiro = async (e) => {
     e.preventDefault()
     if (!modalLaudoArmeiro) return
 
@@ -274,6 +274,8 @@ export default function ModuloOrdens({
       ? itensLaudo.map(it => `${it.quantidade}x ${it.nome} (R$ ${(it.subtotal || 0).toFixed(2)})`).join(' | ')
       : (solucaoProposta || 'Serviços técnicos de armaria.')
 
+    const agora = new Date().toISOString()
+
     const ordemAtualizada = {
       ...modalLaudoArmeiro,
       diagnostico_armeiro: diagnosticoArmeiro,
@@ -281,17 +283,36 @@ export default function ModuloOrdens({
       itens_laudo: itensLaudo,
       observacoes_armeiro: observacoesArmeiro,
       valor_servico: valorTotal,
-      status: 'AGUARDANDO APROVAÇÃO'
+      status: 'AGUARDANDO APROVAÇÃO',
+      updated_at: agora,
+      laudo_concluido_em: agora
     }
 
-    dbUpsert('ordens', ordemAtualizada)
+    // ── 1. Salva imediatamente no localStorage para garantir consistência local ──
     setOrdens(prev => {
-      const proximo = prev.map(o => (String(o.id) === String(modalLaudoArmeiro.id) || Number(o.numero_os) === Number(modalLaudoArmeiro.numero_os)) ? ordemAtualizada : o)
-      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      const proximo = prev.map(o =>
+        (String(o.id) === String(modalLaudoArmeiro.id) || Number(o.numero_os) === Number(modalLaudoArmeiro.numero_os))
+          ? ordemAtualizada : o
+      )
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(err) {}
       return proximo
     })
+
+    // ── 2. Atualiza o modal de documento se estiver aberto ──
     if (docModalOrdem && (String(docModalOrdem.id) === String(modalLaudoArmeiro.id) || Number(docModalOrdem.numero_os) === Number(modalLaudoArmeiro.numero_os))) {
       setDocModalOrdem(ordemAtualizada)
+    }
+
+    // ── 3. Persiste no Supabase com retry ──
+    try {
+      const ok = await dbUpsert('ordens', ordemAtualizada)
+      if (!ok) {
+        // Retry após 1 segundo em caso de falha
+        setTimeout(() => dbUpsert('ordens', ordemAtualizada), 1000)
+      }
+    } catch (err) {
+      console.error('[Laudo] Erro ao salvar no Supabase, tentando novamente...', err)
+      setTimeout(() => dbUpsert('ordens', ordemAtualizada), 1500)
     }
 
     registrarLog({

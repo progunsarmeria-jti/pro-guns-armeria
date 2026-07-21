@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { hojeISO, formatarData } from '../lib/dates'
-import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3 } from 'lucide-react'
+import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
+import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
 import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
@@ -576,7 +576,11 @@ export default function ModuloOrdens({
                   gap: '0.75rem'
                 }}>
                   {/* Linha 1: Detalhes da O.S. */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.82rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#34D399' }}>
+                      <Calendar size={13} />
+                      <span style={{ fontWeight: '700' }}>Abertura: {formatarDataHora(ordem.created_at || ordem.data_abertura)}</span>
+                    </div>
                     {ordem.problema_relatado && (
                       <div>
                         <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>QUEIXA DO CLIENTE: </span>
@@ -955,9 +959,9 @@ export default function ModuloOrdens({
                   CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
                 </div>
 
-                {/* 6º: Data (Lado Esquerdo) */}
+                {/* 6º: Data e Hora de Abertura (Lado Esquerdo) */}
                 <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
-                  Data: {formatarData(docModalOrdem.created_at || hojeISO())}
+                  Data e Hora de Abertura: {formatarDataHora(docModalOrdem.created_at || docModalOrdem.data_abertura)}
                 </div>
 
                 {/* 7º: Traço Longo fazendo a divisão do cabeçalho */}

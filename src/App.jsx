@@ -327,7 +327,16 @@ export default function App() {
     const remotosList = Array.isArray(remotos) ? remotos : []
     const locaisList = Array.isArray(locais) ? locais : []
     const deletedIds = ls.get(`PROGUNS_DELETED_${tabela.toUpperCase()}`, [])
-    const demoIdsToIgnore = ['c1', 'c2', 'c3', 'c4', 'a1', 'a2', 'a3', 'a4', 'a5', 'o1', 'o2', 'o3', 'o4', 'orc1', 'orc_1', 'orc_2', 'fin_1', 'fin_2', 'fin_3', 'f1', 'log_1001', 'log_1002', 'alt_1002', 'cx_20260720']
+    const demoIdsToIgnore = [
+      'c1', 'c2', 'c3', 'c4',
+      'a1', 'a2', 'a3', 'a4', 'a5',
+      'o1', 'o2', 'o3', 'o4',
+      'p1', 'p2', 'p3', 'p4',
+      'orc1', 'orc_1', 'orc_2',
+      'fin_1', 'fin_2', 'fin_3', 'f1',
+      'log_1001', 'log_1002',
+      'alt_1002', 'cx_20260720'
+    ]
 
     const mapa = new Map()
 
@@ -461,50 +470,15 @@ export default function App() {
     return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }
   }, [carregarDoSupabase])
 
-  useEffect(() => {
-    ls.set('PROGUNS_USUARIOS', usuarios)
-    if (isSupabaseConfigured()) dbUpsertAll('usuarios', usuarios)
-  }, [usuarios])
-
-  useEffect(() => {
-    ls.set('PROGUNS_CLIENTES', clientes)
-    if (isSupabaseConfigured()) dbUpsertAll('clientes', clientes)
-  }, [clientes])
-
-  useEffect(() => {
-    ls.set('PROGUNS_ARMAS', armas)
-    if (isSupabaseConfigured()) dbUpsertAll('armas', armas)
-  }, [armas])
-
-  useEffect(() => {
-    ls.set('PROGUNS_ORDENS', ordens)
-    if (isSupabaseConfigured()) dbUpsertAll('ordens', ordens)
-  }, [ordens])
-
-  useEffect(() => {
-    ls.set('PROGUNS_ORCAMENTOS', orcamentos)
-    if (isSupabaseConfigured()) dbUpsertAll('orcamentos', orcamentos)
-  }, [orcamentos])
-
-  useEffect(() => {
-    ls.set('PROGUNS_FINANCEIRO', financeiro)
-    if (isSupabaseConfigured()) dbUpsertAll('financeiro', financeiro)
-  }, [financeiro])
-
-  useEffect(() => {
-    ls.set('PROGUNS_ESTOQUE', estoque)
-    if (isSupabaseConfigured()) dbUpsertAll('estoque', estoque)
-  }, [estoque])
-
-  useEffect(() => {
-    ls.set('PROGUNS_CAIXAS', caixas)
-    if (isSupabaseConfigured()) dbUpsertAll('caixas', caixas)
-  }, [caixas])
-
-  useEffect(() => {
-    ls.set('PROGUNS_ALERTAS', alertas)
-    if (isSupabaseConfigured()) dbUpsertAll('alertas', alertas)
-  }, [alertas])
+  useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])
+  useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
+  useEffect(() => { ls.set('PROGUNS_ARMAS', armas) }, [armas])
+  useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])
+  useEffect(() => { ls.set('PROGUNS_ORCAMENTOS', orcamentos) }, [orcamentos])
+  useEffect(() => { ls.set('PROGUNS_FINANCEIRO', financeiro) }, [financeiro])
+  useEffect(() => { ls.set('PROGUNS_ESTOQUE', estoque) }, [estoque])
+  useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
+  useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
 
   const handleAtualizarConfig = (novosDados) => {
     setConfig(novosDados)

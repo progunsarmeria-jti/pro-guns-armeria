@@ -192,7 +192,7 @@ export default function ModalNovaOSArmeria({
       valor_servico: 0,
       valor_taxamento: 0,
       status: 'NÃO INICIADO',
-      created_at: hojeISO()
+      created_at: new Date().toISOString()
     }
 
     // Se marcado para salvar no Acervo e a arma ainda não constar no cadastro do cliente

@@ -66,6 +66,7 @@ export default function ModuloOrdens({
   const [osParaEditarAposMaster, setOsParaEditarAposMaster] = useState(null)
   const [senhaMasterEditarInput, setSenhaMasterEditarInput] = useState('')
   const [erroSenhaMasterEditar, setErroSenhaMasterEditar] = useState('')
+  const [statusPendenteAlteracao, setStatusPendenteAlteracao] = useState(null)
   const [senhaMasterInput, setSenhaMasterInput] = useState('')
   const [erroSenhaMaster, setErroSenhaMaster] = useState('')
   const [formaPagamentoCheckout, setFormaPagamentoCheckout] = useState('Dinheiro')
@@ -302,7 +303,7 @@ export default function ModuloOrdens({
     if (isSupabaseConfigured()) dbUpsert('alertas', novoAlerta)
   }
 
-  const handleMudarStatus = (ordemId, novoStatus) => {
+  const executarMudarStatus = (ordemId, novoStatus) => {
     const agora = new Date().toISOString()
     setOrdens(prev => {
       const proximo = prev.map(o => {
@@ -330,6 +331,17 @@ export default function ModuloOrdens({
       try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
       return proximo
     })
+  }
+
+  const handleMudarStatus = (ordemId, novoStatus) => {
+    const ordem = ordens.find(o => String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId))
+    if (ordem && ordem.status === 'CONCLUÍDO') {
+      setStatusPendenteAlteracao({ ordem, novoStatus })
+      setSenhaMasterEditarInput('')
+      setErroSenhaMasterEditar('')
+    } else {
+      executarMudarStatus(ordemId, novoStatus)
+    }
   }
 
   const handleIniciarAnalise = (ordem) => {
@@ -676,6 +688,28 @@ export default function ModuloOrdens({
     setModalEditarOS(targetOS)
   }
 
+  // Handler para liberar mudança de status de O.S. concluída via Senha Master
+  const handleConfirmarSenhaMasterStatus = (e) => {
+    e.preventDefault()
+    if (!statusPendenteAlteracao) return
+
+    const { ordem, novoStatus } = statusPendenteAlteracao
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterEditarInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterEditarInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMasterEditar('Senha Master incorreta! Operação não autorizada.')
+      return
+    }
+
+    setStatusPendenteAlteracao(null)
+    setSenhaMasterEditarInput('')
+    setErroSenhaMasterEditar('')
+    executarMudarStatus(ordem.id, novoStatus)
+  }
+
   // Handler para Salvar Edição Completa da O.S.
   const handleSalvarEdicaoOS = (e) => {
     e.preventDefault()
@@ -875,7 +909,16 @@ export default function ModuloOrdens({
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setModalEditarOS(ordem) }}
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      if (ordem.status === 'CONCLUÍDO') {
+                        setOsParaEditarAposMaster(ordem)
+                        setSenhaMasterEditarInput('')
+                        setErroSenhaMasterEditar('')
+                      } else {
+                        setModalEditarOS(ordem)
+                      }
+                    }}
                     style={{ background: 'none', border: 'none', color: '#FBBF24', cursor: 'pointer', padding: '0.25rem' }}
                     title="Editar O.S."
                   >
@@ -2277,6 +2320,59 @@ export default function ModuloOrdens({
                 <button type="button" className="btn-secondary" onClick={() => setOsParaEditarAposMaster(null)}>Cancelar</button>
                 <button type="submit" className="btn-gold" style={{ backgroundColor: '#D97706', borderColor: '#D97706', color: '#FFF' }}>
                   <Unlock size={16} /> Liberar Edição
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE SENHA MASTER PARA ALTERAR STATUS DE O.S. CONCLUÍDA ── */}
+      {statusPendenteAlteracao && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '460px', borderLeft: '4px solid #F59E0B' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#FBBF24', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={20} color="#FBBF24" />
+                Alteração Bloqueada (Requer Master)
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setStatusPendenteAlteracao(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarSenhaMasterStatus} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ backgroundColor: 'rgba(245,158,11,0.1)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)', fontSize: '0.83rem', color: '#FBBF24' }}>
+                <div>Esta O.S. já foi <strong>Concluída e Faturada</strong>.</div>
+                <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  A alteração do status de uma O.S. concluída para <strong>"{statusPendenteAlteracao.novoStatus}"</strong> requer validação por senha Master.
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Senha Pessoal do Usuário Master *</label>
+                <input
+                  required
+                  autoFocus
+                  type="password"
+                  className="input-field"
+                  value={senhaMasterEditarInput}
+                  onChange={e => { setSenhaMasterEditarInput(e.target.value); setErroSenhaMasterEditar('') }}
+                  placeholder="Digite a senha master..."
+                  style={{ textTransform: 'none' }}
+                />
+              </div>
+
+              {erroSenhaMasterEditar && (
+                <div style={{ color: '#F87171', fontSize: '0.78rem', fontWeight: '700' }}>
+                  ⚠️ {erroSenhaMasterEditar}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setStatusPendenteAlteracao(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold" style={{ backgroundColor: '#D97706', borderColor: '#D97706', color: '#FFF' }}>
+                  <Unlock size={16} /> Liberar Alteração
                 </button>
               </div>
             </form>

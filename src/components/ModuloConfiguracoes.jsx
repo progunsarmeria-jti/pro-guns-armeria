@@ -164,6 +164,16 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
+  // Restaurar / Recadastrar Categorias Padrão do Módulo Ativo
+  const handleRestaurarCategoriasPadraoModulo = () => {
+    const padrao = catConfigAtual.padrao || []
+    const atuais = listaCategoriasAtivas || []
+    const uniao = Array.from(new Set([...atuais.map(c => c.toUpperCase()), ...padrao.map(c => c.toUpperCase())]))
+    const updated = { ...formData, [catConfigAtual.chave]: uniao }
+    atualizarConfig(updated)
+    alert(`As categorias padrão de ${catConfigAtual.rotulo} foram recadastradas/restauradas com sucesso!`)
+  }
+
   // Adicionar Novo Serviço ao Catálogo
   const handleAdicionarServico = (e) => {
     e.preventDefault()
@@ -698,8 +708,21 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
           {/* GRID DE CATEGORIAS CADASTRADAS */}
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.6rem' }}>
-              CATEGORIAS REGISTRADAS ({listaCategoriasAtivas.length}):
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)' }}>
+                CATEGORIAS REGISTRADAS ({listaCategoriasAtivas.length}):
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleRestaurarCategoriasPadraoModulo}
+                style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                title="Recadastrar/Restaurar categorias padrão deste módulo"
+              >
+                <RotateCcw size={13} />
+                <span>Restaurar Categorias Padrão</span>
+              </button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {listaCategoriasAtivas.map(cat => (

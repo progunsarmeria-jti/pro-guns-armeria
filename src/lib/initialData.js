@@ -216,7 +216,7 @@ export const INITIAL_CONFIG = {
     { id: "s5", nome: "POLIMENTO DE RAMPA DE ALIMENTAÇÃO E TAMBOR", valor: 200.00, categoria: "ACABAMENTO" }
   ],
   ordem_menu: [
-    'home', 'caixa', 'clientes', 'configuracoes', 'estoque', 'financeiro', 'orcamentos', 'ordens', 'alertas', 'usuarios', 'vendas'
+    'home', 'alertas', 'caixa', 'ordens', 'vendas', 'clientes', 'estoque', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes'
   ]
 };
 

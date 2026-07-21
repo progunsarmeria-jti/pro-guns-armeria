@@ -547,6 +547,9 @@ export default function App() {
           delete remoteCopy.id
           setConfig(prev => {
             const merged = { ...INITIAL_CONFIG, ...prev, ...remoteCopy }
+            if (Array.isArray(remoteCopy.ordem_menu) && remoteCopy.ordem_menu.length > 0) {
+              merged.ordem_menu = remoteCopy.ordem_menu
+            }
             ls.set('PROGUNS_CONFIG', merged)
             return merged
           })

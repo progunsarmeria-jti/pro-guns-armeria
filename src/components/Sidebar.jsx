@@ -35,22 +35,23 @@ export default function Sidebar({
 
   const menuItemsOriginal = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,         badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
-    { id: 'caixa',         label: 'Caixa',              icon: Wallet,       badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
-    { id: 'clientes',      label: 'Clientes',          icon: Users,        badgeCount: null,                                    reqPerm: 'ver_clientes' },
-    { id: 'configuracoes', label: 'Configurações',      icon: Settings,     badgeCount: null,                                    reqPerm: 'ver_configuracoes' },
-    { id: 'estoque',       label: 'Estoque',            icon: Package,      badgeCount: estoqueBaixoCount > 0 ? `${estoqueBaixoCount} Alerta` : null, reqPerm: 'ver_estoque' },
-    { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign,   badgeCount: null,                                    reqPerm: 'ver_financeiro' },
-    { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator,   badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
-    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,     badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
     { id: 'alertas',       label: 'Painel de Alerta',  icon: Bell,         badgeCount: alertasPendentesCount > 0 ? `${alertasPendentesCount} Novo` : null, reqPerm: 'ver_alertas' },
-    { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,    badgeCount: null,                                    reqPerm: 'gerenciar_usuarios' },
+    { id: 'caixa',         label: 'Caixa',              icon: Wallet,       badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
+    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,     badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
     { id: 'vendas',        label: 'Vendas',             icon: ShoppingCart, badgeCount: null,                                    reqPerm: 'ver_vendas' },
+    { id: 'clientes',      label: 'Clientes',          icon: Users,        badgeCount: null,                                    reqPerm: 'ver_clientes' },
+    { id: 'estoque',       label: 'Estoque',            icon: Package,      badgeCount: estoqueBaixoCount > 0 ? `${estoqueBaixoCount} Alerta` : null, reqPerm: 'ver_estoque' },
+    { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator,   badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
+    { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign,   badgeCount: null,                                    reqPerm: 'ver_financeiro' },
+    { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,    badgeCount: null,                                    reqPerm: 'gerenciar_usuarios' },
+    { id: 'configuracoes', label: 'Configurações',      icon: Settings,     badgeCount: null,                                    reqPerm: 'ver_configuracoes' },
   ]
 
   // Garante a ordem exata definida pelo ADM Master
+  const defaultOrder = ['home', 'alertas', 'caixa', 'ordens', 'vendas', 'clientes', 'estoque', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes']
   const ordemCustom = (config?.ordem_menu && Array.isArray(config.ordem_menu) && config.ordem_menu.length > 0)
     ? config.ordem_menu
-    : ['home', 'caixa', 'clientes', 'configuracoes', 'estoque', 'financeiro', 'orcamentos', 'ordens', 'alertas', 'usuarios', 'vendas']
+    : defaultOrder
 
   const menuItemsMap = new Map(menuItemsOriginal.map(item => [item.id, item]))
   const orderedItems = []

@@ -7,16 +7,16 @@ import { INITIAL_CONFIG } from '../lib/initialData'
 
 const ALL_SIDEBAR_ITEMS_REF = [
   { id: 'home',          label: 'Home (Início)' },
-  { id: 'caixa',         label: 'Caixa' },
-  { id: 'clientes',      label: 'Clientes' },
-  { id: 'configuracoes', label: 'Configurações' },
-  { id: 'estoque',       label: 'Estoque' },
-  { id: 'financeiro',    label: 'Financeiro' },
-  { id: 'orcamentos',    label: 'Orçamentos' },
-  { id: 'ordens',        label: 'Ordem de Serviço' },
   { id: 'alertas',       label: 'Painel de Alerta' },
-  { id: 'usuarios',      label: 'Usuários' },
+  { id: 'caixa',         label: 'Caixa' },
+  { id: 'ordens',        label: 'Ordem de Serviço' },
   { id: 'vendas',        label: 'Vendas' },
+  { id: 'clientes',      label: 'Clientes' },
+  { id: 'estoque',       label: 'Estoque' },
+  { id: 'orcamentos',    label: 'Orçamentos' },
+  { id: 'financeiro',    label: 'Financeiro' },
+  { id: 'usuarios',      label: 'Usuários' },
+  { id: 'configuracoes', label: 'Configurações' },
 ]
 
 export default function ModuloConfiguracoes({ config, setConfig }) {

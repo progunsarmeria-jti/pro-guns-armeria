@@ -862,47 +862,195 @@ export default function ModuloOrdens({
         </div>
       )}
 
-      {/* ── MODAL COMPROVANTE / FICHA DA O.S. ── */}
+      {/* ── MODAL COMPROVANTE / FICHA DA O.S. (VISUALIZAR E IMPRIMIR) ── */}
       {docModalOrdem && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', zIndex: 9999, padding: '2rem 1rem', overflowY: 'auto' }}>
-          <div style={{ position: 'relative', width: '100%', maxWidth: '680px', backgroundColor: '#FFFFFF', color: '#111827', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', padding: '2rem', margin: 'auto 0' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '720px', backgroundColor: '#FFFFFF', color: '#111827', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', padding: '2.2rem', margin: 'auto 0' }}>
+            {/* Botão Fechar Modal */}
             <button
               onClick={() => setDocModalOrdem(null)}
               style={{ position: 'absolute', top: '1rem', right: '1rem', background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4B5563' }}
+              title="Fechar"
             >
               <X size={18} />
             </button>
 
-            <div className="print-area">
-              <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000' }}>
-                  {(config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
+            {/* ÁREA IMPRESSA DO COMPROVANTE DA O.S. */}
+            <div className="print-area" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {/* CABEÇALHO DA ARMERIA (LAYOUT INSTITUCIONAL DE IMPRESSÃO) */}
+              <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+                {/* 1º: Logo da Armeria (Lado Superior Central) */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem' }}>
+                  <img
+                    src="/LOGO.png"
+                    alt={config?.nome_fantasia || 'Pró Guns Armeria'}
+                    style={{ maxHeight: '75px', objectFit: 'contain' }}
+                    onError={(e) => { e.target.style.display = 'none' }}
+                  />
+                </div>
+
+                {/* 2º Título: Nome Fantasia (Negrito, Centralizado, Abaixo da Logo) */}
+                <h1 style={{ fontSize: '1.35rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
+                </h1>
+
+                {/* 3º Subtítulo: Razão Social (Fonte tamanho menor, Centralizado abaixo do Nome Fantasia) */}
+                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#374151', margin: '0.1rem 0' }}>
+                  {config?.razao_social || 'Pró Guns Armeria LTDA'}
+                </div>
+
+                {/* 4º: CNPJ (Centralizado abaixo da Razão Social) */}
+                <div style={{ fontSize: '0.8rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                  CNPJ: {config?.cnpj || '12.345.678/0001-99'}
+                </div>
+
+                {/* 5º: N° do CR e Região Militar */}
+                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937', margin: '0.1rem 0' }}>
+                  CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
+                </div>
+
+                {/* 6º: Data (Lado Esquerdo) */}
+                <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
+                  Data: {formatarData(docModalOrdem.created_at || hojeISO())}
+                </div>
+
+                {/* 7º: Traço Longo fazendo a divisão do cabeçalho */}
+                <hr style={{ border: 'none', borderTop: '2px solid #000000', marginTop: '0.4rem', marginBottom: '1.2rem' }} />
+              </div>
+
+              {/* TÍTULO DA ORDEM DE SERVIÇO */}
+              <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+                <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>
+                  COMPROVANTE DE ENTRADA — ORDEM DE SERVIÇO #{docModalOrdem.numero_os}
                 </h2>
-                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#333' }}>COMPROVANTE DE ENTRADA — OS #{docModalOrdem.numero_os}</div>
-                <div style={{ fontSize: '0.75rem', color: '#555' }}>{config?.cr_armeria || 'CR-998877/2ª RM'}</div>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', marginTop: '0.15rem' }}>
+                  Status Atual: <strong style={{ color: '#111827' }}>{docModalOrdem.status}</strong>
+                </div>
               </div>
 
-              <div style={{ fontSize: '0.88rem', lineHeight: '2', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                <div><strong>Cliente:</strong> {docModalOrdem.cliente_nome?.toUpperCase()}</div>
-                <div><strong>Categoria:</strong> {docModalOrdem.categoria_arma || 'Arma de Fogo'}</div>
-                <div><strong>Equipamento:</strong> {docModalOrdem.tipo_arma} — {docModalOrdem.marca_arma} {docModalOrdem.modelo_arma} ({docModalOrdem.calibre_arma})</div>
-                <div><strong>N° de Série:</strong> {docModalOrdem.numero_serie_arma || docModalOrdem.numero_serie}</div>
-                {docModalOrdem.acessorios_acompanhantes && <div><strong>Acessórios:</strong> {docModalOrdem.acessorios_acompanhantes}</div>}
-                <div><strong>Problema Relatado:</strong> "{docModalOrdem.problema_relatado}"</div>
-                {docModalOrdem.diagnostico_armeiro && <div><strong>Laudo do Armeiro:</strong> {docModalOrdem.diagnostico_armeiro}</div>}
-                {docModalOrdem.valor_servico > 0 && <div><strong>Valor Orçado:</strong> R$ {parseFloat(docModalOrdem.valor_servico).toFixed(2)}</div>}
-                {docModalOrdem.gt_protocolo && <div><strong>Guia de Tráfego:</strong> {docModalOrdem.gt_protocolo}</div>}
+              {/* CORPO DO DOCUMENTO DA O.S. (DADOS ORGANIZADOS & FORMATADOS) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.85rem', color: '#1F2937' }}>
+                {/* BLOCO 1: DADOS DO CLIENTE REQUERENTE */}
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
+                    CLIENTE REQUERENTE
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                    <div><strong>Nome:</strong> {docModalOrdem.cliente_nome?.toUpperCase()}</div>
+                    <div>
+                      <strong>CPF / CR:</strong> {
+                        (() => {
+                          const c = (clientes || []).find(item => String(item.id) === String(docModalOrdem.cliente_id) || item.nome_completo === docModalOrdem.cliente_nome)
+                          return c ? `${c.cpf} | CR: ${c.numero_cr || 'N/A'}` : 'Cadastrado'
+                        })()
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                {/* BLOCO 2: DADOS DO EQUIPAMENTO / ARMA */}
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
+                    DADOS DO EQUIPAMENTO
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                    <div><strong>Categoria:</strong> {docModalOrdem.categoria_arma || 'Arma de Fogo'}</div>
+                    <div><strong>Tipo:</strong> {docModalOrdem.tipo_arma || 'Pistola'}</div>
+                    <div><strong>Marca / Modelo:</strong> {docModalOrdem.marca_arma} {docModalOrdem.modelo_arma}</div>
+                    <div><strong>Calibre:</strong> {docModalOrdem.calibre_arma}</div>
+                    <div><strong>N° de Série:</strong> <span style={{ fontWeight: '700' }}>{docModalOrdem.numero_serie_arma || docModalOrdem.numero_serie}</span></div>
+                    <div><strong>Órgão Registro:</strong> {docModalOrdem.orgao_registro || 'SIGMA'}</div>
+                  </div>
+                </div>
+
+                {/* BLOCO 3: GUIA DE TRÁFEGO DE MANUTENÇÃO (GT) */}
+                {docModalOrdem.gt_protocolo && docModalOrdem.gt_protocolo !== 'N/A (Ar Comprimido)' && (
+                  <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
+                      GUIA DE TRÁFEGO DE MANUTENÇÃO (GT)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.4rem' }}>
+                      <div><strong>N° GT:</strong> {docModalOrdem.gt_protocolo}</div>
+                      <div><strong>Emissão:</strong> {formatarData(docModalOrdem.gt_data_emissao)}</div>
+                      <div><strong>Vencimento:</strong> {formatarData(docModalOrdem.gt_data_vencimento)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* BLOCO 4: CHECKLIST E SERVIÇO SOLICITADO */}
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.75rem 0.9rem', backgroundColor: '#F9FAFB' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.3rem', marginBottom: '0.5rem' }}>
+                    CHECKLIST & DETALHES DA O.S.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div><strong>Acessórios Acompanhantes:</strong> {docModalOrdem.acessorios_acompanhantes || 'Nenhum'}</div>
+                    <div><strong>Problema Relatado / Queixa:</strong> "{docModalOrdem.problema_relatado}"</div>
+                    {docModalOrdem.diagnostico_armeiro && (
+                      <div><strong>Laudo Técnico do Armeiro:</strong> {docModalOrdem.diagnostico_armeiro}</div>
+                    )}
+                    {docModalOrdem.solucao_proposta && (
+                      <div><strong>Serviços Executados / Propostos:</strong> {docModalOrdem.solucao_proposta}</div>
+                    )}
+                    {docModalOrdem.valor_servico > 0 && (
+                      <div><strong>Valor Total Orçado:</strong> <span style={{ fontWeight: '800', color: '#111827' }}>R$ {parseFloat(docModalOrdem.valor_servico).toFixed(2)}</span></div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.8rem' }}>
-                <div><div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>{docModalOrdem.cliente_nome}<br />Proprietário / Requerente</div></div>
-                <div><div style={{ borderTop: '1px solid #000', width: '200px', paddingTop: '0.3rem' }}>{config?.nome_fantasia || 'Pró Guns Armeria'}<br />Responsável Técnico Armeiro</div></div>
+              {/* RODAPÉ E LINHAS DE ASSINATURA */}
+              <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.78rem', color: '#374151' }}>
+                <div style={{ width: '45%' }}>
+                  <div style={{ borderTop: '1.5px solid #000000', paddingTop: '0.4rem' }}>
+                    <strong>{docModalOrdem.cliente_nome?.toUpperCase()}</strong><br />
+                    <span>Proprietário / Requerente</span>
+                  </div>
+                </div>
+
+                <div style={{ width: '45%' }}>
+                  <div style={{ borderTop: '1.5px solid #000000', paddingTop: '0.4rem' }}>
+                    <strong>{config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}</strong><br />
+                    <span>Responsável Técnico Armeiro</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-              <button style={{ backgroundColor: '#e5e7eb', color: '#1f2937', border: '1px solid #D1D5DB', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }} onClick={() => setDocModalOrdem(null)}>Fechar</button>
-              <button className="btn-gold" onClick={() => window.print()}>Imprimir Comprovante</button>
+            {/* AÇÕES NO RODAPÉ DO MODAL (NÃO SAEM NA IMPRESSÃO) */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
+              <button
+                className="btn-secondary"
+                style={{ backgroundColor: '#F3F4F6', color: '#374151', borderColor: '#D1D5DB' }}
+                onClick={() => setDocModalOrdem(null)}
+              >
+                Fechar
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{ backgroundColor: '#25D366', color: '#FFFFFF', borderColor: '#25D366', fontWeight: '700' }}
+                onClick={() => {
+                  const cliObj = (clientes || []).find(c => String(c.id) === String(docModalOrdem.cliente_id) || c.nome_completo === docModalOrdem.cliente_nome)
+                  const tel = (cliObj?.telefone || '').replace(/\D/g, '')
+                  const numTel = tel.length === 10 || tel.length === 11 ? `55${tel}` : tel
+                  const msg = `Olá *${docModalOrdem.cliente_nome}*, tudo bem?\n\nAqui é da recepção da *${config?.nome_fantasia || 'Pró Guns Armeria'}*.\n\n*COMPROVANTE DE ENTRADA — O.S. #${docModalOrdem.numero_os}*\nEquipamento: ${docModalOrdem.marca_arma} ${docModalOrdem.modelo_arma} (${docModalOrdem.calibre_arma})\nN° de Série: ${docModalOrdem.numero_serie_arma || docModalOrdem.numero_serie || 'N/A'}\nStatus Atual: *${docModalOrdem.status}*\nQueixa/Serviço: "${docModalOrdem.problema_relatado}"\n${docModalOrdem.valor_servico > 0 ? `Valor Orçado: R$ ${parseFloat(docModalOrdem.valor_servico).toFixed(2)}\n` : ''}\nPara qualquer dúvida, entre em contato!`
+                  window.open(`https://wa.me/${numTel}?text=${encodeURIComponent(msg)}`, '_blank')
+                }}
+              >
+                <MessageCircle size={15} />
+                <span>Enviar via WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-gold"
+                style={{ backgroundColor: '#134633', borderColor: '#134633' }}
+                onClick={() => window.print()}
+              >
+                <Printer size={15} />
+                <span>Imprimir Comprovante</span>
+              </button>
             </div>
           </div>
         </div>

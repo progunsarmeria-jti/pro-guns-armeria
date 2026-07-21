@@ -41,14 +41,53 @@ export default function ModuloAlertas({
   const [dataAgendamento, setDataAgendamento] = useState('')
   const [detalhesConversa, setDetalhesConversa] = useState('')
 
-  // Purga defensiva imediata de alertas órfãos cuja O.S. não existe mais
+  const perfilUsuario = usuarioLogado?.perfil || 'recepcao'
+
+  // Purga defensiva imediata de alertas órfãos cuja O.S. não existe mais ou já mudou de status, e filtra por setor
   const alertasValidos = (alertas || []).filter(a => {
     if (a.ordem_id || a.os_id || a.os_numero) {
-      return (ordens || []).some(o => 
+      const os = (ordens || []).find(o => 
         String(o.id) === String(a.ordem_id) || 
         String(o.id) === String(a.os_id) || 
         Number(o.numero_os) === Number(a.os_numero)
       )
+      if (!os) return false
+      
+      // Auto-purgar alertas cujo status já mudou/andou
+      if (a.status === 'PENDENTE') {
+        const statusFlow = [
+          'NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO',
+          'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
+        ]
+        let alertTriggerStatus = null
+        if (a.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || a.tipo_alerta === 'Pendente') {
+          alertTriggerStatus = 'AGUARDANDO APROVAÇÃO'
+        } else if (a.tipo_alerta === 'APROVADO') {
+          alertTriggerStatus = 'APROVADO'
+        } else if (a.tipo_alerta === 'EM MANUTENÇÃO') {
+          alertTriggerStatus = 'EM MANUTENÇÃO'
+        } else if (a.tipo_alerta === 'AGUARDANDO RETIRADA' || a.tipo_alerta === 'PRONTO PARA RETIRADA') {
+          alertTriggerStatus = 'AGUARDANDO RETIRADA'
+        }
+
+        if (alertTriggerStatus) {
+          const osIndex = statusFlow.indexOf(os.status)
+          const alertIndex = statusFlow.indexOf(alertTriggerStatus)
+          if (osIndex !== -1 && alertIndex !== -1 && osIndex > alertIndex) {
+            return false
+          }
+        }
+      }
+    }
+    
+    // Filtragem por Setor
+    if (perfilUsuario !== 'master') {
+      const dest = (a.destinatario || '').toUpperCase()
+      if (perfilUsuario === 'armeiro') {
+        if (dest && dest !== 'OFICINA' && dest !== 'TODOS' && a.tipo_alerta !== 'APROVADO') return false
+      } else if (perfilUsuario === 'recepcao') {
+        if (dest && dest !== 'RECEPCAO' && dest !== 'TODOS' && a.tipo_alerta === 'APROVADO') return false
+      }
     }
     return true
   })
@@ -269,21 +308,9 @@ export default function ModuloAlertas({
     alert(`Atendimento registrado com sucesso! O chamado da OS #${alerta.os_numero} foi finalizado.`)
   }
 
-  const perfilUsuario = usuarioLogado?.perfil || 'recepcao'
-
   const alertasFiltrados = alertasValidos.filter(a => {
     if (filtroStatus !== 'TODOS' && a.status !== filtroStatus) return false
     if (filtroTipo !== 'TODOS' && a.tipo_alerta !== filtroTipo) return false
-
-    // Filtragem Inteligente por Setor
-    if (perfilUsuario === 'armeiro') {
-      const dest = (a.destinatario || '').toUpperCase()
-      if (dest && dest !== 'OFICINA' && dest !== 'TODOS' && a.tipo_alerta !== 'APROVADO') return false
-    } else if (perfilUsuario === 'recepcao') {
-      const dest = (a.destinatario || '').toUpperCase()
-      if (dest && dest !== 'RECEPCAO' && dest !== 'TODOS' && a.tipo_alerta === 'APROVADO') return false
-    }
-
     return true
   })
 

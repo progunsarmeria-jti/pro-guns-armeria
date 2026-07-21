@@ -333,16 +333,29 @@ export default function App() {
           
           // Se o alerta está PENDENTE, vamos verificar se a O.S. já avançou
           if (alerta.status === 'PENDENTE') {
-            let deveResolver = false
-            
-            if ((alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || alerta.tipo_alerta === 'Pendente') && os.status !== 'AGUARDANDO APROVAÇÃO') {
-              deveResolver = true
-            } else if (alerta.tipo_alerta === 'AGUARDANDO RETIRADA' && os.status === 'CONCLUÍDO') {
-              deveResolver = true
-            } else if ((alerta.tipo_alerta === 'APROVADO' || alerta.tipo_alerta === 'EM MANUTENÇÃO') && 
-                       (os.status === 'AGUARDANDO RETIRADA' || os.status === 'CONCLUÍDO')) {
-              deveResolver = true
-            }
+             let deveResolver = false
+             const statusFlow = [
+               'NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO',
+               'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
+             ]
+             let alertTriggerStatus = null
+             if (alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || alerta.tipo_alerta === 'Pendente') {
+               alertTriggerStatus = 'AGUARDANDO APROVAÇÃO'
+             } else if (alerta.tipo_alerta === 'APROVADO') {
+               alertTriggerStatus = 'APROVADO'
+             } else if (alerta.tipo_alerta === 'EM MANUTENÇÃO') {
+               alertTriggerStatus = 'EM MANUTENÇÃO'
+             } else if (alerta.tipo_alerta === 'AGUARDANDO RETIRADA' || alerta.tipo_alerta === 'PRONTO PARA RETIRADA') {
+               alertTriggerStatus = 'AGUARDANDO RETIRADA'
+             }
+
+             if (alertTriggerStatus) {
+               const osIndex = statusFlow.indexOf(os.status)
+               const alertIndex = statusFlow.indexOf(alertTriggerStatus)
+               if (osIndex !== -1 && alertIndex !== -1 && osIndex > alertIndex) {
+                 deveResolver = true
+               }
+             }
 
             if (deveResolver) {
               alterado = true

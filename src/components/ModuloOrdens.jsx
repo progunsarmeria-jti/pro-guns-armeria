@@ -1357,7 +1357,18 @@ export default function ModuloOrdens({
               })()}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn-secondary" o      {/* ── MODAL UNIFICADO: CHECKOUT DE RETIRADA & CAIXA EDITÁVEL (SHEET + CHECKOUT PANELS) ── */}
+                <button type="button" className="btn-secondary" onClick={() => setModalLaudoArmeiro(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold">
+                  <Send size={15} />
+                  <span>Concluir Laudo → Aguardar Aprovação</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL UNIFICADO: CHECKOUT DE RETIRADA & CAIXA EDITÁVEL (SHEET + CHECKOUT PANELS) ── */}
       {modalCheckoutRetirada && (() => {
         const activeDoc = modalCheckoutRetirada
         
@@ -1860,7 +1871,8 @@ export default function ModuloOrdens({
 
             </div>
           </div>
-        ))()}
+        )
+      })()}
 
       {/* ── MODAL COMPROVANTE / FICHA DA O.S. (VISUALIZAR E IMPRIMIR) ── */}
       {docModalOrdem && (() => {

@@ -21,12 +21,50 @@ export default function Sidebar({
   const orcamentosPendentes = (orcamentos || []).filter(o => o.status === 'Pendente').length
   const estoqueBaixoCount = (estoque || []).filter(i => (i.quantidade || 0) <= (i.estoque_minimo || 2)).length
   const caixaHoje = (caixas || []).find(c => c.data === new Date().toISOString().split('T')[0])
+  const perfilUsuario = usuarioLogado?.perfil || 'recepcao'
   const alertasValidos = (alertas || []).filter(a => {
     if (a.ordem_id || a.os_numero) {
-      return (ordens || []).some(o => 
+      const os = (ordens || []).find(o => 
         String(o.id) === String(a.ordem_id) || 
         Number(o.numero_os) === Number(a.os_numero)
       )
+      if (!os) return false
+      
+      // Auto-purgar alertas cujo status já mudou/andou
+      if (a.status === 'PENDENTE') {
+        const statusFlow = [
+          'NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO',
+          'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
+        ]
+        let alertTriggerStatus = null
+        if (a.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || a.tipo_alerta === 'Pendente') {
+          alertTriggerStatus = 'AGUARDANDO APROVAÇÃO'
+        } else if (a.tipo_alerta === 'APROVADO') {
+          alertTriggerStatus = 'APROVADO'
+        } else if (a.tipo_alerta === 'EM MANUTENÇÃO') {
+          alertTriggerStatus = 'EM MANUTENÇÃO'
+        } else if (a.tipo_alerta === 'AGUARDANDO RETIRADA' || a.tipo_alerta === 'PRONTO PARA RETIRADA') {
+          alertTriggerStatus = 'AGUARDANDO RETIRADA'
+        }
+
+        if (alertTriggerStatus) {
+          const osIndex = statusFlow.indexOf(os.status)
+          const alertIndex = statusFlow.indexOf(alertTriggerStatus)
+          if (osIndex !== -1 && alertIndex !== -1 && osIndex > alertIndex) {
+            return false
+          }
+        }
+      }
+    }
+    
+    // Filtragem Inteligente por Setor
+    if (perfilUsuario !== 'master') {
+      const dest = (a.destinatario || '').toUpperCase()
+      if (perfilUsuario === 'armeiro') {
+        if (dest && dest !== 'OFICINA' && dest !== 'TODOS' && a.tipo_alerta !== 'APROVADO') return false
+      } else if (perfilUsuario === 'recepcao') {
+        if (dest && dest !== 'RECEPCAO' && dest !== 'TODOS' && a.tipo_alerta === 'APROVADO') return false
+      }
     }
     return true
   })

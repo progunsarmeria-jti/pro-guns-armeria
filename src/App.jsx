@@ -11,6 +11,7 @@ import ModuloCaixa from './components/ModuloCaixa'
 import ModuloFinanceiro from './components/ModuloFinanceiro'
 import ModuloConfiguracoes from './components/ModuloConfiguracoes'
 import ModuloUsuarios from './components/ModuloUsuarios'
+import ModuloVendas from './components/ModuloVendas'
 import ModalLogin from './components/ModalLogin'
 import { AlertTriangle, RefreshCw, CheckCircle2, Loader } from 'lucide-react'
 
@@ -225,6 +226,7 @@ export default function App() {
   const [caixas,     setCaixas]     = useState(() => getInitial('PROGUNS_CAIXAS',     INITIAL_CAIXAS))
   const [alertas,    setAlertas]    = useState(() => getInitial('PROGUNS_ALERTAS',    INITIAL_ALERTAS))
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
+  const [vendas,     setVendas]     = useState(() => getInitial('PROGUNS_VENDAS',     []))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
@@ -250,6 +252,7 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_ESTOQUE', estoque) }, [estoque])
   useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
   useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
+  useEffect(() => { ls.set('PROGUNS_VENDAS', vendas) }, [vendas])
 
   // ─── MECANISMO INTELIGENTE DE INTEGRIDADE DA BASE DE DADOS (PURGA DE ÓRFÃOS) ─────
   useEffect(() => {
@@ -364,7 +367,7 @@ export default function App() {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs, dbVendas] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
@@ -374,7 +377,8 @@ export default function App() {
         dbLoad('estoque'),
         dbLoad('caixas'),
         dbLoad('alertas'),
-        dbLoad('logs')
+        dbLoad('logs'),
+        dbLoad('vendas')
       ])
 
       const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
@@ -387,6 +391,7 @@ export default function App() {
       const localCaixas     = ls.get('PROGUNS_CAIXAS', INITIAL_CAIXAS)
       const localAlertas    = ls.get('PROGUNS_ALERTAS', INITIAL_ALERTAS)
       const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
+      const localVendas     = ls.get('PROGUNS_VENDAS', [])
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
       const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')
@@ -398,6 +403,7 @@ export default function App() {
       const finalCaixas     = mesclarDados(dbCaixas, localCaixas, 'caixas')
       const finalAlertas    = mesclarDados(dbAlertas, localAlertas, 'alertas')
       const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
+      const finalVendas     = mesclarDados(dbVendas, localVendas, 'vendas')
 
       setClientes(prev => JSON.stringify(prev) === JSON.stringify(finalClientes) ? prev : finalClientes)
       setOrdens(prev => JSON.stringify(prev) === JSON.stringify(finalOrdens) ? prev : finalOrdens)
@@ -409,6 +415,7 @@ export default function App() {
       setCaixas(prev => JSON.stringify(prev) === JSON.stringify(finalCaixas) ? prev : finalCaixas)
       setAlertas(prev => JSON.stringify(prev) === JSON.stringify(finalAlertas) ? prev : finalAlertas)
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
+      setVendas(prev => JSON.stringify(prev) === JSON.stringify(finalVendas) ? prev : finalVendas)
 
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)
@@ -696,6 +703,19 @@ export default function App() {
             {activeTab === 'configuracoes' && (
               <ModuloConfiguracoes
                 config={config} setConfig={setConfig}
+              />
+            )}
+
+            {activeTab === 'vendas' && (
+              <ModuloVendas
+                vendas={vendas} setVendas={setVendas}
+                estoque={estoque} setEstoque={setEstoque}
+                caixas={caixas} setCaixas={setCaixas}
+                financeiro={financeiro} setFinanceiro={setFinanceiro}
+                clientes={clientes}
+                usuarioLogado={usuarioLogado}
+                setLogs={setLogs}
+                config={config}
               />
             )}
           </ErrorBoundary>

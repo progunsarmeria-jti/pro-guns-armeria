@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Bell, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet } from 'lucide-react'
+import { Home, Bell, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet, ShoppingCart } from 'lucide-react'
 
 export default function Sidebar({
   activeTab,
@@ -34,16 +34,17 @@ export default function Sidebar({
   const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
 
   const menuItems = [
-    { id: 'home',          label: 'Home (Início)',     icon: Home,       badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
-    { id: 'alertas',       label: 'Painel de Alerta',  icon: Bell,       badgeCount: alertasPendentesCount > 0 ? `${alertasPendentesCount} Novo` : null, reqPerm: 'ver_alertas' },
-    { id: 'clientes',      label: 'Clientes',          icon: Users,      badgeCount: null,                                    reqPerm: 'ver_clientes' },
-    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,   badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
-    { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator, badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
-    { id: 'estoque',       label: 'Estoque',            icon: Package,    badgeCount: estoqueBaixoCount > 0 ? `${estoqueBaixoCount} Alerta` : null, reqPerm: 'ver_estoque' },
-    { id: 'caixa',         label: 'Caixa',              icon: Wallet,     badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
-    { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign, badgeCount: null,                                  reqPerm: 'ver_financeiro' },
-    { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,  badgeCount: null,                                  reqPerm: 'gerenciar_usuarios' },
-    { id: 'configuracoes', label: 'Configurações',      icon: Settings,   badgeCount: null,                                  reqPerm: 'ver_configuracoes' },
+    { id: 'home',          label: 'Home (Início)',     icon: Home,         badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
+    { id: 'caixa',         label: 'Caixa',              icon: Wallet,       badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
+    { id: 'clientes',      label: 'Clientes',          icon: Users,        badgeCount: null,                                    reqPerm: 'ver_clientes' },
+    { id: 'configuracoes', label: 'Configurações',      icon: Settings,     badgeCount: null,                                    reqPerm: 'ver_configuracoes' },
+    { id: 'estoque',       label: 'Estoque',            icon: Package,      badgeCount: estoqueBaixoCount > 0 ? `${estoqueBaixoCount} Alerta` : null, reqPerm: 'ver_estoque' },
+    { id: 'financeiro',    label: 'Financeiro',         icon: DollarSign,   badgeCount: null,                                    reqPerm: 'ver_financeiro' },
+    { id: 'orcamentos',    label: 'Orçamentos',         icon: Calculator,   badgeCount: orcamentosPendentes || null,            reqPerm: 'ver_orcamentos' },
+    { id: 'ordens',        label: 'Ordem de Serviço',  icon: FileText,     badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_ordens' },
+    { id: 'alertas',       label: 'Painel de Alerta',  icon: Bell,         badgeCount: alertasPendentesCount > 0 ? `${alertasPendentesCount} Novo` : null, reqPerm: 'ver_alertas' },
+    { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,    badgeCount: null,                                    reqPerm: 'gerenciar_usuarios' },
+    { id: 'vendas',        label: 'Vendas',             icon: ShoppingCart, badgeCount: null,                                    reqPerm: 'ver_vendas' },
   ]
 
   const itemsFiltrados = menuItems.filter(item => {

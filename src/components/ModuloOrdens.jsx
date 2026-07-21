@@ -3,7 +3,7 @@ import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
-import { isSupabaseConfigured, dbUpsert, dbDelete } from '../lib/supabase'
+import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 import { INITIAL_CONFIG } from '../lib/initialData'
 
@@ -211,11 +211,17 @@ export default function ModuloOrdens({
   }
 
   const handleMudarStatus = (ordemId, novoStatus) => {
+    const agora = new Date().toISOString()
     setOrdens(prev => {
       const proximo = prev.map(o => {
         if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
-          const atualizada = { ...o, status: novoStatus }
-          dbUpsert('ordens', atualizada)
+          const atualizada = { ...o, status: novoStatus, updated_at: agora }
+          // UPDATE direto no Supabase (mais confiável que upsert para propagação)
+          if (isSupabaseConfigured()) {
+            dbUpdate('ordens', o.id, { status: novoStatus, updated_at: agora }).catch(() => {
+              dbUpsert('ordens', atualizada) // fallback
+            })
+          }
           registrarLog({
             usuario: usuarioLogado,
             acao: 'MUDANÇA DE STATUS',
@@ -247,8 +253,14 @@ export default function ModuloOrdens({
   }
 
   const handleIniciarAnalise = (ordem) => {
-    const atualizada = { ...ordem, status: 'EM ANÁLISE' }
-    dbUpsert('ordens', atualizada)
+    const agora = new Date().toISOString()
+    const atualizada = { ...ordem, status: 'EM ANÁLISE', updated_at: agora }
+    // UPDATE direto no Supabase
+    if (isSupabaseConfigured()) {
+      dbUpdate('ordens', ordem.id, { status: 'EM ANÁLISE', updated_at: agora }).catch(() => {
+        dbUpsert('ordens', atualizada)
+      })
+    }
     setOrdens(prev => {
       const proximo = prev.map(o => (String(o.id) === String(ordem.id) || Number(o.numero_os) === Number(ordem.numero_os)) ? atualizada : o)
       try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
@@ -303,16 +315,38 @@ export default function ModuloOrdens({
       setDocModalOrdem(ordemAtualizada)
     }
 
-    // ── 3. Persiste no Supabase com retry ──
-    try {
-      const ok = await dbUpsert('ordens', ordemAtualizada)
-      if (!ok) {
-        // Retry após 1 segundo em caso de falha
-        setTimeout(() => dbUpsert('ordens', ordemAtualizada), 1000)
+    // ── 3. Persiste no Supabase com duas estratégias: UPDATE direto + UPSERT completo ──
+    if (isSupabaseConfigured()) {
+      // Estratégia A: UPDATE direto apenas nos campos críticos (mais robusto)
+      const camposUpdate = {
+        status: 'AGUARDANDO APROVAÇÃO',
+        diagnostico_armeiro: diagnosticoArmeiro,
+        solucao_proposta: resumoSolucao,
+        valor_servico: valorTotal,
+        observacoes_armeiro: observacoesArmeiro,
+        updated_at: agora,
+        laudo_concluido_em: agora
       }
-    } catch (err) {
-      console.error('[Laudo] Erro ao salvar no Supabase, tentando novamente...', err)
-      setTimeout(() => dbUpsert('ordens', ordemAtualizada), 1500)
+      // Tenta adicionar itens_laudo como JSON
+      try { camposUpdate.itens_laudo = itensLaudo } catch(e) {}
+
+      try {
+        const okUpdate = await dbUpdate('ordens', modalLaudoArmeiro.id, camposUpdate)
+        if (!okUpdate) {
+          // Fallback: UPDATE só com status (sem campos complexos)
+          await dbUpdate('ordens', modalLaudoArmeiro.id, {
+            status: 'AGUARDANDO APROVAÇÃO',
+            valor_servico: valorTotal,
+            updated_at: agora
+          })
+        }
+      } catch(err) {
+        console.error('[Laudo] Erro no UPDATE Supabase, tentando UPSERT completo...', err)
+        try { await dbUpsert('ordens', ordemAtualizada) } catch(e) {}
+      }
+
+      // Estratégia B (paralela): UPSERT completo como backup
+      setTimeout(() => dbUpsert('ordens', ordemAtualizada), 500)
     }
 
     registrarLog({

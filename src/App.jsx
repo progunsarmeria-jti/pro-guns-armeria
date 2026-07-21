@@ -33,6 +33,7 @@ import {
   isSupabaseConfigured,
   dbLoad,
   dbUpsert,
+  dbUpdate,
   dbUpsertAll,
   dbDelete,
   subscribeToTable
@@ -304,8 +305,12 @@ export default function App() {
         if (o.status === 'EM ANÁLISE' && ((Array.isArray(o.itens_laudo) && o.itens_laudo.length > 0) || o.diagnostico_armeiro || (o.valor_servico && parseFloat(o.valor_servico) > 0))) {
           alterado = true
           const corrigida = { ...o, status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }
-          // Também corrige no Supabase para evitar que o sync reverta
-          if (isSupabaseConfigured()) dbUpsert('ordens', corrigida)
+          // Também corrige no Supabase via UPDATE direto (evita que o sync reverta)
+          if (isSupabaseConfigured()) {
+            dbUpdate('ordens', o.id, { status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }).catch(() => {
+              dbUpsert('ordens', corrigida) // fallback
+            })
+          }
           return corrigida
         }
         return o

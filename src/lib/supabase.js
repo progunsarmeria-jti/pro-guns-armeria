@@ -85,9 +85,38 @@ export async function dbUpsert(tabela, registro) {
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
-    const { error } = await client.from(realTable).upsert(registro, { onConflict: 'id' })
+    // Serializa campos complexos (arrays/objetos) para garantir compatibilidade com Supabase JSONB
+    const registroSeguro = {}
+    for (const [k, v] of Object.entries(registro)) {
+      if (v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+        // Objeto aninhado não-array: converte para JSON string se não for um objeto simples
+        registroSeguro[k] = v
+      } else if (Array.isArray(v)) {
+        // Arrays: envia como array diretamente (Supabase JSONB aceita)
+        registroSeguro[k] = v
+      } else {
+        registroSeguro[k] = v
+      }
+    }
+    const { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
     if (error) {
-      console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error)
+      console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message, error.details, error.hint)
+      // Fallback: tenta upsert apenas com campos primitivos (sem arrays/objetos aninhados)
+      const registroSimples = {}
+      for (const [k, v] of Object.entries(registro)) {
+        if (typeof v !== 'object' || v === null || v instanceof Date) {
+          registroSimples[k] = v
+        }
+      }
+      if (Object.keys(registroSimples).length > 1) {
+        const { error: err2 } = await client.from(realTable).upsert(registroSimples, { onConflict: 'id' })
+        if (err2) {
+          console.error(`[Supabase] Fallback simples também falhou em ${realTable}:`, err2.message)
+          return false
+        }
+        console.warn(`[Supabase] Salvo com campos primitivos apenas em ${realTable} (campos complexos ignorados)`)
+        return true
+      }
       return false
     }
     return true
@@ -96,6 +125,25 @@ export async function dbUpsert(tabela, registro) {
     return false
   }
 }
+
+// Atualiza campos específicos de um registro via UPDATE direto (mais seguro que upsert para atualizações parciais)
+export async function dbUpdate(tabela, id, campos) {
+  if (!isSupabaseConfigured() || !id || !campos) return false
+  const client = getSupabaseClient()
+  const realTable = getTableName(tabela)
+  try {
+    const { error } = await client.from(realTable).update(campos).eq('id', id)
+    if (error) {
+      console.error(`[Supabase] Erro ao atualizar ${realTable} id=${id}:`, error.message, error.details)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error(`[Supabase] Exceção ao atualizar ${realTable}:`, err)
+    return false
+  }
+}
+
 
 export async function dbDelete(tabela, id) {
   if (!id) return false

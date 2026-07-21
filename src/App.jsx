@@ -360,20 +360,22 @@ export default function App() {
 
     const mapa = new Map()
 
+    // 1º Insere cache local do navegador
+    locaisList.forEach(item => {
+      if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
+        mapa.set(String(item.id), item)
+      }
+    })
+
+    // 2º Se Supabase retornou dados (remotos !== null), os dados remotos atualizados SOBRESCREVEM o cache local antigo
     if (remotos !== null) {
       remotosList.forEach(item => {
         if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
-          mapa.set(String(item.id), item)
+          const localObj = mapa.get(String(item.id)) || {}
+          mapa.set(String(item.id), { ...localObj, ...item })
         }
       })
     }
-
-    locaisList.forEach(item => {
-      if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
-        const existente = mapa.get(String(item.id)) || {}
-        mapa.set(String(item.id), { ...existente, ...item })
-      }
-    })
 
     const mesclado = Array.from(mapa.values())
 
@@ -463,7 +465,7 @@ export default function App() {
 
   useEffect(() => {
     const handleSync = () => { if (isSupabaseConfigured()) carregarDoSupabase(true) }
-    const interval = setInterval(handleSync, 10000)
+    const interval = setInterval(handleSync, 3000)
     window.addEventListener('focus', handleSync)
     document.addEventListener('visibilitychange', handleSync)
     return () => {

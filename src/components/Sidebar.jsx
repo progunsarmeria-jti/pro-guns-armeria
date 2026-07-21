@@ -48,9 +48,10 @@ export default function Sidebar({
   ]
 
   const itemsFiltrados = menuItems.filter(item => {
-    if (usuarioLogado?.perfil === 'master') return true
+    if (!usuarioLogado || usuarioLogado?.perfil === 'master') return true
     if (!item.reqPerm) return true
     if (item.id === 'home') return true // Home sempre visível para todos
+    if (item.id === 'vendas') return permissoes.ver_vendas !== false // Vendas visível por padrão
     return permissoes[item.reqPerm] === true
   })
 

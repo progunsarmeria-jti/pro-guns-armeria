@@ -27,7 +27,9 @@ export const INITIAL_USUARIOS = [
       ver_financeiro: true,
       lancar_financeiro: true,
       ver_configuracoes: true,
-      gerenciar_usuarios: true
+      gerenciar_usuarios: true,
+      ver_vendas: true,
+      lancar_vendas: true
     }
   },
   {

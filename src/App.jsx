@@ -720,6 +720,7 @@ export default function App() {
                 alertas={alertas} setAlertas={setAlertas}
                 ordens={ordens} setOrdens={setOrdens}
                 usuarioLogado={usuarioLogado}
+                config={config}
                 setActiveTab={setActiveTab}
                 setFiltroStatusOrdens={setFiltroStatusOrdens}
                 onAbrirImprimirOS={(targetOS) => {

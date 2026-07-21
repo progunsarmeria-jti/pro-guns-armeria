@@ -18,6 +18,7 @@ import {
   Wrench
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { isSupabaseConfigured, dbUpsert, dbUpdate } from '../lib/supabase'
 
 export default function ModuloAlertas({
   alertas = [],
@@ -145,16 +146,18 @@ export default function ModuloAlertas({
       observacao: 'Tentativa de contato telefônico sem sucesso. Enviado recado via WhatsApp.'
     }
 
-    const alertasAtualizados = alertas.map(a => {
-      if (a.id === alerta.id) {
-        return {
-          ...a,
-          tentativas_contato: [...(a.tentativas_contato || []), novaTentativa]
-        }
-      }
-      return a
-    })
+    const alertaAtualizado = {
+      ...alerta,
+      tentativas_contato: [...(alerta.tentativas_contato || []), novaTentativa]
+    }
+
+    const alertasAtualizados = alertas.map(a => a.id === alerta.id ? alertaAtualizado : a)
     setAlertas(alertasAtualizados)
+
+    if (isSupabaseConfigured()) {
+      dbUpsert('alertas', alertaAtualizado)
+    }
+
     alert(`Tentativa registrada para a OS #${alerta.os_numero}. O alerta continua pendente no painel.`)
   }
 
@@ -193,15 +196,77 @@ export default function ModuloAlertas({
       tentativas_contato: [...(alerta.tentativas_contato || []), novaTentativa]
     }
 
-    // Se cliente aprovou orçamento -> Atualiza status da OS para APROVADO
-    if (alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' && resultadoAcordo === 'CLIENTE_APROVOU') {
-      setOrdens(prev => prev.map(o => (String(o.id) === String(alerta.os_id) || String(o.id) === String(alerta.ordem_id)) ? { ...o, status: 'APROVADO' } : o))
-    }
-
+    // 1. Atualiza no estado e no Supabase (Persistência Garantida!)
     const alertasAtualizados = alertas.map(a => a.id === alerta.id ? alertaResolvido : a)
     setAlertas(alertasAtualizados)
+
+    if (isSupabaseConfigured()) {
+      dbUpsert('alertas', alertaResolvido)
+      dbUpdate('alertas', alerta.id, {
+        status: 'RESOLVIDO',
+        resolucao: alertaResolvido.resolucao,
+        tentativas_contato: alertaResolvido.tentativas_contato
+      }, alertaResolvido)
+    }
+
+    // 2. Se cliente aprovou orçamento -> Atualiza status da OS para APROVADO no banco e notifica Armeiro/Oficina
+    if ((alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' || alerta.tipo_alerta === 'Pendente') && resultadoAcordo === 'CLIENTE_APROVOU') {
+      const agora = new Date().toISOString()
+      let osTargetObj = null
+
+      setOrdens(prev => prev.map(o => {
+        if (String(o.id) === String(alerta.os_id) || String(o.id) === String(alerta.ordem_id) || Number(o.numero_os) === Number(alerta.os_numero)) {
+          osTargetObj = { ...o, status: 'APROVADO', updated_at: agora }
+          if (isSupabaseConfigured()) {
+            dbUpdate('ordens', o.id, { status: 'APROVADO', updated_at: agora, numero_os: o.numero_os }, osTargetObj)
+          }
+          return osTargetObj
+        }
+        return o
+      }))
+
+      // Dispara um novo chamado para a OFICINA (Armeiro) avisando que a manutenção foi liberada
+      const novoAlertaOficina = {
+        id: `alt_${Date.now()}`,
+        os_id: alerta.os_id || osTargetObj?.id,
+        os_numero: alerta.os_numero || osTargetObj?.numero_os,
+        cliente_nome: alerta.cliente_nome,
+        cliente_telefone: alerta.cliente_telefone || '',
+        equipamento: alerta.equipamento || 'Equipamento',
+        tipo_alerta: 'APROVADO',
+        destinatario: 'OFICINA',
+        mensagem: `Cliente aprovou o orçamento da OS #${alerta.os_numero}. Manutenção liberada para execução pelo armeiro.`,
+        status: 'PENDENTE',
+        created_at: agora,
+        tentativas_contato: [],
+        resolucao: null
+      }
+
+      setAlertas(prev => [novoAlertaOficina, ...prev.map(a => a.id === alerta.id ? alertaResolvido : a)])
+      if (isSupabaseConfigured()) {
+        dbUpsert('alertas', novoAlertaOficina)
+      }
+
+      // Apito sonoro
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+        const osc = audioCtx.createOscillator()
+        const gain = audioCtx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15)
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
+        osc.connect(gain)
+        gain.connect(audioCtx.destination)
+        osc.start()
+        osc.stop(audioCtx.currentTime + 0.4)
+      } catch(e) {}
+    }
+
     setModalAtendimento(null)
     setDetalhesConversa('')
+    alert(`Atendimento registrado com sucesso! O chamado da OS #${alerta.os_numero} foi finalizado.`)
   }
 
   const perfilUsuario = usuarioLogado?.perfil || 'recepcao'

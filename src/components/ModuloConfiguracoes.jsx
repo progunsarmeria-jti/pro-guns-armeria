@@ -732,26 +732,32 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
                 </tr>
               </thead>
               <tbody>
-                {(formData.blocos_home || INITIAL_CONFIG.blocos_home).map((bloco) => {
-                  const perfisAtuais = bloco.perfis || ['master', 'armeiro', 'recepcao']
+                {(() => {
+                  const listaBlocos = INITIAL_CONFIG.blocos_home.map(def => {
+                    const salvo = (formData.blocos_home || []).find(b => b.id === def.id)
+                    return salvo ? { ...def, ...salvo } : def
+                  })
 
-                  const handleTogglePerfil = (perfilId) => {
-                    const novoPerfis = perfisAtuais.includes(perfilId)
-                      ? perfisAtuais.filter(p => p !== perfilId)
-                      : [...perfisAtuais, perfilId]
-                    
-                    const blocosAtualizados = (formData.blocos_home || INITIAL_CONFIG.blocos_home).map(b => 
-                      b.id === bloco.id ? { ...b, perfis: novoPerfis } : b
-                    )
-                    atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
-                  }
+                  return listaBlocos.map((bloco) => {
+                    const perfisAtuais = bloco.perfis || ['master', 'armeiro', 'recepcao']
 
-                  const handleToggleAtivado = (val) => {
-                    const blocosAtualizados = (formData.blocos_home || INITIAL_CONFIG.blocos_home).map(b => 
-                      b.id === bloco.id ? { ...b, ativado: val } : b
-                    )
-                    atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
-                  }
+                    const handleTogglePerfil = (perfilId) => {
+                      const novoPerfis = perfisAtuais.includes(perfilId)
+                        ? perfisAtuais.filter(p => p !== perfilId)
+                        : [...perfisAtuais, perfilId]
+                      
+                      const blocosAtualizados = listaBlocos.map(b => 
+                        b.id === bloco.id ? { ...b, perfis: novoPerfis } : b
+                      )
+                      atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
+                    }
+
+                    const handleToggleAtivado = (val) => {
+                      const blocosAtualizados = listaBlocos.map(b => 
+                        b.id === bloco.id ? { ...b, ativado: val } : b
+                      )
+                      atualizarConfig({ ...formData, blocos_home: blocosAtualizados })
+                    }
 
                   return (
                     <tr key={bloco.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
@@ -797,7 +803,7 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
                       </td>
                     </tr>
                   )
-                })}
+                })})()}
               </tbody>
             </table>
           </div>

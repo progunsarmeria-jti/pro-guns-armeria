@@ -35,6 +35,7 @@ export default function ModuloHome({
 
   // Contagens dos balões informativos (Badges estilo Shooting House)
   const osAguardandoAprovacao = ordens.filter(o => o.status === 'AGUARDANDO APROVAÇÃO').length
+  const osAprovado           = ordens.filter(o => o.status === 'APROVADO').length
   const osAguardandoRetirada  = ordens.filter(o => o.status === 'AGUARDANDO RETIRADA').length
   const osEmAnalise          = ordens.filter(o => o.status === 'EM ANÁLISE').length
   const osNaoIniciado        = ordens.filter(o => o.status === 'NÃO INICIADO').length
@@ -67,10 +68,19 @@ export default function ModuloHome({
       reqPerm: 'ver_ordens'
     },
     {
+      id: 'aprovado',
+      title: 'O.S. Aprovado',
+      badgeCount: osAprovado,
+      badgeColor: '#10B981', // Verde
+      icon: CheckCircle2,
+      onClick: () => handleNavegarOrdens('APROVADO'),
+      reqPerm: 'ver_ordens'
+    },
+    {
       id: 'aguardando_retirada',
       title: 'O.S. Aguardando Retirada',
       badgeCount: osAguardandoRetirada,
-      badgeColor: '#10B981', // Verde
+      badgeColor: '#34D399', // Verde Claro
       icon: CheckCircle2,
       onClick: () => handleNavegarOrdens('AGUARDANDO RETIRADA'),
       reqPerm: 'ver_ordens'

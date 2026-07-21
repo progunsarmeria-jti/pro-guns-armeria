@@ -255,6 +255,7 @@ export const INITIAL_CONFIG = {
   ],
   blocos_home: [
     { id: 'aguardando_aprovacao', titulo: 'O.S. Aguardando Aprovação', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
+    { id: 'aprovado', titulo: 'O.S. Aprovado', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
     { id: 'aguardando_retirada', titulo: 'O.S. Aguardando Retirada', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
     { id: 'em_analise', titulo: 'O.S. Em Análise', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },
     { id: 'nao_iniciado', titulo: 'O.S. Não Iniciado', perfis: ['master', 'armeiro', 'recepcao'], ativado: true },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Bell, Volume2 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
@@ -381,6 +381,30 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
 
         <button
           type="button"
+          onClick={() => setAbaConfigAtiva('alertas_sons')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'alertas_sons' ? '3px solid #EF4444' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'alertas_sons' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'alertas_sons' ? '#EF4444' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Bell size={16} />
+          <span>Alertas & Sons</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setAbaConfigAtiva('servicos')}
           style={{
             padding: '0.65rem 1.1rem',
@@ -513,6 +537,149 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ==========================================
+          CONTEÚDO DA ABA: ALERTAS & SINAIS SONOROS
+      ========================================== */}
+      {abaConfigAtiva === 'alertas_sons' && (
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Bell size={20} color="#F87171" />
+              <div>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '800', margin: 0 }}>
+                  Configuração de Alertas & Sinais Sonoros por Setor
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Defina quais mudanças de status da O.S. disparam chamados sonoros e alertas entre a Recepção e a Oficina (Armeiros).
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                try {
+                  const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+                  const osc = audioCtx.createOscillator()
+                  const gain = audioCtx.createGain()
+                  osc.type = 'sine'
+                  osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)
+                  osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15)
+                  gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
+                  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
+                  osc.connect(gain)
+                  gain.connect(audioCtx.destination)
+                  osc.start()
+                  osc.stop(audioCtx.currentTime + 0.4)
+                } catch(e) {}
+              }}
+              style={{ fontSize: '0.78rem', padding: '0.4rem 0.8rem', color: '#34D399', borderColor: '#34D399' }}
+            >
+              <Volume2 size={14} />
+              <span>Testar Sinal Sonoro (Apito)</span>
+            </button>
+          </div>
+
+          {/* Ativação Som Geral */}
+          <div style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.85rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>Sinal Sonoro Geral do Sistema</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ativa ou desativa a reprodução do áudio de campainha em todo o sistema</div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem', color: formData.som_geral_ativado !== false ? '#34D399' : '#F87171' }}>
+              <input
+                type="checkbox"
+                checked={formData.som_geral_ativado !== false}
+                onChange={e => {
+                  const updated = { ...formData, som_geral_ativado: e.target.checked }
+                  atualizarConfig(updated)
+                }}
+              />
+              {formData.som_geral_ativado !== false ? '🔊 Sons Ativados' : '🔇 Sons Silenciados'}
+            </label>
+          </div>
+
+          {/* Tabela de Regras por Status */}
+          <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>STATUS DA O.S.</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>DISPARAR ALERTA?</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>TOCAR SOM?</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>SETOR DESTINATÁRIO</th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>MENSAGEM DO CHAMADO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(formData.status_ordens || ['NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO', 'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO']).map((stName) => {
+                  const regrasList = formData.regras_alertas_sons || INITIAL_CONFIG.regras_alertas_sons || []
+                  const regraAtual = regrasList.find(r => r.status === stName) || {
+                    status: stName,
+                    disparar_alerta: stName === 'AGUARDANDO APROVAÇÃO' || stName === 'APROVADO' || stName === 'AGUARDANDO RETIRADA',
+                    tocar_som: stName === 'AGUARDANDO APROVAÇÃO' || stName === 'APROVADO' || stName === 'AGUARDANDO RETIRADA',
+                    destinatario: (stName === 'APROVADO' || stName === 'EM MANUTENÇÃO') ? 'OFICINA' : 'RECEPCAO',
+                    mensagem_padrao: `Mudança de status da O.S. para '${stName}'.`
+                  }
+
+                  const handleUpdateRegra = (campo, val) => {
+                    const novaRegra = { ...regraAtual, [campo]: val }
+                    const out = regrasList.filter(r => r.status !== stName)
+                    const finalRegras = [...out, novaRegra]
+                    const updated = { ...formData, regras_alertas_sons: finalRegras }
+                    atualizarConfig(updated)
+                  }
+
+                  return (
+                    <tr key={stName} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>
+                        {stName}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={regraAtual.disparar_alerta !== false}
+                          onChange={e => handleUpdateRegra('disparar_alerta', e.target.checked)}
+                        />
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={regraAtual.tocar_som !== false}
+                          onChange={e => handleUpdateRegra('tocar_som', e.target.checked)}
+                        />
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <select
+                          className="input-field"
+                          value={regraAtual.destinatario || 'TODOS'}
+                          onChange={e => handleUpdateRegra('destinatario', e.target.value)}
+                          style={{ fontSize: '0.78rem', padding: '0.25rem 0.5rem' }}
+                        >
+                          <option value="OFICINA">🛠️ Oficina (Armeiros)</option>
+                          <option value="RECEPCAO">🏢 Recepção Central</option>
+                          <option value="TODOS">📢 Todos os Setores</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <input
+                          className="input-field"
+                          value={regraAtual.mensagem_padrao || ''}
+                          onChange={e => handleUpdateRegra('mensagem_padrao', e.target.value)}
+                          placeholder="Digite a mensagem do chamado..."
+                          style={{ fontSize: '0.78rem', padding: '0.25rem 0.5rem' }}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

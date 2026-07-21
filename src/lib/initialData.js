@@ -217,6 +217,41 @@ export const INITIAL_CONFIG = {
   ],
   ordem_menu: [
     'home', 'alertas', 'caixa', 'ordens', 'vendas', 'clientes', 'estoque', 'orcamentos', 'financeiro', 'usuarios', 'configuracoes'
+  ],
+  som_geral_ativado: true,
+  regras_alertas_sons: [
+    {
+      status: 'AGUARDANDO APROVAÇÃO',
+      disparar_alerta: true,
+      tocar_som: true,
+      destinatario: 'RECEPCAO',
+      tom_som: 'alerta_medio',
+      mensagem_padrao: 'Laudo e orçamento disponibilizado pelo armeiro para aprovação com o cliente.'
+    },
+    {
+      status: 'APROVADO',
+      disparar_alerta: true,
+      tocar_som: true,
+      destinatario: 'OFICINA',
+      tom_som: 'alerta_sucesso',
+      mensagem_padrao: 'Cliente aprovou o orçamento da O.S. Manutenção liberada para execução pelo armeiro.'
+    },
+    {
+      status: 'AGUARDANDO RETIRADA',
+      disparar_alerta: true,
+      tocar_som: true,
+      destinatario: 'RECEPCAO',
+      tom_som: 'alerta_conclusao',
+      mensagem_padrao: 'Manutenção concluída pelo armeiro. Equipamento pronto para retirada pelo cliente.'
+    },
+    {
+      status: 'EM MANUTENÇÃO',
+      disparar_alerta: false,
+      tocar_som: false,
+      destinatario: 'OFICINA',
+      tom_som: 'alerta_medio',
+      mensagem_padrao: 'Serviço em andamento na oficina pelo armeiro.'
+    }
   ]
 };
 

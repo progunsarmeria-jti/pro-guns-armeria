@@ -188,10 +188,29 @@ export default function ModuloOrdens({
     } catch (e) {}
   }
 
-  // Helper para Disparar Alerta para o Painel da Recepção
-  const dispararAlertaRecepcao = (ordemTarget, tipoAlerta, mensagemAlerta) => {
+  // Helper inteligente para Disparar Alertas e Sons por Setor respeitando as regras do ADM
+  const dispararAlertaSetor = (ordemTarget, novoStatus, mensagemCustom = null) => {
     if (!setAlertas) return
+
+    const regras = config?.regras_alertas_sons || INITIAL_CONFIG.regras_alertas_sons || []
+    const regra = regras.find(r => r.status === novoStatus) || {
+      disparar_alerta: true,
+      tocar_som: true,
+      destinatario: (novoStatus === 'APROVADO' || novoStatus === 'EM MANUTENÇÃO') ? 'OFICINA' : 'RECEPCAO',
+      mensagem_padrao: `Status da OS #${ordemTarget.numero_os} alterado para '${novoStatus}'.`
+    }
+
+    // 1. Toca som se ativado na regra e geral ativado
+    if (regra.tocar_som !== false && config?.som_geral_ativado !== false) {
+      tocarSomNotificacao()
+    }
+
+    // 2. Se a regra de alerta estiver desativada para esse status, encerra
+    if (regra.disparar_alerta === false) return
+
     const cliObj = (clientes || []).find(c => String(c.id) === String(ordemTarget.cliente_id))
+    const msgFinal = mensagemCustom || regra.mensagem_padrao || `Mudança de status da OS #${ordemTarget.numero_os} para '${novoStatus}'.`
+
     const novoAlerta = {
       id: `alt_${Date.now()}`,
       os_id: ordemTarget.id,
@@ -199,13 +218,15 @@ export default function ModuloOrdens({
       cliente_nome: ordemTarget.cliente_nome,
       cliente_telefone: cliObj?.telefone || '',
       equipamento: `${ordemTarget.marca_arma} ${ordemTarget.modelo_arma}`,
-      tipo_alerta: tipoAlerta,
-      mensagem: mensagemAlerta,
+      tipo_alerta: novoStatus,
+      destinatario: regra.destinatario || 'TODOS',
+      mensagem: msgFinal,
       status: 'PENDENTE',
       created_at: new Date().toISOString(),
       tentativas_contato: [],
       resolucao: null
     }
+
     setAlertas(prev => [novoAlerta, ...(prev || [])])
     if (isSupabaseConfigured()) dbUpsert('alertas', novoAlerta)
   }
@@ -216,7 +237,6 @@ export default function ModuloOrdens({
       const proximo = prev.map(o => {
         if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
           const atualizada = { ...o, status: novoStatus, updated_at: agora }
-          // UPDATE direto no Supabase (mais confiável que upsert para propagação)
           if (isSupabaseConfigured()) {
             dbUpdate('ordens', o.id, { status: novoStatus, updated_at: agora, numero_os: o.numero_os }, atualizada)
           }
@@ -229,17 +249,8 @@ export default function ModuloOrdens({
             setLogs
           })
 
-          // Toca som de notificação APENAS para 'AGUARDANDO RETIRADA' ou 'AGUARDANDO APROVAÇÃO'
-          if (novoStatus === 'AGUARDANDO RETIRADA' || novoStatus === 'AGUARDANDO APROVAÇÃO') {
-            tocarSomNotificacao()
-            dispararAlertaRecepcao(
-              atualizada,
-              novoStatus,
-              novoStatus === 'AGUARDANDO RETIRADA'
-                ? `Manutenção concluída pelo armeiro (${usuarioLogado?.nome_completo || 'Oficina'}). Equipamento pronto para retirada pelo cliente.`
-                : `Laudo e orçamento disponibilizado pelo armeiro para aprovação do cliente.`
-            )
-          }
+          // Dispara Alerta e Som por Setor (Oficina / Recepção / Todos) conforme regras do ADM
+          dispararAlertaSetor(atualizada, novoStatus)
 
           return atualizada
         }
@@ -370,19 +381,30 @@ export default function ModuloOrdens({
   }
 
   const handleAprovarPelaRecepcao = (ordemId) => {
+    const agora = new Date().toISOString()
     setOrdens(prev => {
       const proximo = prev.map(o => {
         if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
-          const atualizada = { ...o, status: 'APROVADO' }
-          dbUpsert('ordens', atualizada)
+          const atualizada = { ...o, status: 'APROVADO', updated_at: agora }
+          if (isSupabaseConfigured()) {
+            dbUpdate('ordens', o.id, { status: 'APROVADO', updated_at: agora, numero_os: o.numero_os }, atualizada)
+          }
           registrarLog({
             usuario: usuarioLogado,
             acao: 'APROVAÇÃO DE SERVIÇO',
-            descricao: `Orçamento da OS #${o.numero_os} aprovado pelo cliente/recepção.`,
+            descricao: `Orçamento da OS #${o.numero_os} aprovado pelo cliente/recepção. Manutenção liberada para a oficina.`,
             osId: o.id,
             osNumero: o.numero_os,
             setLogs
           })
+
+          // Dispara Alerta para o Armeiro / Oficina com Som conforme regras do ADM
+          dispararAlertaSetor(
+            atualizada,
+            'APROVADO',
+            `Cliente aprovou o orçamento da OS #${o.numero_os} (${o.marca_arma} ${o.modelo_arma}). Manutenção liberada para execução pelo armeiro.`
+          )
+
           return atualizada
         }
         return o

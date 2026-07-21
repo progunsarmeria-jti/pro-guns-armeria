@@ -14,7 +14,8 @@ import {
   VolumeX,
   X,
   Filter,
-  Check
+  Check,
+  Wrench
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 
@@ -203,9 +204,21 @@ export default function ModuloAlertas({
     setDetalhesConversa('')
   }
 
+  const perfilUsuario = usuarioLogado?.perfil || 'recepcao'
+
   const alertasFiltrados = alertasValidos.filter(a => {
     if (filtroStatus !== 'TODOS' && a.status !== filtroStatus) return false
     if (filtroTipo !== 'TODOS' && a.tipo_alerta !== filtroTipo) return false
+
+    // Filtragem Inteligente por Setor
+    if (perfilUsuario === 'armeiro') {
+      const dest = (a.destinatario || '').toUpperCase()
+      if (dest && dest !== 'OFICINA' && dest !== 'TODOS' && a.tipo_alerta !== 'APROVADO') return false
+    } else if (perfilUsuario === 'recepcao') {
+      const dest = (a.destinatario || '').toUpperCase()
+      if (dest && dest !== 'RECEPCAO' && dest !== 'TODOS' && a.tipo_alerta === 'APROVADO') return false
+    }
+
     return true
   })
 
@@ -386,6 +399,21 @@ export default function ModuloAlertas({
                 {/* Ações do Atendimento */}
                 {isPendente && (
                   <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                    {/* Botão rápido para Armeiro iniciar serviço se OS for APROVADO */}
+                    {alerta.tipo_alerta === 'APROVADO' && (
+                      <button
+                        className="btn-gold"
+                        style={{ fontSize: '0.78rem', backgroundColor: '#F59E0B', color: '#000', fontWeight: '800' }}
+                        onClick={() => {
+                          if (setFiltroStatusOrdens) setFiltroStatusOrdens('APROVADO')
+                          setActiveTab('ordens')
+                        }}
+                        title="Abrir módulo de Ordens de Serviço filtrado pelas O.S. Aprovadas para iniciar a manutenção"
+                      >
+                        <Wrench size={15} /> 🛠️ Iniciar Manutenção na Oficina
+                      </button>
+                    )}
+
                     <button
                       className="btn-secondary"
                       style={{ fontSize: '0.78rem', color: '#60A5FA', borderColor: '#60A5FA' }}

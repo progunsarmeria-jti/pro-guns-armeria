@@ -172,53 +172,53 @@ export default function ModuloAlertas({
   })
 
   return (
-    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Header do Painel de Alerta */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-            <span className="badge badge-red" style={{ fontSize: '0.75rem', fontWeight: '800' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+            <span className="badge badge-red" style={{ fontSize: '0.72rem', fontWeight: '800' }}>
               RECEPÇÃO CENTRAL
             </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monitoramento em Tempo Real</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Monitoramento em Tempo Real</span>
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-primary)', margin: 0 }}>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--gold-primary)', margin: 0 }}>
             🔔 Painel de Alerta & Chamados da Oficina
           </h1>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
             Notificações instantâneas disparadas pelos armeiros para comunicação com clientes.
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button className="btn-secondary" onClick={handleTocarSomTeste} title="Testar Som da Campainha">
-            <Volume2 size={18} color="#34D399" />
+          <button className="btn-secondary" onClick={handleTocarSomTeste} title="Testar Som da Campainha" style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}>
+            <Volume2 size={16} color="#34D399" />
             <span>Testar Alerta Sonoro</span>
           </button>
         </div>
       </div>
 
       {/* Cards Indicadores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #EF4444' }}>
-          <div style={{ width: '46px', height: '46px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bell size={24} color="#F87171" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', borderLeft: '4px solid #EF4444' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Bell size={20} color="#F87171" />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>CHAMADOS PENDENTES</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#F87171' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>CHAMADOS PENDENTES</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#F87171' }}>
               {alertasPendentes.length} pendências
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10B981' }}>
-          <div style={{ width: '46px', height: '46px', borderRadius: '10px', backgroundColor: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle2 size={24} color="#34D399" />
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', borderLeft: '4px solid #10B981' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <CheckCircle2 size={20} color="#34D399" />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ATENDIDOS HOJE</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#34D399' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>ATENDIDOS HOJE</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#34D399' }}>
               {alertasResolvidos.length} finalizados
             </div>
           </div>

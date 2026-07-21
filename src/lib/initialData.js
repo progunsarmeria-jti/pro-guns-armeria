@@ -214,6 +214,9 @@ export const INITIAL_CONFIG = {
     { id: "s3", nome: "AJUSTE E ALÍVIO DE GATILHO TÁTICO", valor: 350.00, categoria: "PERSONALIZAÇÃO" },
     { id: "s4", nome: "INSTALAÇÃO DE RED DOT / LUNETA E COLIMAÇÃO", valor: 150.00, categoria: "ÓPTICA" },
     { id: "s5", nome: "POLIMENTO DE RAMPA DE ALIMENTAÇÃO E TAMBOR", valor: 200.00, categoria: "ACABAMENTO" }
+  ],
+  ordem_menu: [
+    'home', 'caixa', 'clientes', 'configuracoes', 'estoque', 'financeiro', 'orcamentos', 'ordens', 'alertas', 'usuarios', 'vendas'
   ]
 };
 

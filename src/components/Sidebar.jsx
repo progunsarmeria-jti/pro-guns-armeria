@@ -47,19 +47,23 @@ export default function Sidebar({
     { id: 'vendas',        label: 'Vendas',             icon: ShoppingCart, badgeCount: null,                                    reqPerm: 'ver_vendas' },
   ]
 
-  const ordemCustom = config?.ordem_menu || []
-  const menuItems = [...menuItemsOriginal].sort((a, b) => {
-    if (a.id === 'home') return -1
-    if (b.id === 'home') return 1
-    const idxA = ordemCustom.indexOf(a.id)
-    const idxB = ordemCustom.indexOf(b.id)
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB
-    if (idxA !== -1) return -1
-    if (idxB !== -1) return 1
-    return a.label.localeCompare(b.label)
-  })
+  // Garante a ordem exata definida pelo ADM Master
+  const ordemCustom = (config?.ordem_menu && Array.isArray(config.ordem_menu) && config.ordem_menu.length > 0)
+    ? config.ordem_menu
+    : ['home', 'caixa', 'clientes', 'configuracoes', 'estoque', 'financeiro', 'orcamentos', 'ordens', 'alertas', 'usuarios', 'vendas']
 
-  const itemsFiltrados = menuItems.filter(item => {
+  const menuItemsMap = new Map(menuItemsOriginal.map(item => [item.id, item]))
+  const orderedItems = []
+  
+  ordemCustom.forEach(id => {
+    if (menuItemsMap.has(id)) {
+      orderedItems.push(menuItemsMap.get(id))
+      menuItemsMap.delete(id)
+    }
+  })
+  menuItemsMap.forEach(item => orderedItems.push(item))
+
+  const itemsFiltrados = orderedItems.filter(item => {
     if (!usuarioLogado || usuarioLogado?.perfil === 'master') return true
     if (!item.reqPerm) return true
     if (item.id === 'home') return true // Home sempre visível para todos

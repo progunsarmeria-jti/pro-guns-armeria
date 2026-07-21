@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { hojeISO, formatarData } from '../lib/dates'
-import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock } from 'lucide-react'
+import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
 import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
@@ -46,6 +46,7 @@ export default function ModuloOrdens({
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
   const [modalCheckoutRetirada, setModalCheckoutRetirada] = useState(null)
   const [modalExcluirOS, setModalExcluirOS] = useState(null)
+  const [modalEditarOS, setModalEditarOS] = useState(null)
   const [senhaMasterInput, setSenhaMasterInput] = useState('')
   const [erroSenhaMaster, setErroSenhaMaster] = useState('')
   const [formaPagamentoCheckout, setFormaPagamentoCheckout] = useState('Dinheiro')
@@ -335,10 +336,30 @@ export default function ModuloOrdens({
       setLogs
     })
 
+    // 4. Limpa modal
     setModalExcluirOS(null)
     setSenhaMasterInput('')
     setErroSenhaMaster('')
     alert(`Ordem de Serviço #${osParaDeletar.numero_os} excluída com sucesso!`)
+  }
+
+  // Handler para Salvar Edição Completa da O.S.
+  const handleSalvarEdicaoOS = (e) => {
+    e.preventDefault()
+    if (!modalEditarOS) return
+    const ordemAtualizada = { ...modalEditarOS }
+    dbUpsert('ordens', ordemAtualizada)
+    setOrdens(prev => prev.map(o => String(o.id) === String(ordemAtualizada.id) ? ordemAtualizada : o))
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'EDIÇÃO DE O.S.',
+      descricao: `Ordem de Serviço #${ordemAtualizada.numero_os} (${ordemAtualizada.cliente_nome}) editada por ${usuarioLogado?.nome_completo || 'Operador'}.`,
+      osId: ordemAtualizada.id,
+      osNumero: ordemAtualizada.numero_os,
+      setLogs
+    })
+    alert(`Ordem de Serviço #${ordemAtualizada.numero_os} atualizada com sucesso!`)
+    setModalEditarOS(null)
   }
 
   // Filtro de ordens — sempre em ordem numérica crescente de emissão
@@ -882,10 +903,9 @@ export default function ModuloOrdens({
                 {/* 1º: Logo da Armeria (Lado Superior Central) */}
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem' }}>
                   <img
-                    src="/LOGO.png"
+                    src={config?.logo_url || "/logo.png"}
                     alt={config?.nome_fantasia || 'Pró Guns Armeria'}
-                    style={{ maxHeight: '75px', objectFit: 'contain' }}
-                    onError={(e) => { e.target.style.display = 'none' }}
+                    style={{ maxHeight: '80px', maxWidth: '240px', objectFit: 'contain' }}
                   />
                 </div>
 
@@ -1017,7 +1037,7 @@ export default function ModuloOrdens({
             </div>
 
             {/* AÇÕES NO RODAPÉ DO MODAL (NÃO SAEM NA IMPRESSÃO) */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid #E5E7EB', paddingTop: '1rem' }}>
               <button
                 className="btn-secondary"
                 style={{ backgroundColor: '#F3F4F6', color: '#374151', borderColor: '#D1D5DB' }}
@@ -1040,6 +1060,20 @@ export default function ModuloOrdens({
               >
                 <MessageCircle size={15} />
                 <span>Enviar via WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-gold"
+                style={{ backgroundColor: '#F59E0B', borderColor: '#D97706', color: '#FFFFFF', fontWeight: '700' }}
+                onClick={() => {
+                  const targetOS = { ...docModalOrdem }
+                  setDocModalOrdem(null)
+                  setModalEditarOS(targetOS)
+                }}
+              >
+                <Edit3 size={15} />
+                <span>Editar O.S.</span>
               </button>
 
               <button
@@ -1100,6 +1134,144 @@ export default function ModuloOrdens({
                 <button type="button" className="btn-secondary" onClick={() => setModalExcluirOS(null)}>Cancelar</button>
                 <button type="submit" className="btn-gold" style={{ backgroundColor: '#DC2626', color: '#FFF' }}>
                   <Trash2 size={16} /> Excluir O.S. Permanentemente
+                </button>
+              </div>
+            </form>
+      {/* ── MODAL EDITAR ORDEM DE SERVIÇO ── */}
+      {modalEditarOS && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800' }}>
+                <Edit3 size={18} /> Editar Ordem de Serviço #{modalEditarOS.numero_os}
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalEditarOS(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarEdicaoOS} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Cliente Requerente */}
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CLIENTE REQUERENTE *</label>
+                <input
+                  required
+                  className="input-field"
+                  value={modalEditarOS.cliente_nome || ''}
+                  onChange={e => setModalEditarOS({ ...modalEditarOS, cliente_nome: e.target.value })}
+                />
+              </div>
+
+              {/* Grid 2 colunas: Equipamento */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MARCA / FABRICANTE *</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={modalEditarOS.marca_arma || ''}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, marca_arma: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>MODELO *</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={modalEditarOS.modelo_arma || ''}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, modelo_arma: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CALIBRE *</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={modalEditarOS.calibre_arma || ''}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, calibre_arma: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>N° DE SÉRIE *</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={modalEditarOS.numero_serie_arma || modalEditarOS.numero_serie || ''}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, numero_serie_arma: e.target.value, numero_serie: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>ÓRGÃO REGISTRO</label>
+                  <input
+                    className="input-field"
+                    value={modalEditarOS.orgao_registro || 'SIGMA'}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, orgao_registro: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Guia de Tráfego */}
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>GUIA DE TRÁFEGO (GT)</label>
+                <input
+                  className="input-field"
+                  value={modalEditarOS.gt_protocolo || ''}
+                  onChange={e => setModalEditarOS({ ...modalEditarOS, gt_protocolo: e.target.value })}
+                  placeholder="Ex: GT-123456"
+                />
+              </div>
+
+              {/* Queixa / Problema Relatado */}
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>PROBLEMA RELATADO / QUEIXA *</label>
+                <textarea
+                  required
+                  rows="2"
+                  className="input-field"
+                  value={modalEditarOS.problema_relatado || ''}
+                  onChange={e => setModalEditarOS({ ...modalEditarOS, problema_relatado: e.target.value })}
+                />
+              </div>
+
+              {/* Acessórios Acompanhantes */}
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CHECKLIST DE ACESSÓRIOS</label>
+                <input
+                  className="input-field"
+                  value={modalEditarOS.acessorios_acompanhantes || ''}
+                  onChange={e => setModalEditarOS({ ...modalEditarOS, acessorios_acompanhantes: e.target.value })}
+                />
+              </div>
+
+              {/* Status e Valor */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <CustomSelect
+                  label="STATUS DA O.S."
+                  value={modalEditarOS.status}
+                  onChange={val => setModalEditarOS({ ...modalEditarOS, status: val })}
+                  options={STATUS_LISTA}
+                  allowCustom={false}
+                />
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>VALOR DO SERVIÇO (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    value={modalEditarOS.valor_servico || 0}
+                    onChange={e => setModalEditarOS({ ...modalEditarOS, valor_servico: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setModalEditarOS(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold" style={{ backgroundColor: '#F59E0B', borderColor: '#D97706', color: '#FFF' }}>
+                  <Edit3 size={15} />
+                  <span>Salvar Alterações</span>
                 </button>
               </div>
             </form>

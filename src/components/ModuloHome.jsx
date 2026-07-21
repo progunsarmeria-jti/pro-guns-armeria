@@ -1,4 +1,5 @@
 import React from 'react'
+import { INITIAL_CONFIG } from '../lib/initialData'
 import {
   FileText,
   Clock,

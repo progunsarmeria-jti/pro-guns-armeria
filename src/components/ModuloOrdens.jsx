@@ -927,57 +927,56 @@ export default function ModuloOrdens({
             </button>
 
             {/* ÁREA IMPRESSA DO COMPROVANTE DA O.S. */}
-            <div className="print-area" style={{ fontFamily: 'Inter, sans-serif', minHeight: '23cm', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                {/* CABEÇALHO DA ARMERIA (LAYOUT INSTITUCIONAL DE IMPRESSÃO) */}
-                <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
-                  {/* 1º: Logo da Armeria (Lado Superior Central) */}
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem' }}>
-                    <img
-                      src={config?.logo_url || "/logo.png"}
-                      alt={config?.nome_fantasia || 'Pró Guns Armeria'}
-                      style={{ maxHeight: '80px', maxWidth: '240px', objectFit: 'contain' }}
-                    />
-                  </div>
-
-                  {/* 2º Título: Nome Fantasia (Negrito, Centralizado, Abaixo da Logo) */}
-                  <h1 style={{ fontSize: '1.35rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
-                  </h1>
-
-                  {/* 3º Subtítulo: Razão Social (Fonte tamanho menor, Centralizado abaixo do Nome Fantasia) */}
-                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
-                    {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
-                  </div>
-
-                  {/* 4º: CNPJ (Centralizado abaixo da Razão Social) */}
-                  <div style={{ fontSize: '0.8rem', color: '#4B5563', margin: '0.1rem 0' }}>
-                    CNPJ: {config?.cnpj || '12.345.678/0001-99'}
-                  </div>
-
-                  {/* 5º: N° do CR e Região Militar */}
-                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937', margin: '0.1rem 0' }}>
-                    CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
-                  </div>
-
-                  {/* 6º: Data e Hora de Abertura (Lado Esquerdo) */}
-                  <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
-                    Data e Hora de Abertura: {formatarDataHora(docModalOrdem.created_at || docModalOrdem.data_abertura)}
-                  </div>
-
-                  {/* 7º: Traço Longo fazendo a divisão do cabeçalho */}
-                  <hr style={{ border: 'none', borderTop: '2px solid #000000', marginTop: '0.4rem', marginBottom: '1.2rem' }} />
+            <div className="print-area" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {/* CABEÇALHO DA ARMERIA (LAYOUT INSTITUCIONAL DE IMPRESSÃO) */}
+              <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+                {/* 1º: Logo da Armeria (Lado Superior Central) */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem' }}>
+                  <img
+                    src={config?.logo_url || "/logo.png"}
+                    alt={config?.nome_fantasia || 'Pró Guns Armeria'}
+                    style={{ maxHeight: '80px', maxWidth: '240px', objectFit: 'contain' }}
+                  />
                 </div>
 
-                {/* TÍTULO DA ORDEM DE SERVIÇO */}
-                <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>
-                    ORDEM DE SERVIÇO Nº {docModalOrdem.numero_os}
-                  </h2>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', marginTop: '0.15rem' }}>
-                    Status Atual: <strong style={{ color: '#111827' }}>{docModalOrdem.status}</strong>
-                  </div>
+                {/* 2º Título: Nome Fantasia (Negrito, Centralizado, Abaixo da Logo) */}
+                <h1 style={{ fontSize: '1.35rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
+                </h1>
+
+                {/* 3º Subtítulo: Razão Social (Fonte tamanho menor, Centralizado abaixo do Nome Fantasia) */}
+                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
+                  {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
                 </div>
+
+                {/* 4º: CNPJ (Centralizado abaixo da Razão Social) */}
+                <div style={{ fontSize: '0.8rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                  CNPJ: {config?.cnpj || '12.345.678/0001-99'}
+                </div>
+
+                {/* 5º: N° do CR e Região Militar */}
+                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937', margin: '0.1rem 0' }}>
+                  CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
+                </div>
+
+                {/* 6º: Data e Hora de Abertura (Lado Esquerdo) */}
+                <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
+                  Data e Hora de Abertura: {formatarDataHora(docModalOrdem.created_at || docModalOrdem.data_abertura)}
+                </div>
+
+                {/* 7º: Traço Longo fazendo a divisão do cabeçalho */}
+                <hr style={{ border: 'none', borderTop: '2px solid #000000', marginTop: '0.4rem', marginBottom: '1.2rem' }} />
+              </div>
+
+              {/* TÍTULO DA ORDEM DE SERVIÇO */}
+              <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+                <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>
+                  ORDEM DE SERVIÇO Nº {docModalOrdem.numero_os}
+                </h2>
+                <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', marginTop: '0.15rem' }}>
+                  Status Atual: <strong style={{ color: '#111827' }}>{docModalOrdem.status}</strong>
+                </div>
+              </div>
 
               {/* CORPO DO DOCUMENTO DA O.S. (DADOS ORGANIZADOS & FORMATADOS) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.85rem', color: '#1F2937' }}>
@@ -1048,10 +1047,9 @@ export default function ModuloOrdens({
                   </div>
                 </div>
               </div>
-            </div>
 
-              {/* RODAPÉ E LINHAS DE ASSINATURA (POSICIONADO NA PARTE INFERIOR DA PÁGINA) */}
-              <div style={{ marginTop: '6.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.78rem', color: '#374151' }}>
+              {/* RODAPÉ E LINHAS DE ASSINATURA */}
+              <div style={{ marginTop: '3.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.78rem', color: '#374151' }}>
                 <div style={{ width: '45%' }}>
                   <div style={{ borderTop: '1.5px solid #000000', paddingTop: '0.4rem' }}>
                     <strong>{docModalOrdem.cliente_nome?.toUpperCase()}</strong><br />

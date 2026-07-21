@@ -218,9 +218,7 @@ export default function ModuloOrdens({
           const atualizada = { ...o, status: novoStatus, updated_at: agora }
           // UPDATE direto no Supabase (mais confiável que upsert para propagação)
           if (isSupabaseConfigured()) {
-            dbUpdate('ordens', o.id, { status: novoStatus, updated_at: agora }).catch(() => {
-              dbUpsert('ordens', atualizada) // fallback
-            })
+            dbUpdate('ordens', o.id, { status: novoStatus, updated_at: agora, numero_os: o.numero_os }, atualizada)
           }
           registrarLog({
             usuario: usuarioLogado,
@@ -257,9 +255,7 @@ export default function ModuloOrdens({
     const atualizada = { ...ordem, status: 'EM ANÁLISE', updated_at: agora }
     // UPDATE direto no Supabase
     if (isSupabaseConfigured()) {
-      dbUpdate('ordens', ordem.id, { status: 'EM ANÁLISE', updated_at: agora }).catch(() => {
-        dbUpsert('ordens', atualizada)
-      })
+      dbUpdate('ordens', ordem.id, { status: 'EM ANÁLISE', updated_at: agora, numero_os: ordem.numero_os }, atualizada)
     }
     setOrdens(prev => {
       const proximo = prev.map(o => (String(o.id) === String(ordem.id) || Number(o.numero_os) === Number(ordem.numero_os)) ? atualizada : o)
@@ -317,7 +313,6 @@ export default function ModuloOrdens({
 
     // ── 3. Persiste no Supabase com duas estratégias: UPDATE direto + UPSERT completo ──
     if (isSupabaseConfigured()) {
-      // Estratégia A: UPDATE direto apenas nos campos críticos (mais robusto)
       const camposUpdate = {
         status: 'AGUARDANDO APROVAÇÃO',
         diagnostico_armeiro: diagnosticoArmeiro,
@@ -325,28 +320,12 @@ export default function ModuloOrdens({
         valor_servico: valorTotal,
         observacoes_armeiro: observacoesArmeiro,
         updated_at: agora,
-        laudo_concluido_em: agora
+        laudo_concluido_em: agora,
+        numero_os: modalLaudoArmeiro.numero_os
       }
-      // Tenta adicionar itens_laudo como JSON
       try { camposUpdate.itens_laudo = itensLaudo } catch(e) {}
 
-      try {
-        const okUpdate = await dbUpdate('ordens', modalLaudoArmeiro.id, camposUpdate)
-        if (!okUpdate) {
-          // Fallback: UPDATE só com status (sem campos complexos)
-          await dbUpdate('ordens', modalLaudoArmeiro.id, {
-            status: 'AGUARDANDO APROVAÇÃO',
-            valor_servico: valorTotal,
-            updated_at: agora
-          })
-        }
-      } catch(err) {
-        console.error('[Laudo] Erro no UPDATE Supabase, tentando UPSERT completo...', err)
-        try { await dbUpsert('ordens', ordemAtualizada) } catch(e) {}
-      }
-
-      // Estratégia B (paralela): UPSERT completo como backup
-      setTimeout(() => dbUpsert('ordens', ordemAtualizada), 500)
+      dbUpdate('ordens', modalLaudoArmeiro.id, camposUpdate, ordemAtualizada)
     }
 
     registrarLog({

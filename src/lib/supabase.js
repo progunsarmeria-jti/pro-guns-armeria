@@ -85,23 +85,20 @@ export async function dbUpsert(tabela, registro) {
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
-    // Serializa campos complexos (arrays/objetos) para garantir compatibilidade com Supabase JSONB
     const registroSeguro = {}
     for (const [k, v] of Object.entries(registro)) {
-      if (v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
-        // Objeto aninhado não-array: converte para JSON string se não for um objeto simples
-        registroSeguro[k] = v
-      } else if (Array.isArray(v)) {
-        // Arrays: envia como array diretamente (Supabase JSONB aceita)
-        registroSeguro[k] = v
-      } else {
+      if (v !== null && v !== undefined) {
         registroSeguro[k] = v
       }
     }
     const { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
     if (error) {
       console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message, error.details, error.hint)
-      // Fallback: tenta upsert apenas com campos primitivos (sem arrays/objetos aninhados)
+      // Fallback 1: tenta upsert sem 'onConflict'
+      const { error: err1 } = await client.from(realTable).upsert(registroSeguro)
+      if (!err1) return true
+
+      // Fallback 2: tenta upsert apenas com campos primitivos (sem objetos/arrays aninhados)
       const registroSimples = {}
       for (const [k, v] of Object.entries(registro)) {
         if (typeof v !== 'object' || v === null || v instanceof Date) {
@@ -109,13 +106,11 @@ export async function dbUpsert(tabela, registro) {
         }
       }
       if (Object.keys(registroSimples).length > 1) {
-        const { error: err2 } = await client.from(realTable).upsert(registroSimples, { onConflict: 'id' })
-        if (err2) {
-          console.error(`[Supabase] Fallback simples também falhou em ${realTable}:`, err2.message)
-          return false
+        const { error: err2 } = await client.from(realTable).upsert(registroSimples)
+        if (!err2) {
+          console.warn(`[Supabase] Salvo com campos primitivos apenas em ${realTable}`)
+          return true
         }
-        console.warn(`[Supabase] Salvo com campos primitivos apenas em ${realTable} (campos complexos ignorados)`)
-        return true
       }
       return false
     }
@@ -126,22 +121,102 @@ export async function dbUpsert(tabela, registro) {
   }
 }
 
-// Atualiza campos específicos de um registro via UPDATE direto (mais seguro que upsert para atualizações parciais)
-export async function dbUpdate(tabela, id, campos) {
-  if (!isSupabaseConfigured() || !id || !campos) return false
+// Atualiza campos específicos de um registro via UPDATE direto (com verificação de .select() e fallback por numero_os/UPSERT)
+export async function dbUpdate(tabela, id, campos, registroCompleto = null) {
+  if (!isSupabaseConfigured() || !campos) return false
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
+  const numeroOS = campos.numero_os || registroCompleto?.numero_os
+
   try {
-    const { error } = await client.from(realTable).update(campos).eq('id', id)
-    if (error) {
-      console.error(`[Supabase] Erro ao atualizar ${realTable} id=${id}:`, error.message, error.details)
-      return false
+    // 1. Tenta UPDATE por ID com .select() para confirmar se alterou alguma linha
+    if (id) {
+      const { data, error } = await client
+        .from(realTable)
+        .update(campos)
+        .eq('id', id)
+        .select('id, status')
+
+      if (!error && data && data.length > 0) {
+        console.log(`[Supabase] UPDATE ok por ID (${id}) em ${realTable}:`, data)
+        return true
+      }
+      if (error) {
+        console.warn(`[Supabase] Erro no UPDATE por ID (${id}) em ${realTable}:`, error.message)
+      }
     }
-    return true
+
+    // 2. Tenta UPDATE por numero_os (se for a tabela de ordens ou tiver numero_os)
+    if (numeroOS) {
+      const { data, error } = await client
+        .from(realTable)
+        .update(campos)
+        .eq('numero_os', Number(numeroOS))
+        .select('id, status')
+
+      if (!error && data && data.length > 0) {
+        console.log(`[Supabase] UPDATE ok por numero_os (${numeroOS}) em ${realTable}:`, data)
+        return true
+      }
+    }
+
+    // 3. Se nenhuma linha foi alterada no Supabase (ex: registro ainda não existia no banco), faz UPSERT completo
+    if (registroCompleto) {
+      console.log(`[Supabase] Linha não encontrada via UPDATE. Fazendo UPSERT completo em ${realTable}...`)
+      return await dbUpsert(tabela, registroCompleto)
+    }
+
+    return false
   } catch (err) {
     console.error(`[Supabase] Exceção ao atualizar ${realTable}:`, err)
+    if (registroCompleto) {
+      return await dbUpsert(tabela, registroCompleto)
+    }
     return false
   }
+}
+
+// FUNÇÃO CRÍTICA: Atualiza APENAS o status — funciona por ID ou por numero_os com retries
+export async function dbUpdateStatus(tabela, id, novoStatus, numeroOS = null) {
+  if (!isSupabaseConfigured() || (!id && !numeroOS) || !novoStatus) return false
+  const client = getSupabaseClient()
+  const realTable = getTableName(tabela)
+
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      if (id) {
+        const { data, error } = await client
+          .from(realTable)
+          .update({ status: novoStatus, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select('id, status')
+
+        if (!error && data && data.length > 0) {
+          console.log(`[Supabase] Status atualizado via ID em ${realTable} (${id}) → ${novoStatus}`)
+          return true
+        }
+      }
+
+      if (numeroOS) {
+        const { data, error } = await client
+          .from(realTable)
+          .update({ status: novoStatus, updated_at: new Date().toISOString() })
+          .eq('numero_os', Number(numeroOS))
+          .select('id, status')
+
+        if (!error && data && data.length > 0) {
+          console.log(`[Supabase] Status atualizado via numero_os em ${realTable} (${numeroOS}) → ${novoStatus}`)
+          return true
+        }
+      }
+
+      if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 500))
+    } catch (err) {
+      console.error(`[Supabase] Exceção na tentativa ${tentativa} de atualizar status:`, err)
+      if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 500))
+    }
+  }
+  return false
 }
 
 

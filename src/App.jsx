@@ -307,9 +307,7 @@ export default function App() {
           const corrigida = { ...o, status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }
           // Também corrige no Supabase via UPDATE direto (evita que o sync reverta)
           if (isSupabaseConfigured()) {
-            dbUpdate('ordens', o.id, { status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }).catch(() => {
-              dbUpsert('ordens', corrigida) // fallback
-            })
+            dbUpdate('ordens', o.id, { status: 'AGUARDANDO APROVAÇÃO', updated_at: agora, numero_os: o.numero_os }, corrigida)
           }
           return corrigida
         }
@@ -424,27 +422,39 @@ export default function App() {
     if (remotos !== null) {
       remotosList.forEach(item => {
         if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
-          const localObj = mapa.get(String(item.id)) || {}
+          // Busca no mapa local por ID ou por numero_os
+          let localObj = mapa.get(String(item.id))
+          if (!localObj && item.numero_os && tabela === 'ordens') {
+            for (const [k, v] of mapa.entries()) {
+              if (Number(v.numero_os) === Number(item.numero_os)) {
+                localObj = v
+                break
+              }
+            }
+          }
+          if (!localObj) localObj = {}
 
           if (tabela === 'ordens' && localObj.status && item.status) {
-            // Verifica qual status é mais avançado no fluxo de trabalho
             const prioLocal  = STATUS_ORDEM_PRIORIDADE.indexOf(localObj.status)
             const prioRemoto = STATUS_ORDEM_PRIORIDADE.indexOf(item.status)
 
             if (prioLocal > prioRemoto) {
-              // Local está mais avançado: mesclamos campos remotos mas mantemos o status/itens locais
-              // e reforçamos o upsert do local para o Supabase para corrigir a divergência
+              // Local está mais avançado no fluxo de trabalho
               const merged = { ...item, ...localObj }
               mapa.set(String(item.id), merged)
-              // Re-envia para o Supabase para corrigir a divergência
               if (isSupabaseConfigured()) dbUpsert('ordens', merged)
               return
             }
 
+            if (prioRemoto > prioLocal) {
+              // Remoto está mais avançado: remoto substitui o local
+              const merged = { ...localObj, ...item }
+              mapa.set(String(item.id), merged)
+              return
+            }
+
             if (prioLocal === prioRemoto && localObj.updated_at && item.updated_at) {
-              // Mesmo nível de status: usa updated_at como desempate
               if (localObj.updated_at > item.updated_at) {
-                // Local é mais recente
                 const merged = { ...item, ...localObj }
                 mapa.set(String(item.id), merged)
                 if (isSupabaseConfigured()) dbUpsert('ordens', merged)

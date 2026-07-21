@@ -161,8 +161,8 @@ export const INITIAL_ORCAMENTOS = [];
 export const INITIAL_FINANCEIRO = [];
 
 export const INITIAL_CONFIG = {
-  nome_fantasia: "Pró Guns Armeria",
-  razao_social: "Pró Guns Armeria LTDA",
+  nome_fantasia: "PRÓ GUNS ARMERIA",
+  razao_social: "SANTOS E OLIVIERA JUNIOR LTDA",
   cnpj: "12.345.678/0001-99",
   cr_armeria: "CR-998877/2ª RM",
   validade_cr: "2029-12-31",

@@ -677,8 +677,8 @@ export default function ModuloVendas({
                 <h1 style={{ fontSize: '1.35rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase' }}>
                   {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
                 </h1>
-                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#374151' }}>
-                  {config?.razao_social || 'Pró Guns Armeria LTDA'}
+                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', textTransform: 'uppercase' }}>
+                  {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>
                   CNPJ: {config?.cnpj || '12.345.678/0001-99'}

@@ -33,7 +33,7 @@ export default function Sidebar({
   const alertasPendentesCount = alertasValidos.filter(a => a.status === 'PENDENTE').length
   const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
 
-  const menuItems = [
+  const menuItemsOriginal = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,         badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },
     { id: 'caixa',         label: 'Caixa',              icon: Wallet,       badgeCount: caixaBadge,                              reqPerm: 'ver_caixa' },
     { id: 'clientes',      label: 'Clientes',          icon: Users,        badgeCount: null,                                    reqPerm: 'ver_clientes' },
@@ -46,6 +46,18 @@ export default function Sidebar({
     { id: 'usuarios',      label: 'Usuários',           icon: UserCheck,    badgeCount: null,                                    reqPerm: 'gerenciar_usuarios' },
     { id: 'vendas',        label: 'Vendas',             icon: ShoppingCart, badgeCount: null,                                    reqPerm: 'ver_vendas' },
   ]
+
+  const ordemCustom = config?.ordem_menu || []
+  const menuItems = [...menuItemsOriginal].sort((a, b) => {
+    if (a.id === 'home') return -1
+    if (b.id === 'home') return 1
+    const idxA = ordemCustom.indexOf(a.id)
+    const idxB = ordemCustom.indexOf(b.id)
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB
+    if (idxA !== -1) return -1
+    if (idxB !== -1) return 1
+    return a.label.localeCompare(b.label)
+  })
 
   const itemsFiltrados = menuItems.filter(item => {
     if (!usuarioLogado || usuarioLogado?.perfil === 'master') return true

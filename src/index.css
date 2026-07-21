@@ -218,9 +218,17 @@ select option {
 
 /* Printable document styles */
 @media print {
-  body {
+  @page {
+    margin: 0.8cm;
+    size: portrait;
+  }
+  html, body {
     background: #FFFFFF !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   body * {
     visibility: hidden !important;
@@ -229,20 +237,17 @@ select option {
     visibility: visible !important;
   }
   .print-area {
-    position: absolute !important;
+    position: fixed !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 1.2cm !important;
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: #FFFFFF !important;
     color: #000000 !important;
-  }
-  @page {
-    margin: 1cm;
-    size: portrait;
+    z-index: 999999 !important;
   }
 }
 

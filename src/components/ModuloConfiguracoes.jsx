@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X } from 'lucide-react'
+import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
 import { INITIAL_CONFIG } from '../lib/initialData'
+
+const ALL_SIDEBAR_ITEMS_REF = [
+  { id: 'home',          label: 'Home (Início)' },
+  { id: 'caixa',         label: 'Caixa' },
+  { id: 'clientes',      label: 'Clientes' },
+  { id: 'configuracoes', label: 'Configurações' },
+  { id: 'estoque',       label: 'Estoque' },
+  { id: 'financeiro',    label: 'Financeiro' },
+  { id: 'orcamentos',    label: 'Orçamentos' },
+  { id: 'ordens',        label: 'Ordem de Serviço' },
+  { id: 'alertas',       label: 'Painel de Alerta' },
+  { id: 'usuarios',      label: 'Usuários' },
+  { id: 'vendas',        label: 'Vendas' },
+]
 
 export default function ModuloConfiguracoes({ config, setConfig }) {
   const [formData, setFormData] = useState(() => config || INITIAL_CONFIG)
@@ -11,7 +25,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
   const [salvoFeedback, setSalvoFeedback] = useState(false)
 
-  // Aba Principal Ativa: 'dados' | 'categorias' | 'servicos' | 'supabase'
+  // Aba Principal Ativa: 'dados' | 'categorias' | 'servicos' | 'menu_ordem' | 'supabase'
   const [abaConfigAtiva, setAbaConfigAtiva] = useState('dados')
 
   // Estado para Cadastro de Categorias por Módulo
@@ -208,6 +222,40 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     }
   }
 
+  // Funções de Ordenação Personalizada do Menu Lateral
+  const getOrdemMenuAtual = () => {
+    const salva = formData.ordem_menu
+    if (Array.isArray(salva) && salva.length > 0) {
+      const idsExistentes = ALL_SIDEBAR_ITEMS_REF.map(i => i.id)
+      const filtrados = salva.filter(id => idsExistentes.includes(id))
+      idsExistentes.forEach(id => {
+        if (!filtrados.includes(id)) filtrados.push(id)
+      })
+      const semHome = filtrados.filter(id => id !== 'home')
+      return ['home', ...semHome]
+    }
+    return ALL_SIDEBAR_ITEMS_REF.map(i => i.id)
+  }
+
+  const handleMoverMenuItem = (index, direcao) => {
+    const listaAtual = getOrdemMenuAtual()
+    const novoIndex = direcao === 'up' ? index - 1 : index + 1
+    if (novoIndex < 1 || novoIndex >= listaAtual.length) return // Não move a Home do topo (index 0)
+
+    const temp = listaAtual[index]
+    listaAtual[index] = listaAtual[novoIndex]
+    listaAtual[novoIndex] = temp
+
+    const updated = { ...formData, ordem_menu: listaAtual }
+    atualizarConfig(updated)
+  }
+
+  const handleRestaurarOrdemMenuPadrao = () => {
+    const padrao = ALL_SIDEBAR_ITEMS_REF.map(i => i.id)
+    const updated = { ...formData, ordem_menu: padrao }
+    atualizarConfig(updated)
+  }
+
   const categoriasDisponiveis = (dataSafe.categorias_servicos || [
     'MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO', 'LIMPEZA & CONSERVAÇÃO', 'CUSTOMIZAÇÃO', 'PINTURA & CERAKOTE'
   ]).map(c => c.toUpperCase())
@@ -221,7 +269,7 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
           <span>Configurações do Sistema</span>
         </h1>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-          Gerencie dados institucionais da Armeria, categorias personalizadas, tabela de preços e conexão com banco de dados.
+          Gerencie dados institucionais da Armeria, ordem do menu lateral, categorias personalizadas e tabela de preços.
         </p>
       </div>
 
@@ -255,6 +303,30 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
         >
           <Building size={16} />
           <span>Dados Institucionais</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAbaConfigAtiva('menu_ordem')}
+          style={{
+            padding: '0.65rem 1.1rem',
+            borderRadius: '8px 8px 0 0',
+            border: 'none',
+            borderBottom: abaConfigAtiva === 'menu_ordem' ? '3px solid #A78BFA' : '3px solid transparent',
+            backgroundColor: abaConfigAtiva === 'menu_ordem' ? 'var(--bg-card)' : 'transparent',
+            color: abaConfigAtiva === 'menu_ordem' ? '#A78BFA' : 'var(--text-muted)',
+            fontWeight: '700',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <ListOrdered size={16} />
+          <span>Ordem do Menu Lateral</span>
         </button>
 
         <button
@@ -415,6 +487,131 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ==========================================
+          CONTEÚDO DA ABA: PERSONALIZAÇÃO DO MENU LATERAL
+      ========================================== */}
+      {abaConfigAtiva === 'menu_ordem' && (
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <ListOrdered size={20} color="#A78BFA" />
+              <div>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '800', margin: 0 }}>
+                  Personalização da Ordem do Menu Lateral
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Altere a ordem de exibição das opções do menu lateral usando os botões Subir e Descer.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleRestaurarOrdemMenuPadrao}
+              style={{ fontSize: '0.78rem', padding: '0.4rem 0.8rem' }}
+            >
+              <RotateCcw size={14} />
+              <span>Restaurar Ordem Alfabética Padrão</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {getOrdemMenuAtual().map((itemId, idx) => {
+              const itemObj = ALL_SIDEBAR_ITEMS_REF.find(i => i.id === itemId) || { id: itemId, label: itemId }
+              const isHome = itemId === 'home'
+              return (
+                <div
+                  key={itemId}
+                  style={{
+                    backgroundColor: isHome ? 'rgba(212, 175, 55, 0.1)' : 'var(--bg-input)',
+                    border: isHome ? '1px solid rgba(212, 175, 55, 0.3)' : '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{
+                      backgroundColor: isHome ? 'var(--gold-accent)' : '#374151',
+                      color: '#FFF',
+                      fontWeight: '800',
+                      fontSize: '0.75rem',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'center'
+                    }}>
+                      {idx + 1}
+                    </span>
+                    <span style={{ fontWeight: '700', color: isHome ? 'var(--gold-accent)' : 'var(--text-main)', fontSize: '0.9rem' }}>
+                      {itemObj.label}
+                    </span>
+                    {isHome && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--gold-primary)', fontWeight: '800' }}>
+                        (Fixo no Topo)
+                      </span>
+                    )}
+                  </div>
+
+                  {!isHome && (
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        disabled={idx === 1}
+                        onClick={() => handleMoverMenuItem(idx, 'up')}
+                        style={{
+                          backgroundColor: idx === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(96, 165, 250, 0.15)',
+                          border: idx === 1 ? '1px solid rgba(255,255,255,0.1)' : '1px solid #60A5FA',
+                          color: idx === 1 ? 'var(--text-muted)' : '#60A5FA',
+                          borderRadius: '6px',
+                          padding: '0.3rem 0.65rem',
+                          cursor: idx === 1 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '700'
+                        }}
+                        title="Mover para Cima"
+                      >
+                        <ArrowUp size={14} /> Subir
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={idx === getOrdemMenuAtual().length - 1}
+                        onClick={() => handleMoverMenuItem(idx, 'down')}
+                        style={{
+                          backgroundColor: idx === getOrdemMenuAtual().length - 1 ? 'rgba(255,255,255,0.05)' : 'rgba(245, 158, 11, 0.15)',
+                          border: idx === getOrdemMenuAtual().length - 1 ? '1px solid rgba(255,255,255,0.1)' : '1px solid #F59E0B',
+                          color: idx === getOrdemMenuAtual().length - 1 ? 'var(--text-muted)' : '#FBBF24',
+                          borderRadius: '6px',
+                          padding: '0.3rem 0.65rem',
+                          cursor: idx === getOrdemMenuAtual().length - 1 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '700'
+                        }}
+                        title="Mover para Baixo"
+                      >
+                        <ArrowDown size={14} /> Descer
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

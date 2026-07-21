@@ -941,8 +941,8 @@ export default function ModuloOrdens({
                 </h1>
 
                 {/* 3º Subtítulo: Razão Social (Fonte tamanho menor, Centralizado abaixo do Nome Fantasia) */}
-                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#374151', margin: '0.1rem 0' }}>
-                  {config?.razao_social || 'Pró Guns Armeria LTDA'}
+                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
+                  {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
                 </div>
 
                 {/* 4º: CNPJ (Centralizado abaixo da Razão Social) */}

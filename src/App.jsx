@@ -293,8 +293,26 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
   useEffect(() => { ls.set('PROGUNS_VENDAS', vendas) }, [vendas])
 
-  // ─── MECANISMO INTELIGENTE DE INTEGRIDADE DA BASE DE DADOS (PURGA DE ÓRFÃOS) ─────
+  // ─── MECANISMO INTELIGENTE DE INTEGRIDADE DA BASE DE DADOS (PURGA DE ÓRFÃOS & CORREÇÃO DE STATUS) ─────
   useEffect(() => {
+    // 0. Auto-healing: Corrige O.S. com laudo/itens preenchidos mas com status preso em 'EM ANÁLISE'
+    setOrdens(prevOrdens => {
+      if (!Array.isArray(prevOrdens) || prevOrdens.length === 0) return prevOrdens
+      let alterado = false
+      const corrigidos = prevOrdens.map(o => {
+        if (o.status === 'EM ANÁLISE' && ((Array.isArray(o.itens_laudo) && o.itens_laudo.length > 0) || o.diagnostico_armeiro || (o.valor_servico && parseFloat(o.valor_servico) > 0))) {
+          alterado = true
+          return { ...o, status: 'AGUARDANDO APROVAÇÃO' }
+        }
+        return o
+      })
+      if (alterado) {
+        try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(corrigidos)) } catch(e) {}
+        return corrigidos
+      }
+      return prevOrdens
+    })
+
     // 1. Purga Alertas Órfãos de O.S. ou Clientes excluídos
     setAlertas(prevAlertas => {
       const novos = (prevAlertas || []).filter(alerta => {

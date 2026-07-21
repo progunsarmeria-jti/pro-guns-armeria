@@ -213,7 +213,7 @@ export default function ModuloOrdens({
   const handleMudarStatus = (ordemId, novoStatus) => {
     setOrdens(prev => {
       const proximo = prev.map(o => {
-        if (o.id === ordemId) {
+        if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
           const atualizada = { ...o, status: novoStatus }
           dbUpsert('ordens', atualizada)
           registrarLog({
@@ -229,7 +229,7 @@ export default function ModuloOrdens({
           if (novoStatus === 'AGUARDANDO RETIRADA' || novoStatus === 'AGUARDANDO APROVAÇÃO') {
             tocarSomNotificacao()
             dispararAlertaRecepcao(
-              o,
+              atualizada,
               novoStatus,
               novoStatus === 'AGUARDANDO RETIRADA'
                 ? `Manutenção concluída pelo armeiro (${usuarioLogado?.nome_completo || 'Oficina'}). Equipamento pronto para retirada pelo cliente.`
@@ -241,6 +241,7 @@ export default function ModuloOrdens({
         }
         return o
       })
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
       return proximo
     })
   }
@@ -248,7 +249,11 @@ export default function ModuloOrdens({
   const handleIniciarAnalise = (ordem) => {
     const atualizada = { ...ordem, status: 'EM ANÁLISE' }
     dbUpsert('ordens', atualizada)
-    setOrdens(prev => prev.map(o => o.id === ordem.id ? atualizada : o))
+    setOrdens(prev => {
+      const proximo = prev.map(o => (String(o.id) === String(ordem.id) || Number(o.numero_os) === Number(ordem.numero_os)) ? atualizada : o)
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      return proximo
+    })
     registrarLog({
       usuario: usuarioLogado,
       acao: 'INÍCIO DE ANÁLISE',
@@ -281,10 +286,14 @@ export default function ModuloOrdens({
 
     dbUpsert('ordens', ordemAtualizada)
     setOrdens(prev => {
-      const proximo = prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o)
+      const proximo = prev.map(o => (String(o.id) === String(modalLaudoArmeiro.id) || Number(o.numero_os) === Number(modalLaudoArmeiro.numero_os)) ? ordemAtualizada : o)
       try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
       return proximo
     })
+    if (docModalOrdem && (String(docModalOrdem.id) === String(modalLaudoArmeiro.id) || Number(docModalOrdem.numero_os) === Number(modalLaudoArmeiro.numero_os))) {
+      setDocModalOrdem(ordemAtualizada)
+    }
+
     registrarLog({
       usuario: usuarioLogado,
       acao: 'LAUDO E ORÇAMENTO',
@@ -318,7 +327,7 @@ export default function ModuloOrdens({
   }
 
   const handleEnviarOrcamentoWhatsApp = (ordem) => {
-    const clienteObj = clientes.find(c => c.id === ordem.cliente_id || c.nome_completo === ordem.cliente_nome)
+    const clienteObj = clientes.find(c => String(c.id) === String(ordem.cliente_id) || c.nome_completo === ordem.cliente_nome)
     const telefone = clienteObj?.telefone || ''
     const limpo = telefone.replace(/\D/g, '')
     const numero = limpo.length <= 11 ? `55${limpo}` : limpo
@@ -327,22 +336,26 @@ export default function ModuloOrdens({
   }
 
   const handleAprovarPelaRecepcao = (ordemId) => {
-    setOrdens(prev => prev.map(o => {
-      if (o.id === ordemId) {
-        const atualizada = { ...o, status: 'APROVADO' }
-        dbUpsert('ordens', atualizada)
-        registrarLog({
-          usuario: usuarioLogado,
-          acao: 'APROVAÇÃO DE SERVIÇO',
-          descricao: `Orçamento da OS #${o.numero_os} aprovado pelo cliente/recepção.`,
-          osId: o.id,
-          osNumero: o.numero_os,
-          setLogs
-        })
-        return atualizada
-      }
-      return o
-    }))
+    setOrdens(prev => {
+      const proximo = prev.map(o => {
+        if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
+          const atualizada = { ...o, status: 'APROVADO' }
+          dbUpsert('ordens', atualizada)
+          registrarLog({
+            usuario: usuarioLogado,
+            acao: 'APROVAÇÃO DE SERVIÇO',
+            descricao: `Orçamento da OS #${o.numero_os} aprovado pelo cliente/recepção.`,
+            osId: o.id,
+            osNumero: o.numero_os,
+            setLogs
+          })
+          return atualizada
+        }
+        return o
+      })
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      return proximo
+    })
   }
 
   const handleAbrirCheckoutRetirada = (ordem) => {
@@ -362,7 +375,11 @@ export default function ModuloOrdens({
     // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO'
     const ordemAtualizada = { ...ordem, status: 'CONCLUÍDO' }
     dbUpsert('ordens', ordemAtualizada)
-    setOrdens(prev => prev.map(o => o.id === ordem.id ? ordemAtualizada : o))
+    setOrdens(prev => {
+      const proximo = prev.map(o => (String(o.id) === String(ordem.id) || Number(o.numero_os) === Number(ordem.numero_os)) ? ordemAtualizada : o)
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      return proximo
+    })
 
     // 2. Registra Log de Auditoria
     registrarLog({

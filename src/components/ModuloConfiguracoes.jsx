@@ -19,7 +19,7 @@ const ALL_SIDEBAR_ITEMS_REF = [
   { id: 'configuracoes', label: 'Configurações' },
 ]
 
-export default function ModuloConfiguracoes({ config, setConfig }) {
+export default function ModuloConfiguracoes({ config, setConfig, ordens = [], setOrdens }) {
   const [formData, setFormData] = useState(() => config || INITIAL_CONFIG)
   const [supaUrl, setSupaUrl] = useState(localStorage.getItem('PROGUNS_SUPABASE_URL') || '')
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
@@ -29,14 +29,24 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
   const [abaConfigAtiva, setAbaConfigAtiva] = useState('dados')
 
   // Estado para Cadastro de Categorias por Módulo
-  const [abaCategoriaAtiva, setAbaCategoriaAtiva] = useState('servicos') // 'servicos' | 'estoque' | 'financeiro' | 'equipamento'
+  const [abaCategoriaAtiva, setAbaCategoriaAtiva] = useState('status_os') // 'status_os' | 'servicos' | 'estoque' | 'financeiro' | 'equipamento'
   const [inputNovaCategoria, setInputNovaCategoria] = useState('')
   const [modalEditarCategoria, setModalEditarCategoria] = useState(null) // { modulo, chave, original, editado }
 
   const CONFIG_CATEGORIAS_MAP = {
+    status_os: {
+      id: 'status_os',
+      rotulo: '🏷️ Status O.S.',
+      rotuloCompleto: '🏷️ Status das Ordens de Serviço (O.S.)',
+      campoDestino: 'Usado em: Status das Ordens de Serviço, Filtros, Troca de Status pelo Armeiro/Recepção e Painel de Alerta',
+      chave: 'status_ordens',
+      padrao: ['NÃO INICIADO', 'EM ANÁLISE', 'AGUARDANDO APROVAÇÃO', 'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'],
+      cor: '#EF4444'
+    },
     servicos: {
       id: 'servicos',
-      rotulo: '🛠️ Serviços (O.S. / Orçamentos)',
+      rotulo: '🛠️ Serviços O.S.',
+      rotuloCompleto: '🛠️ Serviços (O.S. / Orçamentos)',
       campoDestino: 'Usado em: Categoria de Serviço em O.S., Laudos Técnicos e Tabela de Valores',
       chave: 'categorias_servicos',
       padrao: ['MANUTENÇÃO', 'REPARO', 'PERSONALIZAÇÃO', 'ÓPTICA', 'ACABAMENTO', 'LIMPEZA & CONSERVAÇÃO', 'CUSTOMIZAÇÃO', 'PINTURA & CERAKOTE'],
@@ -44,7 +54,8 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     },
     estoque: {
       id: 'estoque',
-      rotulo: '📦 Peças & Produtos (Estoque)',
+      rotulo: '📦 Est. / Peças',
+      rotuloCompleto: '📦 Peças & Produtos (Estoque)',
       campoDestino: 'Usado em: Categoria no cadastro de peças, produtos e filtro de estoque',
       chave: 'categorias_estoque',
       padrao: ['COMPONENTES & PEÇAS', 'LIMPEZA & CONSERVAÇÃO', 'MIRAS & ÓPTICAS', 'ACESSÓRIOS & CARREGADORES', 'INSUMOS'],
@@ -52,7 +63,8 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     },
     financeiro: {
       id: 'financeiro',
-      rotulo: '💰 Financeiro (Receitas & Despesas)',
+      rotulo: '💰 Financeiro',
+      rotuloCompleto: '💰 Financeiro (Receitas & Despesas)',
       campoDestino: 'Usado em: Categoria dos lançamentos do Financeiro e Livro Caixa',
       chave: 'categorias_financeiro',
       padrao: ['SERVIÇO ARMERIA', 'VENDA DE BALCÃO', 'SANGRIA DE CAIXA', 'REFORÇO / APORTE', 'PEÇAS & INSUMOS', 'DESPESAS OPERACIONAIS', 'IMPOSTOS & TAXAS'],
@@ -60,7 +72,8 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     },
     equipamento: {
       id: 'equipamento',
-      rotulo: '🔫 Equipamentos / Armas',
+      rotulo: '🔫 Armas',
+      rotuloCompleto: '🔫 Equipamentos / Armas',
       campoDestino: 'Usado em: Categoria / Tipo de Arma no Acervo do Cliente e Entrada de O.S.',
       chave: 'categorias_equipamento',
       padrao: ['PISTOLA', 'REVÓLVER', 'CARABINA', 'FUZIL', 'ESPINGARDA', 'ARMA DE AR COMPRIMIDO', 'ACESSÓRIO / SUPORTE'],
@@ -142,16 +155,16 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
 
     let updated = { ...formData, [chave]: novaLista }
 
-    // Atualizar também serviços vinculados se for categoria de serviços
-    if (chave === 'categorias_servicos') {
-      const catalogoAtual = formData.catalogo_servicos || []
-      const novoCatalogo = catalogoAtual.map(s => {
-        if ((s.categoria || '').toUpperCase() === origUpper) {
-          return { ...s, categoria: novoNome }
+    // Atualizar também ordens vinculadas se for alteração de nome de status da O.S.
+    if (chave === 'status_ordens' && Array.isArray(ordens) && typeof setOrdens === 'function') {
+      const ordensAtualizadas = ordens.map(o => {
+        if ((o.status || '').toUpperCase() === origUpper) {
+          const atualizada = { ...o, status: novoNome, updated_at: new Date().toISOString() }
+          return atualizada
         }
-        return s
+        return o
       })
-      updated.catalogo_servicos = novoCatalogo
+      setOrdens(ordensAtualizadas)
     }
 
     atualizarConfig(updated)
@@ -645,8 +658,8 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
             </div>
           </div>
 
-          {/* MÓDULOS DE CATEGORIAS (SELETOR COMPACTO) */}
-          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', borderBottom: '1px solid var(--border-color)', pb: '0.6rem' }}>
+          {/* MÓDULOS DE CATEGORIAS (SELETOR COMPACTO EM TELA ÚNICA SEM BARRA DE ROLAGEM) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem' }}>
             {Object.values(CONFIG_CATEGORIAS_MAP).map(mod => {
               const ativa = abaCategoriaAtiva === mod.id
               const qtd = ((dataSafe && dataSafe[mod.chave]) || mod.padrao).length
@@ -656,22 +669,24 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
                   type="button"
                   onClick={() => { setAbaCategoriaAtiva(mod.id); setInputNovaCategoria('') }}
                   style={{
-                    backgroundColor: ativa ? 'rgba(245,158,11,0.15)' : 'var(--bg-input)',
+                    backgroundColor: ativa ? 'rgba(245,158,11,0.18)' : 'var(--bg-input)',
                     border: ativa ? `1px solid ${mod.cor}` : '1px solid var(--border-color)',
                     color: ativa ? mod.cor : 'var(--text-muted)',
-                    padding: '0.5rem 0.85rem',
+                    padding: '0.45rem 0.5rem',
                     borderRadius: '6px',
-                    fontSize: '0.82rem',
+                    fontSize: '0.78rem',
                     fontWeight: '700',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
+                    justifyContent: 'center',
+                    gap: '0.3rem',
                     whiteSpace: 'nowrap'
                   }}
+                  title={mod.rotuloCompleto || mod.rotulo}
                 >
                   <span>{mod.rotulo}</span>
-                  <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                  <span style={{ fontSize: '0.68rem', padding: '0.08rem 0.35rem', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.12)', color: '#FFF' }}>
                     {qtd}
                   </span>
                 </button>

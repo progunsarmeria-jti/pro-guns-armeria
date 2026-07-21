@@ -815,6 +815,7 @@ export default function App() {
             {activeTab === 'configuracoes' && (
               <ModuloConfiguracoes
                 config={config} setConfig={setConfig}
+                ordens={ordens} setOrdens={setOrdens}
               />
             )}
 

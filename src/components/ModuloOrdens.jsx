@@ -538,7 +538,11 @@ export default function ModuloOrdens({
       ? ordensOrdenadas.filter(o => o.status !== 'CONCLUÍDO')
       : ordensOrdenadas.filter(o => o.status === filtroStatus)
 
-  const ordensPorStatus = STATUS_LISTA.reduce((acc, s) => {
+  const listaStatusAtivos = (config?.status_ordens && Array.isArray(config.status_ordens) && config.status_ordens.length > 0)
+    ? config.status_ordens
+    : STATUS_LISTA
+
+  const ordensPorStatus = listaStatusAtivos.reduce((acc, s) => {
     acc[s] = ordens.filter(o => o.status === s).length
     return acc
   }, {})
@@ -794,9 +798,9 @@ export default function ModuloOrdens({
                         label="STATUS:"
                         value={ordem.status}
                         onChange={val => handleMudarStatus(ordem.id, val)}
-                        options={STATUS_LISTA}
+                        options={listaStatusAtivos}
                         placeholder="Selecione o Status..."
-                        allowCustom={false}
+                        allowCustom={true}
                       />
                     </div>
 

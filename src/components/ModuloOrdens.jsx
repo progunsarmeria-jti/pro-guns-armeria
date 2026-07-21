@@ -20,30 +20,33 @@ const STATUS_CONFIG = {
 const STATUS_LISTA = Object.keys(STATUS_CONFIG)
 
 export default function ModuloOrdens({
-  ordens,
+  ordens = [],
   setOrdens,
-  clientes,
+  clientes = [],
   setClientes,
-  armas,
+  armas = [],
   setArmas,
   estoque = [],
   setEstoque,
-  financeiro,
+  financeiro = [],
   setFinanceiro,
-  caixas,
+  caixas = [],
   setCaixas,
-  alertas,
+  alertas = [],
   setAlertas,
-  usuarios,
-  logs,
+  usuarios = [],
+  logs = [],
   setLogs,
-  perfilOperador,
+  perfilOperador = 'recepcao',
   usuarioLogado,
-  notificacoes,
+  notificacoes = [],
   setNotificacoes,
   config,
-  filtroInicial
+  filtroInicial,
+  osParaVisualizar,
+  setOsParaVisualizar
 }) {
+  const [modalOrdem, setModalOrdem] = useState(false)
   const [showModalOrdem, setShowModalOrdem] = useState(false)
   const [docModalOrdem, setDocModalOrdem] = useState(null)
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
@@ -74,6 +77,13 @@ export default function ModuloOrdens({
   React.useEffect(() => {
     if (filtroInicial) setFiltroStatus(filtroInicial)
   }, [filtroInicial])
+
+  React.useEffect(() => {
+    if (osParaVisualizar) {
+      setDocModalOrdem(osParaVisualizar)
+      if (setOsParaVisualizar) setOsParaVisualizar(null)
+    }
+  }, [osParaVisualizar])
 
   // Recalcula valor total automaticamente a partir de itensLaudo
   const recalcularTotalLaudo = (lista) => {
@@ -270,7 +280,11 @@ export default function ModuloOrdens({
     }
 
     dbUpsert('ordens', ordemAtualizada)
-    setOrdens(prev => prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o))
+    setOrdens(prev => {
+      const proximo = prev.map(o => o.id === modalLaudoArmeiro.id ? ordemAtualizada : o)
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      return proximo
+    })
     registrarLog({
       usuario: usuarioLogado,
       acao: 'LAUDO E ORÇAMENTO',
@@ -283,9 +297,9 @@ export default function ModuloOrdens({
     // Toca som de notificação APENAS quando o armeiro define status AGUARDANDO APROVAÇÃO
     tocarSomNotificacao()
 
-    // Dispara Alerta automático para o Painel de Alerta da Recepção
+    // Dispara Alerta automático para o Painel de Alerta da Recepção com o objeto atualizado
     dispararAlertaRecepcao(
-      modalLaudoArmeiro,
+      ordemAtualizada,
       'AGUARDANDO APROVAÇÃO',
       `Armeiro ${usuarioLogado?.nome_completo || 'Técnico'} concluiu o laudo técnico. Orçamento de R$ ${valorTotal.toFixed(2)} pendente de aprovação com o cliente.`
     )

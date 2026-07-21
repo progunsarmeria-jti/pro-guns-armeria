@@ -264,6 +264,25 @@ export default function App() {
     }
   }, [usuarios, usuarioLogado])
 
+  const [osParaVisualizar, setOsParaVisualizar] = useState(null)
+
+  // ── Sincronização em Tempo Real via Eventos de Armazenamento (Multi-Aba) ─────────
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'PROGUNS_ORDENS' && e.newValue) {
+        try { setOrdens(JSON.parse(e.newValue)) } catch(err) {}
+      }
+      if (e.key === 'PROGUNS_ALERTAS' && e.newValue) {
+        try { setAlertas(JSON.parse(e.newValue)) } catch(err) {}
+      }
+      if (e.key === 'PROGUNS_CONFIG' && e.newValue) {
+        try { setConfig(JSON.parse(e.newValue)) } catch(err) {}
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
   useEffect(() => { ls.set('PROGUNS_CLIENTES', clientes) }, [clientes])
   useEffect(() => { ls.set('PROGUNS_ARMAS', armas) }, [armas])
   useEffect(() => { ls.set('PROGUNS_ORDENS', ordens) }, [ordens])
@@ -626,6 +645,10 @@ export default function App() {
                 usuarioLogado={usuarioLogado}
                 setActiveTab={setActiveTab}
                 setFiltroStatusOrdens={setFiltroStatusOrdens}
+                onAbrirImprimirOS={(targetOS) => {
+                  setOsParaVisualizar(targetOS)
+                  setActiveTab('ordens')
+                }}
               />
             )}
 
@@ -660,6 +683,8 @@ export default function App() {
                 notificacoes={notificacoes} setNotificacoes={setNotificacoes}
                 config={config}
                 filtroInicial={filtroStatusOrdens}
+                osParaVisualizar={osParaVisualizar}
+                setOsParaVisualizar={setOsParaVisualizar}
               />
             )}
 

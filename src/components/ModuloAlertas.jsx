@@ -25,7 +25,8 @@ export default function ModuloAlertas({
   setOrdens,
   usuarioLogado,
   setActiveTab,
-  setFiltroStatusOrdens
+  setFiltroStatusOrdens,
+  onAbrirImprimirOS
 }) {
   const [filtroStatus, setFiltroStatus] = useState('PENDENTE') // 'PENDENTE' | 'RESOLVIDO' | 'TODOS'
   const [filtroTipo, setFiltroTipo] = useState('TODOS')
@@ -40,9 +41,10 @@ export default function ModuloAlertas({
 
   // Purga defensiva imediata de alertas órfãos cuja O.S. não existe mais
   const alertasValidos = (alertas || []).filter(a => {
-    if (a.ordem_id || a.os_numero) {
+    if (a.ordem_id || a.os_id || a.os_numero) {
       return (ordens || []).some(o => 
         String(o.id) === String(a.ordem_id) || 
+        String(o.id) === String(a.os_id) || 
         Number(o.numero_os) === Number(a.os_numero)
       )
     }
@@ -83,15 +85,51 @@ export default function ModuloAlertas({
     } catch(e) {}
   }
 
-  // Abrir WhatsApp Web com mensagem pré-formatada para o cliente
+  // Abrir WhatsApp Web com mensagem pré-formatada completa detalhando serviços, peças e valores
   const handleAbrirWhatsApp = (alerta) => {
     const num = (alerta.cliente_telefone || '').replace(/\D/g, '')
-    let msg = `Olá ${alerta.cliente_nome}, tudo bem? Aqui é da recepção da Pró Guns Armeria.`
+    const osTarget = (ordens || []).find(o => 
+      String(o.id) === String(alerta.os_id) || 
+      String(o.id) === String(alerta.ordem_id) || 
+      Number(o.numero_os) === Number(alerta.os_numero)
+    )
+
+    let msg = `Olá *${alerta.cliente_nome}*, tudo bem? Aqui é da recepção da *Pró Guns Armeria*. 🛡️\n\n`
+
     if (alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO') {
-      msg += ` O laudo técnico da sua ${alerta.equipamento} (OS #${alerta.os_numero}) foi concluído pelo armeiro e está aguardando sua aprovação. Podemos conversar?`
+      msg += `O laudo técnico e orçamento da sua *${alerta.equipamento}* (O.S. #${alerta.os_numero}) foi concluído pelo nosso armeiro!\n\n`
+
+      if (osTarget) {
+        if (osTarget.diagnostico_armeiro) {
+          msg += `🔍 *DIAGNÓSTICO TÉCNICO:*\n"${osTarget.diagnostico_armeiro}"\n\n`
+        }
+
+        if (Array.isArray(osTarget.itens_laudo) && osTarget.itens_laudo.length > 0) {
+          msg += `🛠️ *DETALHAMENTO DE SERVIÇOS & PEÇAS:*\n`
+          osTarget.itens_laudo.forEach(it => {
+            const labelTipo = it.tipo === 'SERVICO' ? 'Serviço' : 'Peça'
+            msg += `• [${labelTipo}] ${it.quantidade}x ${it.nome} — R$ ${(parseFloat(it.subtotal) || 0).toFixed(2)}\n`
+          })
+          msg += `\n`
+        } else if (osTarget.solucao_proposta) {
+          msg += `🛠️ *SERVIÇOS PROPOSTOS:*\n• ${osTarget.solucao_proposta}\n\n`
+        }
+
+        const vTotal = parseFloat(osTarget.valor_servico) || 0
+        msg += `💰 *VALOR TOTAL DO ORÇAMENTO:* R$ ${vTotal.toFixed(2)}\n\n`
+      } else {
+        msg += `💰 *DETALHES:* ${alerta.mensagem}\n\n`
+      }
+
+      msg += `Podemos aprovar o início dos serviços?`
     } else {
-      msg += ` Sua ${alerta.equipamento} (OS #${alerta.os_numero}) está pronta para retirada! Quando você poderá vir buscar?`
+      msg += `Sua *${alerta.equipamento}* (O.S. #${alerta.os_numero}) está com os serviços concluídos e pronta para retirada!\n\n`
+      if (osTarget && osTarget.valor_servico) {
+        msg += `💰 *VALOR TOTAL:* R$ ${(parseFloat(osTarget.valor_servico) || 0).toFixed(2)}\n\n`
+      }
+      msg += `Quando você poderá vir buscar?`
     }
+
     const url = num ? `https://wa.me/55${num}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`
     window.open(url, '_blank')
   }
@@ -156,7 +194,7 @@ export default function ModuloAlertas({
 
     // Se cliente aprovou orçamento -> Atualiza status da OS para APROVADO
     if (alerta.tipo_alerta === 'AGUARDANDO APROVAÇÃO' && resultadoAcordo === 'CLIENTE_APROVOU') {
-      setOrdens(prev => prev.map(o => String(o.id) === String(alerta.os_id) ? { ...o, status: 'APROVADO' } : o))
+      setOrdens(prev => prev.map(o => (String(o.id) === String(alerta.os_id) || String(o.id) === String(alerta.ordem_id)) ? { ...o, status: 'APROVADO' } : o))
     }
 
     const alertasAtualizados = alertas.map(a => a.id === alerta.id ? alertaResolvido : a)
@@ -242,7 +280,7 @@ export default function ModuloAlertas({
             label="TIPO DE ALERTA"
             value={filtroTipo}
             onChange={val => setFiltroTipo(val)}
-            options={['TODOS', 'AGUARDANDO APROVAÇÃO', 'AGUARDANDO RETIRADA']}
+            options={['TODOS', 'AGUARDANDO APROVAÇÃO', 'PRONTO PARA RETIRADA']}
             placeholder="Tipo..."
             allowCustom={false}
           />
@@ -261,6 +299,11 @@ export default function ModuloAlertas({
           alertasFiltrados.map(alerta => {
             const isPendente = alerta.status === 'PENDENTE'
             const tempoDecorrido = getTempoDecorrido(alerta.created_at)
+            const osTarget = (ordens || []).find(o => 
+              String(o.id) === String(alerta.os_id) || 
+              String(o.id) === String(alerta.ordem_id) || 
+              Number(o.numero_os) === Number(alerta.os_numero)
+            )
 
             return (
               <div
@@ -342,11 +385,29 @@ export default function ModuloAlertas({
 
                 {/* Ações do Atendimento */}
                 {isPendente && (
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.78rem', color: '#60A5FA', borderColor: '#60A5FA' }}
+                      onClick={() => {
+                        if (osTarget && typeof onAbrirImprimirOS === 'function') {
+                          onAbrirImprimirOS(osTarget)
+                        } else if (osTarget) {
+                          setActiveTab('ordens')
+                        } else {
+                          alert('Ordem de serviço não encontrada.')
+                        }
+                      }}
+                      title="Abrir Ordem de Serviço em tela cheia para visualizar laudo e gerar PDF"
+                    >
+                      <FileText size={15} /> Abrir / Imprimir O.S.
+                    </button>
+
                     <button
                       className="btn-secondary"
                       style={{ fontSize: '0.78rem', color: '#25D366', borderColor: '#25D366' }}
                       onClick={() => handleAbrirWhatsApp(alerta)}
+                      title="Enviar resumo completo do laudo, itens e orçamento para o WhatsApp do cliente"
                     >
                       <MessageCircle size={15} /> WhatsApp 1-Click
                     </button>

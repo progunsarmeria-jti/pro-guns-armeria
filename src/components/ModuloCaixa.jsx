@@ -24,7 +24,7 @@ import {
   Shield
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
-import { isSupabaseConfigured, dbDelete, dbUpsertAll } from '../lib/supabase'
+import { isSupabaseConfigured, dbDelete, dbUpsertAll, dbUpsert, dbUpdate } from '../lib/supabase'
 import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 
 const fmtBRL = (val) => {
@@ -154,6 +154,9 @@ export default function ModuloCaixa({
       conferencia: {}
     }
     setCaixas([novoCaixa, ...caixas])
+    if (isSupabaseConfigured()) {
+      dbUpsert('caixas', novoCaixa)
+    }
     setModalAbrirCaixa(false)
   }
 
@@ -203,7 +206,11 @@ export default function ModuloCaixa({
 
     const caixasAtualizados = caixas.map(c => {
       if (c.id === caixaAtual.id) {
-        return { ...c, movimentacoes: [...(c.movimentacoes || []), novaMov] }
+        const cxAtt = { ...c, movimentacoes: [...(c.movimentacoes || []), novaMov] }
+        if (isSupabaseConfigured()) {
+          dbUpsert('caixas', cxAtt)
+        }
+        return cxAtt
       }
       return c
     })
@@ -223,6 +230,9 @@ export default function ModuloCaixa({
         forma_pagamento: formaPagamento
       }
       setFinanceiro([novoFin, ...financeiro])
+      if (isSupabaseConfigured()) {
+        dbUpsert('financeiro', novoFin)
+      }
     } else if (tipoLancamento === 'SANGRIA') {
       const novoFin = {
         id: `f_${Date.now()}`,
@@ -236,6 +246,9 @@ export default function ModuloCaixa({
         forma_pagamento: 'Dinheiro'
       }
       setFinanceiro([novoFin, ...financeiro])
+      if (isSupabaseConfigured()) {
+        dbUpsert('financeiro', novoFin)
+      }
     }
 
     setModalNovoLancamento(false)
@@ -276,6 +289,9 @@ export default function ModuloCaixa({
 
     const caixasAtualizados = (caixas || []).map(c => {
       if (c && c.id === caixaAtual.id) {
+        if (isSupabaseConfigured()) {
+          dbUpsert('caixas', caixaAtualizadoItem)
+        }
         return caixaAtualizadoItem
       }
       return c

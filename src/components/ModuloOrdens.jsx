@@ -63,6 +63,9 @@ export default function ModuloOrdens({
 
   const [modalExcluirOS, setModalExcluirOS] = useState(null)
   const [modalEditarOS, setModalEditarOS] = useState(null)
+  const [osParaEditarAposMaster, setOsParaEditarAposMaster] = useState(null)
+  const [senhaMasterEditarInput, setSenhaMasterEditarInput] = useState('')
+  const [erroSenhaMasterEditar, setErroSenhaMasterEditar] = useState('')
   const [senhaMasterInput, setSenhaMasterInput] = useState('')
   const [erroSenhaMaster, setErroSenhaMaster] = useState('')
   const [formaPagamentoCheckout, setFormaPagamentoCheckout] = useState('Dinheiro')
@@ -575,7 +578,11 @@ export default function ModuloOrdens({
         }
         const caixasAtualizados = caixas.map(c => {
           if (c.id === caixaAbertoHoje.id) {
-            return { ...c, movimentacoes: [...(c.movimentacoes || []), novaMovCaixa] }
+            const cxAtt = { ...c, movimentacoes: [...(c.movimentacoes || []), novaMovCaixa] }
+            if (isSupabaseConfigured()) {
+              dbUpsert('caixas', cxAtt)
+            }
+            return cxAtt
           }
           return c
         })
@@ -597,6 +604,9 @@ export default function ModuloOrdens({
         forma_pagamento: formaPagamentoCheckout
       }
       setFinanceiro([novoLancamentoFin, ...financeiro])
+      if (isSupabaseConfigured()) {
+        dbUpsert('financeiro', novoLancamentoFin)
+      }
     }
 
     // 5. Exibe Comprovante / Ficha de Retirada
@@ -643,6 +653,27 @@ export default function ModuloOrdens({
     setSenhaMasterInput('')
     setErroSenhaMaster('')
     alert(`Ordem de Serviço #${osParaDeletar.numero_os} excluída com sucesso!`)
+  }
+
+  // Handler para liberar edição de O.S. concluída via Senha Master
+  const handleConfirmarSenhaMasterEditar = (e) => {
+    e.preventDefault()
+    if (!osParaEditarAposMaster) return
+
+    const usuariosMaster = (usuarios || []).filter(u => u.perfil === 'master')
+    const masterValido = usuariosMaster.find(u => (u.senha_pessoal || '').trim() === senhaMasterEditarInput.trim()) ||
+      (usuarioLogado?.perfil === 'master' && (usuarioLogado.senha_pessoal || '').trim() === senhaMasterEditarInput.trim())
+
+    if (!masterValido) {
+      setErroSenhaMasterEditar('Senha Master incorreta! Operação não autorizada.')
+      return
+    }
+
+    const targetOS = osParaEditarAposMaster
+    setOsParaEditarAposMaster(null)
+    setSenhaMasterEditarInput('')
+    setErroSenhaMasterEditar('')
+    setModalEditarOS(targetOS)
   }
 
   // Handler para Salvar Edição Completa da O.S.
@@ -921,7 +952,16 @@ export default function ModuloOrdens({
                     {/* BOTÃO EXPLICITO: EDITAR O.S. */}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setModalEditarOS(ordem) }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (ordem.status === 'CONCLUÍDO') {
+                          setOsParaEditarAposMaster(ordem)
+                          setSenhaMasterEditarInput('')
+                          setErroSenhaMasterEditar('')
+                        } else {
+                          setModalEditarOS(ordem)
+                        }
+                      }}
                       style={{ backgroundColor: 'rgba(245,158,11,0.18)', border: '1px solid #F59E0B', color: '#FBBF24', padding: '0.35rem 0.8rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                     >
                       <Edit3 size={14} /> Editar O.S.
@@ -2070,12 +2110,49 @@ export default function ModuloOrdens({
                         </div>
                       )}
 
-                      {activeDoc.valor_servico > 0 && (
-                        <div style={{ marginTop: '0.3rem' }}><strong>Valor Total Orçado:</strong> <span style={{ fontWeight: '800', color: '#111827' }}>R$ {parseFloat(activeDoc.valor_servico).toFixed(2)}</span></div>
+                      {activeDoc.status === 'CONCLUÍDO' ? (
+                        <div style={{ marginTop: '0.75rem', borderTop: '1px dashed #D1D5DB', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Soma Bruta dos Itens:</span>
+                            <strong>R$ {((activeDoc.itens_laudo || []).reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0) || parseFloat(activeDoc.valor_servico) + (parseFloat(activeDoc.desconto_valor) || 0)).toFixed(2)}</strong>
+                          </div>
+                          {parseFloat(activeDoc.desconto_valor) > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#DC2626' }}>
+                              <span>Desconto Aplicado:</span>
+                              <strong>- R$ {parseFloat(activeDoc.desconto_valor).toFixed(2)}</strong>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderTop: '1px solid #D1D5DB', paddingTop: '0.25rem', marginTop: '0.15rem' }}>
+                            <span><strong>VALOR TOTAL COBRADO:</strong></span>
+                            <strong style={{ color: '#134633' }}>R$ {parseFloat(activeDoc.valor_servico || 0).toFixed(2)}</strong>
+                          </div>
+                          {activeDoc.forma_pagamento && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#4B5563', marginTop: '0.1rem' }}>
+                              <span>Forma de Pagamento:</span>
+                              <strong>{activeDoc.forma_pagamento}</strong>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        activeDoc.valor_servico > 0 && (
+                          <div style={{ marginTop: '0.3rem' }}><strong>Valor Total Orçado:</strong> <span style={{ fontWeight: '800', color: '#111827' }}>R$ {parseFloat(activeDoc.valor_servico).toFixed(2)}</span></div>
+                        )
                       )}
                     </div>
                   </div>
                 </div>
+
+                {/* TERMO DE RETIRADA (APENAS SE CONCLUÍDO) */}
+                {activeDoc.status === 'CONCLUÍDO' && (
+                  <div style={{ marginTop: '1.25rem', padding: '0.75rem', border: '1px solid #D1D5DB', borderRadius: '6px', backgroundColor: '#F9FAFB', fontSize: '0.78rem', lineHeight: '1.4', color: '#374151' }}>
+                    <div style={{ fontWeight: '800', borderBottom: '1px solid #D1D5DB', paddingBottom: '0.25rem', marginBottom: '0.4rem', textTransform: 'uppercase', fontSize: '0.72rem', color: '#111827' }}>
+                      🛡️ Termo de Entrega & Retirada de Equipamento
+                    </div>
+                    <p style={{ margin: 0 }}>
+                      Declaro para os devidos fins que o serviço descrito nesta Ordem de Serviço foi realizado de forma satisfatória e que nesta data, <strong>{new Date().toLocaleDateString('pt-BR')}</strong>, efetuei a conferência e retirei o equipamento <strong>{activeDoc.marca_arma} {activeDoc.modelo_arma} (Nº Série: {activeDoc.numero_serie_arma || activeDoc.numero_serie || 'N/A'})</strong> em perfeitas condições de conservação e funcionamento.
+                    </p>
+                  </div>
+                )}
 
                 {/* RODAPÉ E LINHAS DE ASSINATURA */}
                 <div style={{ marginTop: '3.5rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.78rem', color: '#374151' }}>
@@ -2128,7 +2205,13 @@ export default function ModuloOrdens({
                   onClick={() => {
                     const targetOS = { ...activeDoc }
                     setDocModalOrdem(null)
-                    setModalEditarOS(targetOS)
+                    if (targetOS.status === 'CONCLUÍDO') {
+                      setOsParaEditarAposMaster(targetOS)
+                      setSenhaMasterEditarInput('')
+                      setErroSenhaMasterEditar('')
+                    } else {
+                      setModalEditarOS(targetOS)
+                    }
                   }}
                 >
                   <Edit3 size={15} />
@@ -2149,6 +2232,57 @@ export default function ModuloOrdens({
           </div>
         )
       })()}
+
+      {/* ── MODAL DE SENHA MASTER PARA EDIÇÃO DE O.S. CONCLUÍDA ── */}
+      {osParaEditarAposMaster && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '460px', borderLeft: '4px solid #F59E0B' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#FBBF24', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={20} color="#FBBF24" />
+                Edição Bloqueada (Requer Master)
+              </h3>
+              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setOsParaEditarAposMaster(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarSenhaMasterEditar} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ backgroundColor: 'rgba(245,158,11,0.1)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)', fontSize: '0.83rem', color: '#FBBF24' }}>
+                <div>Esta O.S. já foi <strong>Concluída e Faturada</strong>.</div>
+                <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Alterações nesta fase só podem ser feitas mediante autenticação com senha do administrador Master.</div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Senha Pessoal do Usuário Master *</label>
+                <input
+                  required
+                  autoFocus
+                  type="password"
+                  className="input-field"
+                  value={senhaMasterEditarInput}
+                  onChange={e => { setSenhaMasterEditarInput(e.target.value); setErroSenhaMasterEditar('') }}
+                  placeholder="Digite a senha master..."
+                  style={{ textTransform: 'none' }}
+                />
+              </div>
+
+              {erroSenhaMasterEditar && (
+                <div style={{ color: '#F87171', fontSize: '0.78rem', fontWeight: '700' }}>
+                  ⚠️ {erroSenhaMasterEditar}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setOsParaEditarAposMaster(null)}>Cancelar</button>
+                <button type="submit" className="btn-gold" style={{ backgroundColor: '#D97706', borderColor: '#D97706', color: '#FFF' }}>
+                  <Unlock size={16} /> Liberar Edição
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL DE EXCLUSÃO DE OS (AUTENTICAÇÃO MASTER) ────────────────────────── */}
       {modalExcluirOS && (

@@ -302,32 +302,31 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
       {/* BARRA SUPERIOR DE SUB-ABAS (NAVEGAÇÃO LIMPA E ORGANIZADA) */}
       <div style={{
         display: 'flex',
-        gap: '0.5rem',
+        flexWrap: 'wrap',
+        gap: '0.4rem',
         borderBottom: '2px solid var(--border-color)',
-        paddingBottom: '0.1rem',
-        overflowX: 'auto'
+        paddingBottom: '0.5rem'
       }}>
         <button
           type="button"
           onClick={() => setAbaConfigAtiva('dados')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'dados' ? '3px solid var(--gold-accent)' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'dados' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'dados' ? 'var(--gold-accent)' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'dados' ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'dados' ? 'var(--gold-accent)' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <Building size={16} />
+          <Building size={15} />
           <span>Dados Institucionais</span>
         </button>
 
@@ -335,23 +334,22 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('menu_ordem')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'menu_ordem' ? '3px solid #A78BFA' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'menu_ordem' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'menu_ordem' ? '#A78BFA' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'menu_ordem' ? 'rgba(167, 139, 250, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'menu_ordem' ? '#A78BFA' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <ListOrdered size={16} />
+          <ListOrdered size={15} />
           <span>Ordem do Menu Lateral</span>
         </button>
 
@@ -359,23 +357,22 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('blocos_home')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'blocos_home' ? '3px solid #60A5FA' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'blocos_home' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'blocos_home' ? '#60A5FA' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'blocos_home' ? 'rgba(96, 165, 250, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'blocos_home' ? '#60A5FA' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <LayoutGrid size={16} />
+          <LayoutGrid size={15} />
           <span>Blocos do Home</span>
         </button>
 
@@ -383,23 +380,22 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('categorias')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'categorias' ? '3px solid #FBBF24' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'categorias' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'categorias' ? '#FBBF24' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'categorias' ? 'rgba(251, 191, 36, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'categorias' ? '#FBBF24' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <Tag size={16} />
+          <Tag size={15} />
           <span>Categorias do Sistema</span>
         </button>
 
@@ -407,23 +403,22 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('alertas_sons')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'alertas_sons' ? '3px solid #EF4444' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'alertas_sons' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'alertas_sons' ? '#EF4444' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'alertas_sons' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'alertas_sons' ? '#EF4444' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <Bell size={16} />
+          <Bell size={15} />
           <span>Alertas & Sons</span>
         </button>
 
@@ -431,23 +426,22 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('servicos')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'servicos' ? '3px solid #F87171' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'servicos' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'servicos' ? '#F87171' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'servicos' ? 'rgba(248, 113, 113, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'servicos' ? '#F87171' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <Wrench size={16} />
+          <Wrench size={15} />
           <span>Catálogo de Serviços ({ (formData.catalogo_servicos || []).length })</span>
         </button>
 
@@ -455,26 +449,25 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
           type="button"
           onClick={() => setAbaConfigAtiva('supabase')}
           style={{
-            padding: '0.65rem 1.1rem',
-            borderRadius: '8px 8px 0 0',
-            border: 'none',
-            borderBottom: abaConfigAtiva === 'supabase' ? '3px solid #34D399' : '3px solid transparent',
-            backgroundColor: abaConfigAtiva === 'supabase' ? 'var(--bg-card)' : 'transparent',
+            padding: '0.45rem 0.8rem',
+            borderRadius: '6px',
+            border: '1px solid ' + (abaConfigAtiva === 'supabase' ? '#34D399' : 'var(--border-color)'),
+            backgroundColor: abaConfigAtiva === 'supabase' ? 'rgba(52, 211, 153, 0.1)' : 'transparent',
             color: abaConfigAtiva === 'supabase' ? '#34D399' : 'var(--text-muted)',
             fontWeight: '700',
-            fontSize: '0.88rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             whiteSpace: 'nowrap',
             transition: 'all 0.15s ease'
           }}
         >
-          <Database size={16} />
+          <Database size={15} />
           <span>Banco Supabase</span>
           {isSupabaseConfigured && (
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34D399' }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#34D399', marginLeft: '0.2rem' }} />
           )}
         </button>
       </div>

@@ -301,6 +301,20 @@ html, body, #root, main {
   overflow-x: hidden !important;
 }
 
+/* Ocultar elementos mobile por padrão no desktop */
+.mobile-only {
+  display: none !important;
+}
+
+/* Utilitário para ocultar barra de rolagem */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 @media (max-width: 768px) {
   .desktop-only {
     display: none !important;

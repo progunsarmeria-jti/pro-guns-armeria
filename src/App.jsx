@@ -217,14 +217,11 @@ export default function App() {
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
   const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
 
-  const prevAlertasCount = useRef(alertas.filter(a => a.status === 'PENDENTE').length)
-
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     localStorage.removeItem('PROGUNS_AUTH_USER')
     return ss.get('PROGUNS_AUTH_USER', null)
   })
   const [modalLoginAberto, setModalLoginAberto] = useState(false)
-
   const [notificacoes, setNotificacoes] = useState([])
 
   const handleLogoff = () => {
@@ -232,28 +229,6 @@ export default function App() {
     localStorage.removeItem('PROGUNS_AUTH_USER')
     setUsuarioLogado(null)
   }
-
-  // Tocar alerta sonoro Web Audio API quando chega novo alerta pendente
-  useEffect(() => {
-    const pendentesAtuais = alertas.filter(a => a.status === 'PENDENTE').length
-    if (pendentesAtuais > prevAlertasCount.current) {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-        const osc = audioCtx.createOscillator()
-        const gain = audioCtx.createGain()
-        osc.type = 'sine'
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15)
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
-        osc.connect(gain)
-        gain.connect(audioCtx.destination)
-        osc.start()
-        osc.stop(audioCtx.currentTime + 0.4)
-      } catch (e) {}
-    }
-    prevAlertasCount.current = pendentesAtuais
-  }, [alertas])
 
   // ── Sincronização Automática em localStorage ──────────────────────────────────
   useEffect(() => { ls.set('PROGUNS_USUARIOS', usuarios) }, [usuarios])

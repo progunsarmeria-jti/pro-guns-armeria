@@ -57,6 +57,24 @@ export default function ModuloOrdens({
     if (filtroInicial) setFiltroStatus(filtroInicial)
   }, [filtroInicial])
 
+  // Helper para tocar som de notificação apenas quando a O.S. passa para AGUARDANDO APROVAÇÃO ou AGUARDANDO RETIRADA
+  const tocarSomNotificacao = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = audioCtx.createOscillator()
+      const gain = audioCtx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15)
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4)
+      osc.connect(gain)
+      gain.connect(audioCtx.destination)
+      osc.start()
+      osc.stop(audioCtx.currentTime + 0.4)
+    } catch (e) {}
+  }
+
   // Helper para Disparar Alerta para o Painel da Recepção
   const dispararAlertaRecepcao = (ordemTarget, tipoAlerta, mensagemAlerta) => {
     if (!setAlertas) return
@@ -99,12 +117,15 @@ export default function ModuloOrdens({
             setLogs
           })
 
-          // Dispara Alerta se for para Retirada
-          if (novoStatus === 'AGUARDANDO RETIRADA') {
+          // Toca som de notificação APENAS para 'AGUARDANDO RETIRADA' ou 'AGUARDANDO APROVAÇÃO'
+          if (novoStatus === 'AGUARDANDO RETIRADA' || novoStatus === 'AGUARDANDO APROVAÇÃO') {
+            tocarSomNotificacao()
             dispararAlertaRecepcao(
               o,
-              'AGUARDANDO RETIRADA',
-              `Manutenção concluída pelo armeiro (${usuarioLogado?.nome_completo || 'Oficina'}). Equipamento pronto para retirada pelo cliente.`
+              novoStatus,
+              novoStatus === 'AGUARDANDO RETIRADA'
+                ? `Manutenção concluída pelo armeiro (${usuarioLogado?.nome_completo || 'Oficina'}). Equipamento pronto para retirada pelo cliente.`
+                : `Laudo e orçamento disponibilizado pelo armeiro para aprovação do cliente.`
             )
           }
 
@@ -155,6 +176,9 @@ export default function ModuloOrdens({
       osNumero: modalLaudoArmeiro.numero_os,
       setLogs
     })
+
+    // Toca som de notificação APENAS quando o armeiro define status AGUARDANDO APROVAÇÃO
+    tocarSomNotificacao()
 
     // Dispara Alerta automático para o Painel de Alerta da Recepção
     dispararAlertaRecepcao(

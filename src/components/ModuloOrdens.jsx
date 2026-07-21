@@ -51,6 +51,16 @@ export default function ModuloOrdens({
   const [docModalOrdem, setDocModalOrdem] = useState(null)
   const [modalLaudoArmeiro, setModalLaudoArmeiro] = useState(null)
   const [modalCheckoutRetirada, setModalCheckoutRetirada] = useState(null)
+  // Estados do Checkout Editável (Print Layout + Quitação)
+  const [itensCheckout, setItensCheckout] = useState([])
+  const [tipoDescontoCheckout, setTipoDescontoCheckout] = useState('NONE')
+  const [valorDescontoInput, setValorDescontoInput] = useState('')
+  const [servicoCheckoutSelId, setServicoCheckoutSelId] = useState('')
+  const [servicoCheckoutSelNome, setServicoCheckoutSelNome] = useState('')
+  const [customServicoCheckoutNome, setCustomServicoCheckoutNome] = useState('')
+  const [precoServicoCheckoutInput, setPrecoServicoCheckoutInput] = useState('')
+  const [pecaEstoqueCheckoutSelId, setPecaEstoqueCheckoutSelId] = useState('')
+
   const [modalExcluirOS, setModalExcluirOS] = useState(null)
   const [modalEditarOS, setModalEditarOS] = useState(null)
   const [senhaMasterInput, setSenhaMasterInput] = useState('')
@@ -168,6 +178,64 @@ export default function ModuloOrdens({
     const proximaLista = itensLaudo.filter(it => it.id !== id)
     setItensLaudo(proximaLista)
     recalcularTotalLaudo(proximaLista)
+  }
+
+  // Funções auxiliares para manipulação de itens no Checkout
+  const handleAdicionarServicoCheckout = () => {
+    const nomeServico = servicoCheckoutSelId === '__CUSTOM__' ? customServicoCheckoutNome.trim() : servicoCheckoutSelNome
+    if (!nomeServico) {
+      alert('Selecione ou digite o nome do serviço!')
+      return
+    }
+    const unit = parseFloat(precoServicoCheckoutInput) || 0
+    const novoItem = {
+      id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      tipo: 'SERVICO',
+      nome: nomeServico,
+      quantidade: 1,
+      valor_unitario: unit,
+      subtotal: unit
+    }
+    setItensCheckout(prev => [...prev, novoItem])
+    setServicoCheckoutSelId('')
+    setServicoCheckoutSelNome('')
+    setCustomServicoCheckoutNome('')
+    setPrecoServicoCheckoutInput('')
+  }
+
+  const handleAdicionarPecaEstoqueCheckout = (estoqueId) => {
+    if (!estoqueId) return
+    const peca = (estoque || []).find(p => String(p.id) === String(estoqueId))
+    if (!peca) return
+    const unit = parseFloat(peca.preco_venda) || 0
+    const novoItem = {
+      id: `peca_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      tipo: 'PECA',
+      estoque_id: peca.id,
+      nome: `${peca.nome} (${peca.codigo_sku || 'S/SKU'})`,
+      quantidade: 1,
+      valor_unitario: unit,
+      subtotal: unit
+    }
+    setItensCheckout(prev => [...prev, novoItem])
+    setPecaEstoqueCheckoutSelId('')
+  }
+
+  const handleAtualizarItemCheckout = (id, campo, val) => {
+    setItensCheckout(prev => prev.map(it => {
+      if (it.id === id) {
+        const mod = { ...it, [campo]: val }
+        const qtd = Number(mod.quantidade) || 1
+        const unit = parseFloat(mod.valor_unitario) || 0
+        mod.subtotal = qtd * unit
+        return mod
+      }
+      return it
+    }))
+  }
+
+  const handleRemoverItemCheckout = (id) => {
+    setItensCheckout(prev => prev.filter(it => it.id !== id))
   }
 
   // Helper para tocar som de notificação apenas quando a O.S. passa para AGUARDANDO APROVAÇÃO ou AGUARDANDO RETIRADA
@@ -418,22 +486,67 @@ export default function ModuloOrdens({
     setModalCheckoutRetirada(ordem)
     setFormaPagamentoCheckout('Dinheiro')
     setValorPagoClienteCheckout('')
+    setItensCheckout(ordem.itens_laudo || [])
+    setTipoDescontoCheckout('NONE')
+    setValorDescontoInput('')
+    setServicoCheckoutSelId('')
+    setServicoCheckoutSelNome('')
+    setCustomServicoCheckoutNome('')
+    setPrecoServicoCheckoutInput('')
+    setPecaEstoqueCheckoutSelId('')
   }
 
   const handleConfirmarCheckoutRetirada = (e) => {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
     if (!modalCheckoutRetirada) return
     const ordem = modalCheckoutRetirada
-    const valorCobrado = parseFloat(ordem.valor_servico) || 350.00
+    
+    // Calcula o total final baseado em itensCheckout e descontos
+    const subtotalBase = (itensCheckout || []).reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0)
+    let valorDesconto = 0
+    if (tipoDescontoCheckout === 'PERCENT') {
+      const pct = parseFloat(valorDescontoInput) || 0
+      valorDesconto = subtotalBase * (pct / 100)
+    } else if (tipoDescontoCheckout === 'FIXED') {
+      valorDesconto = parseFloat(valorDescontoInput) || 0
+    }
+    const valorCobrado = Math.max(0, subtotalBase - valorDesconto)
     const hojeStr = hojeISO()
     const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-    // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO'
-    const ordemAtualizada = { ...ordem, status: 'CONCLUÍDO' }
-    dbUpsert('ordens', ordemAtualizada)
+    // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO', itens_laudo e valor cobrado
+    const ordemAtualizada = { 
+      ...ordem, 
+      status: 'CONCLUÍDO',
+      itens_laudo: itensCheckout,
+      valor_servico: valorCobrado,
+      desconto_valor: valorDesconto,
+      desconto_tipo: tipoDescontoCheckout,
+      desconto_input: valorDescontoInput,
+      forma_pagamento: formaPagamentoCheckout,
+      checkout_realizado_em: hojeStr
+    }
+
+    if (isSupabaseConfigured()) {
+      dbUpdate('ordens', ordem.id, { 
+        status: 'CONCLUÍDO', 
+        itens_laudo: itensCheckout, 
+        valor_servico: valorCobrado,
+        desconto_valor: valorDesconto,
+        desconto_tipo: tipoDescontoCheckout,
+        desconto_input: valorDescontoInput,
+        forma_pagamento: formaPagamentoCheckout,
+        checkout_realizado_em: hojeStr,
+        updated_at: new Date().toISOString(),
+        numero_os: ordem.numero_os
+      }, ordemAtualizada)
+    } else {
+      dbUpsert('ordens', ordemAtualizada)
+    }
+
     setOrdens(prev => {
       const proximo = prev.map(o => (String(o.id) === String(ordem.id) || Number(o.numero_os) === Number(ordem.numero_os)) ? ordemAtualizada : o)
-      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(e) {}
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(err) {}
       return proximo
     })
 
@@ -441,7 +554,7 @@ export default function ModuloOrdens({
     registrarLog({
       usuario: usuarioLogado,
       acao: 'RETIRADA E PAGAMENTO',
-      descricao: `OS #${ordem.numero_os} concluída. Retirada de equipamento realizada por ${ordem.cliente_nome}. Pagamento de R$ ${valorCobrado.toFixed(2)} registrado em ${formaPagamentoCheckout}.`,
+      descricao: `OS #${ordem.numero_os} concluída. Retirada de equipamento realizada por ${ordem.cliente_nome}. Pagamento de R$ ${valorCobrado.toFixed(2)} registrado em ${formaPagamentoCheckout}. Desconto: R$ ${valorDesconto.toFixed(2)}.`,
       osId: ordem.id,
       osNumero: ordem.numero_os,
       setLogs
@@ -1244,97 +1357,510 @@ export default function ModuloOrdens({
               })()}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setModalLaudoArmeiro(null)}>Cancelar</button>
-                <button type="submit" className="btn-gold">
-                  <Send size={15} />
-                  <span>Concluir Laudo → Aguardar Aprovação</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                <button type="button" className="btn-secondary" o      {/* ── MODAL UNIFICADO: CHECKOUT DE RETIRADA & CAIXA EDITÁVEL (SHEET + CHECKOUT PANELS) ── */}
+      {modalCheckoutRetirada && (() => {
+        const activeDoc = modalCheckoutRetirada
+        
+        // Calculadora de totais e descontos
+        const subtotalBase = (itensCheckout || []).reduce((acc, i) => acc + (parseFloat(i.subtotal) || 0), 0)
+        
+        // Calcula valor final baseado no desconto
+        let valorDesconto = 0
+        if (tipoDescontoCheckout === 'PERCENT') {
+          const pct = parseFloat(valorDescontoInput) || 0
+          valorDesconto = subtotalBase * (pct / 100)
+        } else if (tipoDescontoCheckout === 'FIXED') {
+          valorDesconto = parseFloat(valorDescontoInput) || 0
+        }
+        
+        const valorFinalCalculado = Math.max(0, subtotalBase - valorDesconto)
+        
+        // Troco
+        const trocoADevolver = Math.max(0, (parseFloat(valorPagoClienteCheckout) || 0) - valorFinalCalculado)
 
-      {/* ── MODAL UNIFICADO: CHECKOUT DE RETIRADA & CAIXA ── */}
-      {modalCheckoutRetirada && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '540px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <DollarSign size={22} color="#34D399" />
-                  Checkout de Retirada & Quitação — OS #{modalCheckoutRetirada.numero_os}
-                </h3>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Entrega de equipamento e lançamento financeiro automático no caixa
-                </div>
-              </div>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalCheckoutRetirada(null)}>
-                <X size={20} />
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', zIndex: 9999, padding: '2rem 1rem', overflowY: 'auto' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '1240px', backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)', borderRadius: '12px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '80vh', border: '1px solid var(--border-color)' }}>
+              
+              {/* Botão Fechar Modal */}
+              <button
+                onClick={() => setModalCheckoutRetirada(null)}
+                style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', zIndex: 100 }}
+                title="Fechar"
+              >
+                <X size={18} />
               </button>
-            </div>
 
-            <form onSubmit={handleConfirmarCheckoutRetirada} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Resumo do Cliente e Equipamento */}
-              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.83rem' }}>
-                <div><strong>CLIENTE:</strong> <span style={{ color: 'var(--gold-accent)', fontWeight: '700' }}>{modalCheckoutRetirada.cliente_nome?.toUpperCase()}</span></div>
-                <div><strong>EQUIPAMENTO:</strong> {modalCheckoutRetirada.marca_arma} {modalCheckoutRetirada.modelo_arma} ({modalCheckoutRetirada.calibre_arma}) — S/N: {modalCheckoutRetirada.numero_serie_arma || modalCheckoutRetirada.numero_serie || 'N/A'}</div>
-                {modalCheckoutRetirada.solucao_proposta && <div><strong>SERVIÇOS REALIZADOS:</strong> {modalCheckoutRetirada.solucao_proposta}</div>}
-              </div>
-
-              {/* Formas de Pagamento */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <CustomSelect
-                  label="Forma de Pagamento *"
-                  value={formaPagamentoCheckout}
-                  onChange={val => setFormaPagamentoCheckout(val)}
-                  options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
-                  placeholder="Selecione a forma..."
-                  allowCustom={false}
-                />
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700' }}>Valor do Serviço/Peças (R$) *</label>
-                  <input
-                    disabled
-                    className="input-field"
-                    value={`R$ ${(parseFloat(modalCheckoutRetirada.valor_servico) || 350).toFixed(2)}`}
-                  />
-                </div>
-              </div>
-
-              {/* Se Dinheiro -> Troco */}
-              {formaPagamentoCheckout === 'Dinheiro' && (
-                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: '#34D399' }}>Valor Entregue pelo Cliente (R$)</label>
-                    <input type="number" step="0.01" className="input-field" value={valorPagoClienteCheckout} onChange={e => setValorPagoClienteCheckout(e.target.value)} placeholder="0.00" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', width: '100%' }} className="grid-mobile-1">
+                
+                {/* COLUNA ESQUERDA: PREVIEW DA O.S. (LAYOUT DE IMPRESSÃO BRANCO) */}
+                <div style={{ backgroundColor: '#FFFFFF', color: '#111827', padding: '2rem', overflowY: 'auto', borderRight: '1px solid var(--border-color)', fontFamily: 'Inter, sans-serif' }}>
+                  
+                  {/* CABEÇALHO DA ARMERIA */}
+                  <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.4rem' }}>
+                      <img
+                        src={config?.logo_url || "/logo.png"}
+                        alt={config?.nome_fantasia || 'Pró Guns Armeria'}
+                        style={{ maxHeight: '60px', maxWidth: '180px', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <h1 style={{ fontSize: '1.25rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
+                    </h1>
+                    <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
+                      {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                      CNPJ: {config?.cnpj || '12.345.678/0001-99'} | CR: {config?.cr_armeria || 'CR-998877/2ª RM'}
+                    </div>
+                    <div style={{ textAlign: 'left', fontSize: '0.75rem', color: '#374151', marginTop: '0.5rem', fontWeight: '600' }}>
+                      Data e Hora de Abertura: {formatarDataHora(activeDoc.created_at || activeDoc.data_abertura)}
+                    </div>
+                    <hr style={{ border: 'none', borderTop: '2px solid #000000', marginTop: '0.4rem', marginBottom: '1rem' }} />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Troco a Devolver (R$)</label>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '800', color: (parseFloat(valorPagoClienteCheckout) || 0) > (parseFloat(modalCheckoutRetirada.valor_servico) || 350) ? '#F59E0B' : '#FFFFFF', paddingTop: '0.4rem' }}>
-                      R$ {Math.max(0, (parseFloat(valorPagoClienteCheckout) || 0) - (parseFloat(modalCheckoutRetirada.valor_servico) || 350)).toFixed(2)}
+
+                  {/* TÍTULO DA OS */}
+                  <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                    <h2 style={{ fontSize: '0.98rem', fontWeight: '800', color: '#111827', textTransform: 'uppercase', margin: 0 }}>
+                      ORDEM DE SERVIÇO Nº {activeDoc.numero_os} (CONCLUINDO)
+                    </h2>
+                  </div>
+
+                  {/* CORPO DO DOCUMENTO */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.78rem', color: '#1F2937' }}>
+                    
+                    {/* CLIENTE */}
+                    <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.6rem 0.8rem', backgroundColor: '#F9FAFB' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>
+                        CLIENTE REQUERENTE & CONTATO
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem' }}>
+                        <div><strong>Nome:</strong> {activeDoc.cliente_nome?.toUpperCase()}</div>
+                        <div><strong>CPF / CR:</strong> {(clientes || []).find(cli => String(cli.id) === String(activeDoc.cliente_id))?.cpf || 'Cadastrado'}</div>
+                        <div><strong>Contato / WhatsApp:</strong> {activeDoc.cliente_telefone || 'Não informado'}</div>
+                      </div>
+                    </div>
+
+                    {/* EQUIPAMENTO */}
+                    <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.6rem 0.8rem', backgroundColor: '#F9FAFB' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>
+                        DADOS DO EQUIPAMENTO
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem' }}>
+                        <div><strong>Tipo / Categoria:</strong> {activeDoc.tipo_arma} ({activeDoc.categoria_arma})</div>
+                        <div><strong>Marca / Modelo:</strong> {activeDoc.marca_arma} {activeDoc.modelo_arma}</div>
+                        <div><strong>Calibre:</strong> {activeDoc.calibre_arma}</div>
+                        <div><strong>N° de Série:</strong> {activeDoc.numero_serie_arma || activeDoc.numero_serie || 'N/A'}</div>
+                      </div>
+                    </div>
+
+                    {/* CHECKLIST E LAUDO */}
+                    <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', padding: '0.6rem 0.8rem', backgroundColor: '#F9FAFB' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>
+                        LAUDO TÉCNICO & ITENS A SEREM FATURADOS
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                        <div><strong>Queixa do Cliente:</strong> "{activeDoc.problema_relatado}"</div>
+                        {activeDoc.diagnostico_armeiro && (
+                          <div><strong>Diagnóstico do Armeiro:</strong> {activeDoc.diagnostico_armeiro}</div>
+                        )}
+                      </div>
+
+                      {/* TABELA DE ITENS EDITÁVEL NO CHECKOUT */}
+                      <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{ fontWeight: '700', marginBottom: '0.25rem', fontSize: '0.75rem', color: '#374151' }}>
+                          Lista de Serviços Executados & Peças (Edite Valores e Quantidades):
+                        </div>
+
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid #D1D5DB', textAlign: 'left', color: '#6B7280' }}>
+                              <th style={{ padding: '0.25rem 0' }}>TIPO</th>
+                              <th style={{ padding: '0.25rem 0' }}>DESCRIÇÃO</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'center', width: '60px' }}>QTD</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'right', width: '90px' }}>VALOR UNIT.</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'right', width: '95px' }}>SUBTOTAL</th>
+                              <th style={{ padding: '0.25rem 0', textAlign: 'right', width: '40px' }}></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {itensCheckout.length === 0 ? (
+                              <tr>
+                                <td colSpan="6" style={{ padding: '1rem', textAlign: 'center', color: '#6B7280', fontStyle: 'italic' }}>
+                                  Nenhum item adicionado à O.S. Selecione abaixo para adicionar.
+                                </td>
+                              </tr>
+                            ) : (
+                              itensCheckout.map((it, index) => (
+                                <tr key={it.id || index} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                                  <td style={{ padding: '0.35rem 0', fontWeight: '700', fontSize: '0.7rem' }}>
+                                    <span style={{ padding: '0.1rem 0.3rem', borderRadius: '4px', backgroundColor: it.tipo === 'SERVICO' ? 'rgba(37,99,235,0.1)' : 'rgba(217,119,6,0.1)', color: it.tipo === 'SERVICO' ? '#2563EB' : '#D97706' }}>
+                                      {it.tipo === 'SERVICO' ? 'SRV' : 'PÇ'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '0.35rem 0' }}>
+                                    <input
+                                      type="text"
+                                      value={it.nome}
+                                      onChange={e => handleAtualizarItemCheckout(it.id, 'nome', e.target.value)}
+                                      style={{ width: '95%', border: '1px solid #D1D5DB', borderRadius: '4px', padding: '0.15rem 0.3rem', fontSize: '0.75rem' }}
+                                    />
+                                  </td>
+                                  <td style={{ padding: '0.35rem 0', textAlign: 'center' }}>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={it.quantidade}
+                                      onChange={e => handleAtualizarItemCheckout(it.id, 'quantidade', parseInt(e.target.value) || 1)}
+                                      style={{ width: '45px', border: '1px solid #D1D5DB', borderRadius: '4px', padding: '0.15rem 0.3rem', textAlign: 'center', fontSize: '0.75rem' }}
+                                    />
+                                  </td>
+                                  <td style={{ padding: '0.35rem 0', textAlign: 'right' }}>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={it.valor_unitario}
+                                      onChange={e => handleAtualizarItemCheckout(it.id, 'valor_unitario', parseFloat(e.target.value) || 0)}
+                                      style={{ width: '75px', border: '1px solid #D1D5DB', borderRadius: '4px', padding: '0.15rem 0.3rem', textAlign: 'right', fontSize: '0.75rem' }}
+                                    />
+                                  </td>
+                                  <td style={{ padding: '0.35rem 0', textAlign: 'right', fontWeight: '700' }}>
+                                    R$ {(it.subtotal || 0).toFixed(2)}
+                                  </td>
+                                  <td style={{ padding: '0.35rem 0', textAlign: 'right' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoverItemCheckout(it.id)}
+                                      style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer' }}
+                                      title="Remover"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+
+                        {/* ADICIONAR ITEM RAPIDAMENTE NA TELA DE CHECKOUT */}
+                        <div style={{ marginTop: '0.85rem', padding: '0.65rem', border: '1px dashed #D1D5DB', borderRadius: '6px', backgroundColor: '#F9FAFB' }}>
+                          <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#4B5563', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                            + Incluir itens/serviços de última hora no faturamento:
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }} className="grid-mobile-1">
+                            
+                            {/* Adicionar Serviço */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <label style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: '600' }}>Serviço do Catálogo:</label>
+                              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <select
+                                  className="input-field"
+                                  value={servicoCheckoutSelId}
+                                  onChange={e => {
+                                    const val = e.target.value
+                                    setServicoCheckoutSelId(val)
+                                    if (val === '__CUSTOM__') {
+                                      setServicoCheckoutSelNome('')
+                                      setPrecoServicoCheckoutInput('')
+                                    } else {
+                                      const lista = (config?.catalogo_servicos?.length > 0 ? config.catalogo_servicos : INITIAL_CONFIG.catalogo_servicos)
+                                      const srvObj = lista.find(s => String(s.id) === String(val) || s.nome === val)
+                                      if (srvObj) {
+                                        setServicoCheckoutSelNome(srvObj.nome)
+                                        setPrecoServicoCheckoutInput(srvObj.valor ? srvObj.valor.toString() : '0')
+                                      }
+                                    }
+                                  }}
+                                  style={{ fontSize: '0.7rem', padding: '0.2rem', color: '#111827', backgroundColor: '#FFF', borderColor: '#D1D5DB', flex: 1 }}
+                                >
+                                  <option value="">-- Selecionar Serviço --</option>
+                                  {(config?.catalogo_servicos?.length > 0 ? config.catalogo_servicos : INITIAL_CONFIG.catalogo_servicos).map((srv, idx) => (
+                                    <option key={srv.id || idx} value={srv.id || srv.nome}>
+                                      {srv.nome} (R$ {parseFloat(srv.valor).toFixed(2)})
+                                    </option>
+                                  ))}
+                                  <option value="__CUSTOM__">+ Outro...</option>
+                                </select>
+                                
+                                <input
+                                  type="number"
+                                  placeholder="R$"
+                                  value={precoServicoCheckoutInput}
+                                  onChange={e => setPrecoServicoCheckoutInput(e.target.value)}
+                                  style={{ width: '50px', border: '1px solid #D1D5DB', borderRadius: '4px', padding: '0.2rem', fontSize: '0.7rem', color: '#111827' }}
+                                />
+
+                                <button
+                                  type="button"
+                                  onClick={handleAdicionarServicoCheckout}
+                                  style={{ padding: '0.2rem 0.5rem', backgroundColor: '#3B82F6', color: '#FFF', border: 'none', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: '700' }}
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {servicoCheckoutSelId === '__CUSTOM__' && (
+                                <input
+                                  placeholder="Nome do serviço customizado..."
+                                  value={customServicoCheckoutNome}
+                                  onChange={e => setCustomServicoCheckoutNome(e.target.value)}
+                                  style={{ border: '1px solid #D1D5DB', borderRadius: '4px', padding: '0.2rem', fontSize: '0.7rem', color: '#111827', marginTop: '0.25rem' }}
+                                />
+                              )}
+                            </div>
+
+                            {/* Adicionar Peça */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <label style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: '600' }}>Peça do Estoque:</label>
+                              <select
+                                className="input-field"
+                                value={pecaEstoqueCheckoutSelId}
+                                onChange={e => {
+                                  setPecaEstoqueCheckoutSelId(e.target.value)
+                                  handleAdicionarPecaEstoqueCheckout(e.target.value)
+                                }}
+                                style={{ fontSize: '0.7rem', padding: '0.2rem', color: '#111827', backgroundColor: '#FFF', borderColor: '#D1D5DB' }}
+                              >
+                                <option value="">-- Selecionar Peça --</option>
+                                {(estoque || []).map(item => (
+                                  <option key={item.id} value={item.id}>
+                                    {item.nome} (R$ {parseFloat(item.preco_venda).toFixed(2)})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* ASSINATURAS PREVIAS */}
+                  <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', textAlign: 'center', fontSize: '0.7rem', color: '#4B5563' }}>
+                    <div style={{ width: '45%', borderTop: '1px solid #D1D5DB', paddingTop: '0.25rem' }}>
+                      <strong>{activeDoc.cliente_nome?.toUpperCase()}</strong>
+                    </div>
+                    <div style={{ width: '45%', borderTop: '1px solid #D1D5DB', paddingTop: '0.25rem' }}>
+                      <strong>{config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}</strong>
                     </div>
                   </div>
+
                 </div>
-              )}
 
-              {/* Status do Caixa */}
-              <div style={{ backgroundColor: 'rgba(59,130,246,0.1)', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.3)', fontSize: '0.78rem', color: '#93C5FD', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle2 size={16} />
-                <span>O valor recebido será registrado automaticamente no <strong>Caixa ABERTO da Recepção</strong> e no Financeiro.</span>
+                {/* COLUNA DIREITA: PAINEL DE PAGAMENTO & DESCONTO (ESTILO ESCURO APP) */}
+                <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', justifyContent: 'space-between', backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                    <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--gold-accent)', margin: 0, textTransform: 'uppercase' }}>
+                        ⚙️ FECHAMENTO & FINANCEIRO
+                      </h4>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0.1rem 0 0 0' }}>
+                        Escolha descontos, forma de pagamento e dê baixa.
+                      </p>
+                    </div>
+
+                    {/* APLICAÇÃO DE DESCONTO */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>
+                        APLICAR DESCONTO
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setTipoDescontoCheckout('NONE'); setValorDescontoInput('') }}
+                          style={{
+                            flex: 1,
+                            fontSize: '0.7rem',
+                            padding: '0.35rem',
+                            borderRadius: '4px',
+                            border: '1px solid ' + (tipoDescontoCheckout === 'NONE' ? 'var(--gold-accent)' : 'var(--border-color)'),
+                            backgroundColor: tipoDescontoCheckout === 'NONE' ? 'rgba(212, 175, 55, 0.15)' : 'transparent',
+                            color: tipoDescontoCheckout === 'NONE' ? 'var(--gold-accent)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontWeight: '700'
+                          }}
+                        >
+                          Sem Desc.
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTipoDescontoCheckout('PERCENT'); setValorDescontoInput('10') }}
+                          style={{
+                            flex: 1,
+                            fontSize: '0.7rem',
+                            padding: '0.35rem',
+                            borderRadius: '4px',
+                            border: '1px solid ' + (tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '10' ? 'var(--gold-accent)' : 'var(--border-color)'),
+                            backgroundColor: tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '10' ? 'rgba(212, 175, 55, 0.15)' : 'transparent',
+                            color: tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '10' ? 'var(--gold-accent)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontWeight: '700'
+                          }}
+                        >
+                          -10%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTipoDescontoCheckout('PERCENT'); setValorDescontoInput('15') }}
+                          style={{
+                            flex: 1,
+                            fontSize: '0.7rem',
+                            padding: '0.35rem',
+                            borderRadius: '4px',
+                            border: '1px solid ' + (tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '15' ? 'var(--gold-accent)' : 'var(--border-color)'),
+                            backgroundColor: tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '15' ? 'rgba(212, 175, 55, 0.15)' : 'transparent',
+                            color: tipoDescontoCheckout === 'PERCENT' && valorDescontoInput === '15' ? 'var(--gold-accent)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontWeight: '700'
+                          }}
+                        >
+                          -15%
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTipoDescontoCheckout('FIXED'); setValorDescontoInput('50') }}
+                          style={{
+                            flex: 1,
+                            fontSize: '0.7rem',
+                            padding: '0.35rem',
+                            borderRadius: '4px',
+                            border: '1px solid ' + (tipoDescontoCheckout === 'FIXED' && valorDescontoInput === '50' ? 'var(--gold-accent)' : 'var(--border-color)'),
+                            backgroundColor: tipoDescontoCheckout === 'FIXED' && valorDescontoInput === '50' ? 'rgba(212, 175, 55, 0.15)' : 'transparent',
+                            color: tipoDescontoCheckout === 'FIXED' && valorDescontoInput === '50' ? 'var(--gold-accent)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontWeight: '700'
+                          }}
+                        >
+                          - R$ 50
+                        </button>
+                      </div>
+                      
+                      {/* Desconto Customizado */}
+                      <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
+                        <select
+                          className="input-field"
+                          value={tipoDescontoCheckout}
+                          onChange={e => { setTipoDescontoCheckout(e.target.value); setValorDescontoInput('') }}
+                          style={{ width: '120px', fontSize: '0.75rem', padding: '0.25rem' }}
+                        >
+                          <option value="NONE">Sem Desconto</option>
+                          <option value="PERCENT">Percentual (%)</option>
+                          <option value="FIXED">Valor Fixo (R$)</option>
+                        </select>
+                        {tipoDescontoCheckout !== 'NONE' && (
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder={tipoDescontoCheckout === 'PERCENT' ? "Ex: 10%" : "Ex: 25.00"}
+                            className="input-field"
+                            value={valorDescontoInput}
+                            onChange={e => setValorDescontoInput(e.target.value)}
+                            style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem' }}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RESUMO DOS TOTAIS */}
+                    <div style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Soma dos Itens:</span>
+                        <span>R$ {subtotalBase.toFixed(2)}</span>
+                      </div>
+                      {valorDesconto > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#F87171' }}>
+                          <span>Desconto ({tipoDescontoCheckout === 'PERCENT' ? `${valorDescontoInput}%` : 'Fixo'}):</span>
+                          <span>- R$ {valorDesconto.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '0.2rem 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '800' }}>
+                        <span style={{ color: 'var(--text-main)' }}>TOTAL FINAL:</span>
+                        <span style={{ color: '#34D399' }}>R$ {valorFinalCalculado.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* SELEÇÃO DE PAGAMENTO */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <CustomSelect
+                        label="Forma de Pagamento *"
+                        value={formaPagamentoCheckout}
+                        onChange={val => setFormaPagamentoCheckout(val)}
+                        options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
+                        placeholder="Selecione a forma..."
+                        allowCustom={false}
+                      />
+                    </div>
+
+                    {/* SE DINHEIRO -> CÁLCULO DE TROCO */}
+                    {formaPagamentoCheckout === 'Dinheiro' && (
+                      <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: '700' }}>Valor Recebido (R$)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="input-field"
+                            value={valorPagoClienteCheckout}
+                            onChange={e => setValorPagoClienteCheckout(e.target.value)}
+                            placeholder="0.00"
+                            style={{ fontSize: '0.8rem', padding: '0.3rem' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Troco a Devolver:</span>
+                          <strong style={{ fontSize: '1.05rem', color: trocoADevolver > 0 ? '#FBBF24' : '#FFF' }}>
+                            R$ {trocoADevolver.toFixed(2)}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AVISO DO CAIXA */}
+                    <div style={{ backgroundColor: 'rgba(59,130,246,0.1)', padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.2)', fontSize: '0.72rem', color: '#93C5FD', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <CheckCircle2 size={14} style={{ flexShrink: 0 }} />
+                      <span>Registrará automaticamente no caixa ativo e lançará no financeiro.</span>
+                    </div>
+
+                  </div>
+
+                  {/* BOTOES DE AÇÃO */}
+                  <div style={{ display: 'flex', gap: '0.6rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setModalCheckoutRetirada(null)}
+                      style={{ flex: 1 }}
+                    >
+                      Cancelar
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="btn-gold"
+                      onClick={handleConfirmarCheckoutRetirada}
+                      style={{ flex: 1.5, backgroundColor: '#10B981', borderColor: '#059669', color: '#FFFFFF', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Quitar & Fechar O.S.</span>
+                    </button>
+                  </div>
+
+                </div>
+
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setModalCheckoutRetirada(null)}>Cancelar</button>
-                <button type="submit" className="btn-gold" style={{ backgroundColor: '#10B981', color: '#FFF' }}>
-                  <CheckCircle2 size={16} />
-                  <span>Finalizar Retirada & Dar Baixa</span>
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        ))()}
 
       {/* ── MODAL COMPROVANTE / FICHA DA O.S. (VISUALIZAR E IMPRIMIR) ── */}
       {docModalOrdem && (() => {

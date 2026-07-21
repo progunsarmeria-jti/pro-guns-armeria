@@ -89,6 +89,9 @@ export default function ModuloConfiguracoes({ config, setConfig }) {
     if (typeof setConfig === 'function') {
       setConfig(updated)
     }
+    if (isSupabaseConfigured()) {
+      dbUpsert('config', { id: 'main_config', ...updated })
+    }
   }
 
   const handleSalvarConfig = (e) => {

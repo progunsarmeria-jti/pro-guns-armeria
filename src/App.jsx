@@ -398,7 +398,7 @@ export default function App() {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs, dbVendas] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs, dbVendas, dbConfig] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
@@ -409,7 +409,8 @@ export default function App() {
         dbLoad('caixas'),
         dbLoad('alertas'),
         dbLoad('logs'),
-        dbLoad('vendas')
+        dbLoad('vendas'),
+        dbLoad('config')
       ])
 
       const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
@@ -447,6 +448,19 @@ export default function App() {
       setAlertas(prev => JSON.stringify(prev) === JSON.stringify(finalAlertas) ? prev : finalAlertas)
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
       setVendas(prev => JSON.stringify(prev) === JSON.stringify(finalVendas) ? prev : finalVendas)
+
+      if (Array.isArray(dbConfig) && dbConfig.length > 0) {
+        const remoteCfg = dbConfig.find(c => c.id === 'main_config') || dbConfig[0]
+        if (remoteCfg) {
+          const remoteCopy = { ...remoteCfg }
+          delete remoteCopy.id
+          setConfig(prev => {
+            const merged = { ...INITIAL_CONFIG, ...prev, ...remoteCopy }
+            ls.set('PROGUNS_CONFIG', merged)
+            return merged
+          })
+        }
+      }
 
       if (!silencioso) setSyncStatus('ok')
       setTimeout(() => setSyncStatus('idle'), 3000)
@@ -487,6 +501,7 @@ export default function App() {
       subscribeToTable('caixas',     () => carregarDoSupabase(true)),
       subscribeToTable('alertas',    () => carregarDoSupabase(true)),
       subscribeToTable('usuarios',   () => carregarDoSupabase(true)),
+      subscribeToTable('config',     () => carregarDoSupabase(true)),
     ].filter(Boolean)
 
     return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }

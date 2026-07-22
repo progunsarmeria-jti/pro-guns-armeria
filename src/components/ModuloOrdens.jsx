@@ -303,8 +303,52 @@ export default function ModuloOrdens({
     if (isSupabaseConfigured()) dbUpsert('alertas', novoAlerta)
   }
 
+  const estornarLancamentosFinanceiros = (ordem) => {
+    // 1. Estorna / deleta do Financeiro
+    if (setFinanceiro && financeiro) {
+      const descPrefix = `OS #${ordem.numero_os} `;
+      const financeiroFiltrado = financeiro.filter(f => {
+        const matchesOrdemId = f.ordem_id && String(f.ordem_id) === String(ordem.id);
+        const matchesDesc = f.descricao && f.descricao.startsWith(descPrefix);
+        const shouldDelete = matchesOrdemId || matchesDesc;
+        if (shouldDelete) {
+          if (isSupabaseConfigured() && f.id) {
+            dbDelete('financeiro', f.id)
+          }
+        }
+        return !shouldDelete;
+      })
+      setFinanceiro(financeiroFiltrado)
+    }
+
+    // 2. Estorna / remove movimentações do Caixa
+    if (caixas && setCaixas) {
+      const caixasAtualizados = caixas.map(c => {
+        const movs = c.movimentacoes || [];
+        const hasMatchingMov = movs.some(m => m && m.tipo === 'RECEBIMENTO_OS' && Number(m.os_numero) === Number(ordem.numero_os));
+        if (hasMatchingMov) {
+          const movsFiltradas = movs.filter(m => !(m && m.tipo === 'RECEBIMENTO_OS' && Number(m.os_numero) === Number(ordem.numero_os)));
+          const cxAtt = { ...c, movimentacoes: movsFiltradas };
+          if (isSupabaseConfigured()) {
+            dbUpsert('caixas', cxAtt);
+          }
+          return cxAtt;
+        }
+        return c;
+      });
+      setCaixas(caixasAtualizados);
+    }
+  }
+
   const executarMudarStatus = (ordemId, novoStatus) => {
     const agora = new Date().toISOString()
+
+    // Identifica se a O.S. estava concluída e está mudando para outro status
+    const ordemOriginal = ordens.find(o => String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId))
+    if (ordemOriginal && ordemOriginal.status === 'CONCLUÍDO' && novoStatus !== 'CONCLUÍDO') {
+      estornarLancamentosFinanceiros(ordemOriginal)
+    }
+
     setOrdens(prev => {
       const proximo = prev.map(o => {
         if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
@@ -606,6 +650,8 @@ export default function ModuloOrdens({
     if (setFinanceiro && financeiro) {
       const novoLancamentoFin = {
         id: `f_${Date.now()}`,
+        ordem_id: ordem.id,
+        cliente_id: ordem.cliente_id,
         descricao: `OS #${ordem.numero_os} - ${ordem.marca_arma} ${ordem.modelo_arma} (${ordem.cliente_nome})`,
         tipo: 'Receita',
         categoria: 'Serviço Armeria',
@@ -715,6 +761,13 @@ export default function ModuloOrdens({
     e.preventDefault()
     if (!modalEditarOS) return
     const ordemAtualizada = { ...modalEditarOS }
+
+    // Identifica se a O.S. estava concluída e está mudando para outro status
+    const ordemOriginal = ordens.find(o => String(o.id) === String(ordemAtualizada.id))
+    if (ordemOriginal && ordemOriginal.status === 'CONCLUÍDO' && ordemAtualizada.status !== 'CONCLUÍDO') {
+      estornarLancamentosFinanceiros(ordemOriginal)
+    }
+
     dbUpsert('ordens', ordemAtualizada)
     setOrdens(prev => prev.map(o => String(o.id) === String(ordemAtualizada.id) ? ordemAtualizada : o))
     registrarLog({

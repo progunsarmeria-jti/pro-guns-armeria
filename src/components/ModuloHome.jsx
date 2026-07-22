@@ -163,7 +163,22 @@ export default function ModuloHome({
     return permissoes[reqPermDefault] === true
   }
 
-  const statusBlocks = allStatusBlocks.filter(block => isBlocoPermitidoNoHome(block.id, block.reqPerm))
+  // Ordena os statusBlocks de acordo com a ordem do regrasBlocos
+  const orderedStatusBlocks = [];
+  regrasBlocos.forEach(cfg => {
+    const block = allStatusBlocks.find(b => b.id === cfg.id);
+    if (block) {
+      orderedStatusBlocks.push(block);
+    }
+  });
+  // Adiciona qualquer bloco do default que não esteja configurado, como fallback de segurança
+  allStatusBlocks.forEach(block => {
+    if (!orderedStatusBlocks.some(b => b.id === block.id)) {
+      orderedStatusBlocks.push(block);
+    }
+  });
+
+  const statusBlocks = orderedStatusBlocks.filter(block => isBlocoPermitidoNoHome(block.id, block.reqPerm))
 
   const podeDarEntradaOS = isMaster || (permissoes.dar_entrada_os !== false && permissoes.ver_ordens !== false)
   const podeAbrirCaixa = isMaster || (permissoes.ver_caixa === true || permissoes.gerenciar_caixa === true)
@@ -325,63 +340,75 @@ export default function ModuloHome({
       </div>
 
       {/* Resumo Rápido Operacional (Filtrado por Permissões) */}
-      {(podeVerClientes || podeVerFinanceiroOuCaixa) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
-          {/* Card Resumo de Clientes e Acervo */}
-          {podeVerClientes && (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Users size={16} />
-                  <span>Clientes & Acervo Registrado</span>
-                </div>
-                <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('clientes')}>
-                  Ver Clientes
-                </button>
+      {(() => {
+        const renderClientesResumo = podeVerClientes && (
+          <div key="bloco_clientes_resumo" className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Users size={16} />
+                <span>Clientes & Acervo Registrado</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>CLIENTES CADASTRADOS</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)' }}>{clientes.length}</div>
-                </div>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>ORÇAMENTOS PENDENTES</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#F59E0B' }}>{orcamentosPendentes}</div>
-                </div>
+              <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('clientes')}>
+                Ver Clientes
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>CLIENTES CADASTRADOS</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-main)' }}>{clientes.length}</div>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>ORÇAMENTOS PENDENTES</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#F59E0B' }}>{orcamentosPendentes}</div>
               </div>
             </div>
-          )}
+          </div>
+        )
 
-          {/* Card Resumo Financeiro Rápido */}
-          {podeVerFinanceiroOuCaixa && (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <TrendingUp size={16} />
-                  <span>Caixa & Fluxo Financeiro</span>
-                </div>
-                <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('financeiro')}>
-                  Ver Financeiro
-                </button>
+        const renderFluxoResumo = podeVerFinanceiroOuCaixa && (
+          <div key="bloco_fluxo_resumo" className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.85rem 1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <TrendingUp size={16} />
+                <span>Caixa & Fluxo Financeiro</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>STATUS DO CAIXA</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: '800', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
-                    {caixaStatus === 'ABERTO' ? '● ABERTO' : '○ FECHADO'}
-                  </div>
+              <button className="btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }} onClick={() => setActiveTab('financeiro')}>
+                Ver Financeiro
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>STATUS DO CAIXA</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: caixaStatus === 'ABERTO' ? '#34D399' : '#F87171' }}>
+                  {caixaStatus === 'ABERTO' ? '● ABERTO' : '○ FECHADO'}
                 </div>
-                <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>RECEITAS DO MÊS</div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#34D399' }}>
-                    R$ {receitasMes.toFixed(2)}
-                  </div>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.65rem 0.85rem', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>RECEITAS DO MÊS</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#34D399' }}>
+                  R$ {receitasMes.toFixed(2)}
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )
+
+        const resumoCards = []
+        regrasBlocos.forEach(cfg => {
+          if (cfg.id === 'bloco_clientes_resumo' && renderClientesResumo) resumoCards.push(renderClientesResumo)
+          if (cfg.id === 'bloco_fluxo_resumo' && renderFluxoResumo) resumoCards.push(renderFluxoResumo)
+        })
+        if (renderClientesResumo && !resumoCards.includes(renderClientesResumo)) resumoCards.push(renderClientesResumo)
+        if (renderFluxoResumo && !resumoCards.includes(renderFluxoResumo)) resumoCards.push(renderFluxoResumo)
+
+        if (resumoCards.length === 0) return null
+
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
+            {resumoCards}
+          </div>
+        )
+      })()}
     </div>
   )
 }

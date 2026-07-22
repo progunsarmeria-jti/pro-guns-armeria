@@ -719,6 +719,7 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '80px' }}>ORDEM</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>BLOCO / ATALHO DO HOME</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>VISÍVEL NO HOME?</th>
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left' }}>PERFIS PERMITIDOS (QUEM PODE VER)</th>
@@ -726,12 +727,34 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
               </thead>
               <tbody>
                 {(() => {
-                  const listaBlocos = INITIAL_CONFIG.blocos_home.map(def => {
-                    const salvo = (formData.blocos_home || []).find(b => b.id === def.id)
-                    return salvo ? { ...def, ...salvo } : def
+                  const salvos = formData.blocos_home || []
+                  // 1. Pega os blocos salvos e completa com os dados do default, mantendo a ordem
+                  const listaBlocos = salvos.map(s => {
+                    const def = INITIAL_CONFIG.blocos_home.find(d => d.id === s.id)
+                    return def ? { ...def, ...s } : s
+                  }).filter(b => INITIAL_CONFIG.blocos_home.some(d => d.id === b.id))
+
+                  // 2. Adiciona blocos do default que não estão no salvo
+                  INITIAL_CONFIG.blocos_home.forEach(def => {
+                    if (!listaBlocos.some(b => b.id === def.id)) {
+                      listaBlocos.push(def)
+                    }
                   })
 
-                  return listaBlocos.map((bloco) => {
+                  const handleMoverBloco = (index, direcao) => {
+                    const novaLista = [...listaBlocos]
+                    const targetIndex = index + direcao
+                    if (targetIndex < 0 || targetIndex >= novaLista.length) return
+                    
+                    // Troca os elementos de posição
+                    const temp = novaLista[index]
+                    novaLista[index] = novaLista[targetIndex]
+                    novaLista[targetIndex] = temp
+                    
+                    atualizarConfig({ ...formData, blocos_home: novaLista })
+                  }
+
+                  return listaBlocos.map((bloco, idx) => {
                     const perfisAtuais = bloco.perfis || ['master', 'armeiro', 'recepcao']
 
                     const handleTogglePerfil = (perfilId) => {
@@ -754,6 +777,52 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
 
                   return (
                     <tr key={bloco.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleMoverBloco(idx, -1)}
+                            disabled={idx === 0}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'rgba(255,255,255,0.03)',
+                              color: idx === 0 ? 'var(--text-muted)' : 'var(--text-main)',
+                              cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                              opacity: idx === 0 ? 0.3 : 1
+                            }}
+                            title="Mover para cima"
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoverBloco(idx, 1)}
+                            disabled={idx === listaBlocos.length - 1}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'rgba(255,255,255,0.03)',
+                              color: idx === listaBlocos.length - 1 ? 'var(--text-muted)' : 'var(--text-main)',
+                              cursor: idx === listaBlocos.length - 1 ? 'not-allowed' : 'pointer',
+                              opacity: idx === listaBlocos.length - 1 ? 0.3 : 1
+                            }}
+                            title="Mover para baixo"
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                        </div>
+                      </td>
                       <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: 'var(--gold-accent)' }}>
                         {bloco.titulo}
                       </td>

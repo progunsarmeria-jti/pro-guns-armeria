@@ -479,7 +479,7 @@ export default function ModuloOrdens({
     tocarSomNotificacao()
 
     // Dispara Alerta automático para o Painel de Alerta da Recepção com o objeto atualizado
-    dispararAlertaRecepcao(
+    dispararAlertaSetor(
       ordemAtualizada,
       'AGUARDANDO APROVAÇÃO',
       `Armeiro ${usuarioLogado?.nome_completo || 'Técnico'} concluiu o laudo técnico. Orçamento de R$ ${valorTotal.toFixed(2)} pendente de aprovação com o cliente.`

@@ -142,6 +142,8 @@ CREATE TABLE IF NOT EXISTS public.proguns_usuarios (
     status TEXT DEFAULT 'Ativo',
     permissoes JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- 8. Tabela de Controle de Estoque
 CREATE TABLE IF NOT EXISTS public.proguns_estoque (
     id TEXT PRIMARY KEY,
@@ -180,6 +182,7 @@ CREATE TABLE IF NOT EXISTS public.proguns_alertas (
     cliente_telefone TEXT,
     equipamento TEXT,
     tipo_alerta TEXT,
+    destinatario TEXT,
     mensagem TEXT,
     status TEXT DEFAULT 'PENDENTE',
     tentativas_contato JSONB DEFAULT '[]'::jsonb,

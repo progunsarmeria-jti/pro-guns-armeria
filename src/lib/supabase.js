@@ -312,3 +312,29 @@ export async function uploadGTFile(file, fileName) {
     return null
   }
 }
+
+export async function getGTFileUrl(fileNameOrUrl, expiresIn = 600) {
+  if (!isSupabaseConfigured() || !fileNameOrUrl) return null
+  const client = getSupabaseClient()
+  try {
+    const bucketName = 'guias_trafego'
+    let fileName = fileNameOrUrl
+    if (fileNameOrUrl.includes('/')) {
+      fileName = fileNameOrUrl.split('/').pop()
+    }
+    if (fileName.includes('?')) {
+      fileName = fileName.split('?')[0]
+    }
+    const { data, error } = await client.storage
+      .from(bucketName)
+      .createSignedUrl(fileName, expiresIn)
+    if (error) {
+      console.error('[Supabase Storage] Erro ao criar URL assinada:', error)
+      return null
+    }
+    return data?.signedUrl || null
+  } catch (err) {
+    console.error('[Supabase Storage] Exceção ao criar URL assinada:', err)
+    return null
+  }
+}

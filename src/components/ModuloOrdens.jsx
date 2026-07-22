@@ -3,7 +3,7 @@ import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar, UploadCloud, Camera, Loader } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
-import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete, getSupabaseClient, uploadGTFile } from '../lib/supabase'
+import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 import { INITIAL_CONFIG } from '../lib/initialData'
 
@@ -2181,9 +2181,26 @@ export default function ModuloOrdens({
                         <div style={{ marginTop: '0.6rem', borderTop: '1px solid #E5E7EB', paddingTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
                           <FileText size={16} color="#10B981" />
                           <strong>Guia Anexada:</strong>
-                          <a href={activeDoc.gt_anexo_url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563EB', textDecoration: 'underline', fontWeight: '700' }}>
+                          <button
+                            onClick={async () => {
+                              const url = await getGTFileUrl(activeDoc.gt_anexo_url)
+                              if (url) window.open(url, '_blank')
+                              else alert('Não foi possível carregar a guia do servidor.')
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#2563EB',
+                              textDecoration: 'underline',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontSize: '0.8rem',
+                              textAlign: 'left'
+                            }}
+                          >
                             Abrir Documento (PDF / Foto)
-                          </a>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -2672,9 +2689,27 @@ export default function ModuloOrdens({
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         <FileText size={14} color="#10B981" />
-                        <a href={modalEditarOS.gt_anexo_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA', textDecoration: 'underline', fontWeight: '600' }}>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const url = await getGTFileUrl(modalEditarOS.gt_anexo_url)
+                            if (url) window.open(url, '_blank')
+                            else alert('Não foi possível carregar a guia do servidor.')
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#60A5FA',
+                            textDecoration: 'underline',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontSize: '0.75rem',
+                            textAlign: 'left'
+                          }}
+                        >
                           Visualizar Guia Anexada
-                        </a>
+                        </button>
                       </div>
                       <button
                         type="button"

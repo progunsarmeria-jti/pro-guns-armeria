@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search, UploadCloud, Camera, Loader } from 'lucide-react'
-import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile } from '../lib/supabase'
+import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 import { hojeISO } from '../lib/dates'
 import CustomSelect from './CustomSelect'
@@ -672,9 +672,27 @@ export default function ModalNovaOSArmeria({
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       <FileText size={15} color="#10B981" />
-                      <a href={gtAnexoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA', textDecoration: 'underline', fontWeight: '600' }}>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const url = await getGTFileUrl(gtAnexoUrl)
+                          if (url) window.open(url, '_blank')
+                          else alert('Não foi possível carregar a guia do servidor.')
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#60A5FA',
+                          textDecoration: 'underline',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: '0.75rem',
+                          textAlign: 'left'
+                        }}
+                      >
                         Visualizar Guia Anexada
-                      </a>
+                      </button>
                     </div>
                     <button
                       type="button"

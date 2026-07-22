@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS public.proguns_ordens (
     gt_protocolo TEXT,
     gt_data_emissao TEXT,
     gt_data_vencimento TEXT,
+    gt_anexo_url TEXT,
     tipo_servico TEXT,
     valor_servico DECIMAL(10,2) DEFAULT 0.00,
     valor_taxamento DECIMAL(10,2) DEFAULT 0.00,

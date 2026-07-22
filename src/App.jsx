@@ -13,6 +13,7 @@ import ModuloConfiguracoes from './components/ModuloConfiguracoes'
 import ModuloUsuarios from './components/ModuloUsuarios'
 import ModuloVendas from './components/ModuloVendas'
 import ModalLogin from './components/ModalLogin'
+import TelaUploadGTMobile from './components/TelaUploadGTMobile'
 import { AlertTriangle, RefreshCw, CheckCircle2, Loader } from 'lucide-react'
 
 import {
@@ -158,6 +159,14 @@ const ss = {
 }
 
 export default function App() {
+  const params = new URLSearchParams(window.location.search)
+  const isUploadGTMobileRoute = params.get('action') === 'upload_gt'
+  const uploadGTSessionId = params.get('session_id')
+
+  if (isUploadGTMobileRoute && uploadGTSessionId) {
+    return <TelaUploadGTMobile sessionId={uploadGTSessionId} />
+  }
+
   const [activeTab, setActiveTab] = useState('home')
   const [filtroStatusOrdens, setFiltroStatusOrdens] = useState('')
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)

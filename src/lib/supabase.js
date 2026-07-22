@@ -292,3 +292,23 @@ export function subscribeToTable(tabela, onUpdate) {
     return null
   }
 }
+
+export async function uploadGTFile(file, fileName) {
+  if (!isSupabaseConfigured() || !file) return null
+  const client = getSupabaseClient()
+  try {
+    const bucketName = 'guias_trafego'
+    const { data, error } = await client.storage
+      .from(bucketName)
+      .upload(fileName, file, { cacheControl: '3600', upsert: true })
+    if (error) {
+      console.error('[Supabase Storage] Erro ao subir arquivo:', error)
+      return null
+    }
+    const { data: urlData } = client.storage.from(bucketName).getPublicUrl(fileName)
+    return urlData?.publicUrl || null
+  } catch (err) {
+    console.error('[Supabase Storage] Exceção ao subir arquivo:', err)
+    return null
+  }
+}

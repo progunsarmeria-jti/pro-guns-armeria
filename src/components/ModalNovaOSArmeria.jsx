@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search } from 'lucide-react'
-import { dbUpsert } from '../lib/supabase'
+import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search, UploadCloud, Camera, Loader } from 'lucide-react'
+import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 import { hojeISO } from '../lib/dates'
 import CustomSelect from './CustomSelect'
@@ -82,10 +82,34 @@ export default function ModalNovaOSArmeria({
   const [descricaoLuneta, setDescricaoLuneta] = useState('')
   const [acessoriosAdicionais, setAcessoriosAdicionais] = useState('')
 
-  // Guia de Tráfego de Manutenção (GT)
   const [gtProtocolo, setGtProtocolo] = useState('')
   const [gtDataEmissao, setGtDataEmissao] = useState(hojeISO())
   const [gtDataVencimento, setGtDataVencimento] = useState('')
+  const [gtAnexoUrl, setGtAnexoUrl] = useState('')
+  const [sessionId] = useState(() => `gt_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
+  const [showQrModal, setShowQrModal] = useState(false)
+  const [subindoArquivo, setSubindoArquivo] = useState(false)
+
+  useEffect(() => {
+    if (!showQrModal || !sessionId) return
+    const client = getSupabaseClient()
+    if (!client) return
+
+    const channelName = `upload_gt_${sessionId}`
+    const channel = client.channel(channelName)
+      .on('broadcast', { event: 'file_uploaded' }, ({ payload }) => {
+        if (payload?.url) {
+          setGtAnexoUrl(payload.url)
+          setShowQrModal(false)
+          alert('Foto da Guia de Tráfego recebida e anexada com sucesso!')
+        }
+      })
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [showQrModal, sessionId])
 
   // Handler para cadastrar novo cliente diretamente pela tela de Entrada de O.S.
   const handleCadastrarNovoCliente = (e) => {
@@ -188,6 +212,7 @@ export default function ModalNovaOSArmeria({
       gt_protocolo: categoriaArma === 'Arma de Fogo' ? gtProtocolo : 'N/A (Ar Comprimido)',
       gt_data_emissao: categoriaArma === 'Arma de Fogo' ? gtDataEmissao : null,
       gt_data_vencimento: categoriaArma === 'Arma de Fogo' ? gtDataVencimento : null,
+      gt_anexo_url: categoriaArma === 'Arma de Fogo' ? gtAnexoUrl : null,
       tipo_servico: `Manutenção ${tipoFinal} ${marcaFinal}`,
       valor_servico: 0,
       valor_taxamento: 0,
@@ -582,6 +607,92 @@ export default function ModalNovaOSArmeria({
                   />
                 </div>
               </div>
+
+              {/* Controles de Anexo da Guia */}
+              <div style={{ borderTop: '1px solid rgba(139, 38, 42, 0.2)', paddingTop: '0.6rem', marginTop: '0.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>ANEXAR DOCUMENTO DA GUIA (PDF OU FOTO)</label>
+                
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {/* Botão de Upload Local */}
+                  <label className="btn-secondary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', margin: 0 }}>
+                    <UploadCloud size={14} />
+                    <span>{subindoArquivo ? 'Enviando...' : 'Anexar PDF / Foto local'}</span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files[0]
+                        if (!file) return
+                        setSubindoArquivo(true)
+                        try {
+                          const ext = file.name.split('.').pop() || 'png'
+                          const fName = `${sessionId}_local_${Date.now()}.${ext}`
+                          const publicUrl = await uploadGTFile(file, fName)
+                          if (publicUrl) {
+                            setGtAnexoUrl(publicUrl)
+                            alert('Documento anexado com sucesso!')
+                          } else {
+                            alert('Erro ao anexar arquivo.')
+                          }
+                        } catch (err) {
+                          console.error(err)
+                          alert('Erro ao anexar arquivo.')
+                        } finally {
+                          setSubindoArquivo(false)
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                      disabled={subindoArquivo}
+                    />
+                  </label>
+
+                  {/* Botão de QR Code Celular */}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowQrModal(true)}
+                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                  >
+                    <Camera size={14} />
+                    <span>Tirar Foto com o Celular (QR Code)</span>
+                  </button>
+                </div>
+
+                {/* Exibição do Arquivo Anexado */}
+                {gtAnexoUrl && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.5rem',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    marginTop: '0.2rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      <FileText size={15} color="#10B981" />
+                      <a href={gtAnexoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA', textDecoration: 'underline', fontWeight: '600' }}>
+                        Visualizar Guia Anexada
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGtAnexoUrl('')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#EF4444',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: '700'
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -686,6 +797,53 @@ export default function ModalNovaOSArmeria({
           </div>
         </form>
       </div>
+
+      {/* Modal QR Code Celular */}
+      {showQrModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+        }}>
+          <div className="card" style={{ padding: '1.5rem', width: '90%', maxWidth: '340px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>Digitalizar com Celular</h3>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Aponte a câmera do seu celular para o QR Code abaixo para abrir a câmera móvel e tirar a foto da guia.
+            </p>
+            
+            {/* QR Code Container */}
+            <div style={{
+              padding: '0.5rem',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  `${window.location.origin}${window.location.pathname}?action=upload_gt&session_id=${sessionId}`
+                )}`}
+                alt="QR Code de Digitalização"
+                style={{ width: '180px', height: '180px' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--gold-accent)' }}>
+              <Loader size={12} style={{ animation: 'spin 1.5s linear infinite' }} />
+              <span>Aguardando envio do celular...</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowQrModal(false)}
+              style={{ width: '100%', padding: '0.35rem 0', fontSize: '0.78rem' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

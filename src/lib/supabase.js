@@ -4,9 +4,20 @@ import { createClient } from '@supabase/supabase-js'
 const DEFAULT_SUPABASE_URL = 'https://xknexpjapjanozsuowod.supabase.co'
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_HAFcm7qicaIH-FrexVz3lQ_mqRRhurR'
 
-// Lê credenciais salvas pelo usuário em Configurações, ou .env, ou credenciais padrão
-const getUrl = () => localStorage.getItem('PROGUNS_SUPABASE_URL') || import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
-const getKey = () => localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY
+// Lê credenciais salvas pelo usuário em Configurações, ou na URL (para sincronia mobile), ou .env, ou credenciais padrão
+export const getUrl = () => {
+  const params = new URLSearchParams(window.location.search)
+  const urlParam = params.get('sb_url')
+  if (urlParam) return decodeURIComponent(urlParam)
+  return localStorage.getItem('PROGUNS_SUPABASE_URL') || import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
+}
+
+export const getKey = () => {
+  const params = new URLSearchParams(window.location.search)
+  const keyParam = params.get('sb_key')
+  if (keyParam) return decodeURIComponent(keyParam)
+  return localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY
+}
 
 // Mapeamento de nomes de tabelas isoladas para o Pró Guns Armeria (evita colisão com outros projetos no mesmo Supabase)
 const TABLE_MAP = {

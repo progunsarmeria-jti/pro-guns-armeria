@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search, UploadCloud, Camera, Loader } from 'lucide-react'
-import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
+import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile, getGTFileUrl, getUrl, getKey } from '../lib/supabase'
 import { compressImage } from '../lib/imageCompressor'
 import { registrarLog } from '../lib/auditLogger'
 import { hojeISO } from '../lib/dates'
@@ -841,7 +841,7 @@ export default function ModalNovaOSArmeria({
             }}>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `${window.location.origin}${window.location.pathname}?action=upload_gt&session_id=${sessionId}`
+                  `${window.location.origin}${window.location.pathname}?action=upload_gt&session_id=${sessionId}&sb_url=${encodeURIComponent(getUrl())}&sb_key=${encodeURIComponent(getKey())}`
                 )}`}
                 alt="QR Code de Digitalização"
                 style={{ width: '180px', height: '180px' }}

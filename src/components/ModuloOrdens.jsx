@@ -3,7 +3,7 @@ import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar, UploadCloud, Camera, Loader } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
-import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
+import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete, getSupabaseClient, uploadGTFile, getGTFileUrl, getUrl, getKey } from '../lib/supabase'
 import { compressImage } from '../lib/imageCompressor'
 import { registrarLog } from '../lib/auditLogger'
 import { INITIAL_CONFIG } from '../lib/initialData'
@@ -2810,7 +2810,7 @@ export default function ModuloOrdens({
             }}>
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `${window.location.origin}${window.location.pathname}?action=upload_gt&session_id=${gtSessionId}`
+                  `${window.location.origin}${window.location.pathname}?action=upload_gt&session_id=${gtSessionId}&sb_url=${encodeURIComponent(getUrl())}&sb_key=${encodeURIComponent(getKey())}`
                 )}`}
                 alt="QR Code de Digitalização"
                 style={{ width: '180px', height: '180px' }}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Camera, UploadCloud, CheckCircle2, Loader, FileText, AlertTriangle } from 'lucide-react'
 import { getSupabaseClient, isSupabaseConfigured, uploadGTFile } from '../lib/supabase'
+import { compressImage } from '../lib/imageCompressor'
 
 export default function TelaUploadGTMobile({ sessionId }) {
   const [loading, setLoading] = useState(false)
@@ -43,14 +44,13 @@ export default function TelaUploadGTMobile({ sessionId }) {
         throw new Error('Supabase não está configurado no sistema.')
       }
 
-      // 1. Fazer upload do arquivo no Storage
-      const ext = selectedFile.name.split('.').pop() || 'png'
-      const fileName = `${sessionId}_${Date.now()}.${ext}`
-      const publicUrl = await uploadGTFile(selectedFile, fileName)
+      // 1. Comprimir o arquivo (se for imagem) para reduzir peso e evitar timeouts
+      const fileToUpload = await compressImage(selectedFile)
 
-      if (!publicUrl) {
-        throw new Error('Não foi possível realizar o upload do arquivo.')
-      }
+      // 2. Fazer upload do arquivo no Storage
+      const ext = fileToUpload.name.split('.').pop() || 'png'
+      const fileName = `${sessionId}_${Date.now()}.${ext}`
+      const publicUrl = await uploadGTFile(fileToUpload, fileName)
 
       // 2. Transmitir o link para o computador via Realtime Broadcast
       const channel = client.channel(`upload_gt_${sessionId}`)

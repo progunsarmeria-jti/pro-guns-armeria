@@ -294,22 +294,36 @@ export function subscribeToTable(tabela, onUpdate) {
 }
 
 export async function uploadGTFile(file, fileName) {
-  if (!isSupabaseConfigured() || !file) return null
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase não está configurado.')
+  }
+  if (!file) {
+    throw new Error('Nenhum arquivo fornecido para upload.')
+  }
   const client = getSupabaseClient()
+  const bucketName = 'guias_trafego'
   try {
-    const bucketName = 'guias_trafego'
     const { data, error } = await client.storage
       .from(bucketName)
       .upload(fileName, file, { cacheControl: '3600', upsert: true })
     if (error) {
       console.error('[Supabase Storage] Erro ao subir arquivo:', error)
-      return null
+      let message = error.message || 'Erro desconhecido.'
+      if (message.includes('Bucket not found')) {
+        message = "O bucket 'guias_trafego' não existe no Supabase. Crie-o no painel do Supabase com acesso público."
+      } else if (message.includes('row level security') || error.status === 403 || error.statusCode === '403') {
+        message = "Permissão negada (RLS). Certifique-se de configurar políticas públicas de leitura/escrita para o bucket 'guias_trafego' no Supabase."
+      }
+      throw new Error(message)
     }
     const { data: urlData } = client.storage.from(bucketName).getPublicUrl(fileName)
-    return urlData?.publicUrl || null
+    if (!urlData?.publicUrl) {
+      throw new Error('Não foi possível obter a URL pública do arquivo.')
+    }
+    return urlData.publicUrl
   } catch (err) {
     console.error('[Supabase Storage] Exceção ao subir arquivo:', err)
-    return null
+    throw err
   }
 }
 

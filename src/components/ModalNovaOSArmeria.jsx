@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Shield, Crosshair, AlertCircle, Calendar, FileText, CheckCircle2, Info, Package, BookmarkCheck, Plus, AlertTriangle, UserPlus, Search, UploadCloud, Camera, Loader } from 'lucide-react'
 import { dbUpsert, isSupabaseConfigured, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
+import { compressImage } from '../lib/imageCompressor'
 import { registrarLog } from '../lib/auditLogger'
 import { hojeISO } from '../lib/dates'
 import CustomSelect from './CustomSelect'
@@ -625,9 +626,10 @@ export default function ModalNovaOSArmeria({
                         if (!file) return
                         setSubindoArquivo(true)
                         try {
-                          const ext = file.name.split('.').pop() || 'png'
+                          const fileToUpload = await compressImage(file)
+                          const ext = fileToUpload.name.split('.').pop() || 'png'
                           const fName = `${sessionId}_local_${Date.now()}.${ext}`
-                          const publicUrl = await uploadGTFile(file, fName)
+                          const publicUrl = await uploadGTFile(fileToUpload, fName)
                           if (publicUrl) {
                             setGtAnexoUrl(publicUrl)
                             alert('Documento anexado com sucesso!')
@@ -636,7 +638,7 @@ export default function ModalNovaOSArmeria({
                           }
                         } catch (err) {
                           console.error(err)
-                          alert('Erro ao anexar arquivo.')
+                          alert('Erro ao anexar arquivo: ' + err.message)
                         } finally {
                           setSubindoArquivo(false)
                         }

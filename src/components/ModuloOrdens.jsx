@@ -4,6 +4,7 @@ import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, 
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, dbUpsert, dbUpdate, dbDelete, getSupabaseClient, uploadGTFile, getGTFileUrl } from '../lib/supabase'
+import { compressImage } from '../lib/imageCompressor'
 import { registrarLog } from '../lib/auditLogger'
 import { INITIAL_CONFIG } from '../lib/initialData'
 
@@ -2638,9 +2639,10 @@ export default function ModuloOrdens({
                           if (!file) return
                           setSubindoArquivo(true)
                           try {
-                            const ext = file.name.split('.').pop() || 'png'
+                            const fileToUpload = await compressImage(file)
+                            const ext = fileToUpload.name.split('.').pop() || 'png'
                             const fName = `gt_edit_${modalEditarOS.id || Date.now()}_local_${Date.now()}.${ext}`
-                            const publicUrl = await uploadGTFile(file, fName)
+                            const publicUrl = await uploadGTFile(fileToUpload, fName)
                             if (publicUrl) {
                               setModalEditarOS({ ...modalEditarOS, gt_anexo_url: publicUrl })
                               alert('Documento anexado com sucesso!')
@@ -2649,7 +2651,7 @@ export default function ModuloOrdens({
                             }
                           } catch (err) {
                             console.error(err)
-                            alert('Erro ao anexar arquivo.')
+                            alert('Erro ao anexar arquivo: ' + err.message)
                           } finally {
                             setSubindoArquivo(false)
                           }

@@ -72,9 +72,47 @@ export const clearSupabaseKeys = () => {
   window.location.reload()
 }
 
-// ─── Funções de CRUD genérico ───────────────────────────────────────────────
+export let _useLocalServer = false
+export let _localServerUrl = 'http://localhost:3001'
+
+export const checkLocalServer = async () => {
+  try {
+    const host = window.location.hostname || 'localhost'
+    const port = '3001'
+    const testUrl = `http://${host}:${port}`
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), 1200)
+    const res = await fetch(`${testUrl}/api/ping`, { signal: controller.signal })
+    clearTimeout(id)
+    if (res.ok) {
+      _useLocalServer = true
+      _localServerUrl = testUrl
+      console.log(`[Database Router] Servidor Local ativo em: ${testUrl}`)
+      return true
+    }
+  } catch (e) {
+    // Falha local
+  }
+  _useLocalServer = false
+  console.log(`[Database Router] Servidor Local inativo. Usando Supabase diretamente.`)
+  return false
+}
+
+// Tenta verificar o servidor local imediatamente
+checkLocalServer()
+
+// ─── Funções de CRUD genérico Híbrido ───────────────────────────────────────
 
 export async function dbLoad(tabela) {
+  if (_useLocalServer) {
+    try {
+      const res = await fetch(`${_localServerUrl}/api/db/${tabela}`)
+      if (res.ok) return await res.json()
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbLoad de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
+
   if (!isSupabaseConfigured()) return null
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
@@ -92,7 +130,22 @@ export async function dbLoad(tabela) {
 }
 
 export async function dbUpsert(tabela, registro) {
-  if (!isSupabaseConfigured() || !registro) return false
+  if (!registro) return false
+  
+  if (_useLocalServer) {
+    try {
+      const res = await fetch(`${_localServerUrl}/api/db/${tabela}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registro)
+      })
+      if (res.ok) return true
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbUpsert de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
+
+  if (!isSupabaseConfigured()) return false
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
@@ -104,25 +157,9 @@ export async function dbUpsert(tabela, registro) {
     }
     const { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
     if (error) {
-      console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message, error.details, error.hint)
-      // Fallback 1: tenta upsert sem 'onConflict'
+      console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message)
       const { error: err1 } = await client.from(realTable).upsert(registroSeguro)
       if (!err1) return true
-
-      // Fallback 2: tenta upsert apenas com campos primitivos (sem objetos/arrays aninhados)
-      const registroSimples = {}
-      for (const [k, v] of Object.entries(registro)) {
-        if (typeof v !== 'object' || v === null || v instanceof Date) {
-          registroSimples[k] = v
-        }
-      }
-      if (Object.keys(registroSimples).length > 1) {
-        const { error: err2 } = await client.from(realTable).upsert(registroSimples)
-        if (!err2) {
-          console.warn(`[Supabase] Salvo com campos primitivos apenas em ${realTable}`)
-          return true
-        }
-      }
       return false
     }
     return true
@@ -132,64 +169,82 @@ export async function dbUpsert(tabela, registro) {
   }
 }
 
-// Atualiza campos específicos de um registro via UPDATE direto (com verificação de .select() e fallback por numero_os/UPSERT)
 export async function dbUpdate(tabela, id, campos, registroCompleto = null) {
-  if (!isSupabaseConfigured() || !campos) return false
+  if (!campos) return false
+
+  if (_useLocalServer) {
+    try {
+      const payload = registroCompleto ? { ...registroCompleto, ...campos } : { id, ...campos }
+      const res = await fetch(`${_localServerUrl}/api/db/${tabela}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (res.ok) return true
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbUpdate de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
+
+  if (!isSupabaseConfigured()) return false
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   const numeroOS = campos.numero_os || registroCompleto?.numero_os
 
   try {
-    // 1. Tenta UPDATE por ID com .select() para confirmar se alterou alguma linha
     if (id) {
       const { data, error } = await client
         .from(realTable)
         .update(campos)
         .eq('id', id)
         .select('id, status')
-
-      if (!error && data && data.length > 0) {
-        console.log(`[Supabase] UPDATE ok por ID (${id}) em ${realTable}:`, data)
-        return true
-      }
-      if (error) {
-        console.warn(`[Supabase] Erro no UPDATE por ID (${id}) em ${realTable}:`, error.message)
-      }
+      if (!error && data && data.length > 0) return true
     }
-
-    // 2. Tenta UPDATE por numero_os (se for a tabela de ordens ou tiver numero_os)
     if (numeroOS) {
       const { data, error } = await client
         .from(realTable)
         .update(campos)
         .eq('numero_os', Number(numeroOS))
         .select('id, status')
-
-      if (!error && data && data.length > 0) {
-        console.log(`[Supabase] UPDATE ok por numero_os (${numeroOS}) em ${realTable}:`, data)
-        return true
-      }
+      if (!error && data && data.length > 0) return true
     }
-
-    // 3. Se nenhuma linha foi alterada no Supabase (ex: registro ainda não existia no banco), faz UPSERT completo
     if (registroCompleto) {
-      console.log(`[Supabase] Linha não encontrada via UPDATE. Fazendo UPSERT completo em ${realTable}...`)
       return await dbUpsert(tabela, registroCompleto)
     }
-
     return false
   } catch (err) {
     console.error(`[Supabase] Exceção ao atualizar ${realTable}:`, err)
-    if (registroCompleto) {
-      return await dbUpsert(tabela, registroCompleto)
-    }
+    if (registroCompleto) return await dbUpsert(tabela, registroCompleto)
     return false
   }
 }
 
-// FUNÇÃO CRÍTICA: Atualiza APENAS o status — funciona por ID ou por numero_os com retries
 export async function dbUpdateStatus(tabela, id, novoStatus, numeroOS = null) {
-  if (!isSupabaseConfigured() || (!id && !numeroOS) || !novoStatus) return false
+  if ((!id && !numeroOS) || !novoStatus) return false
+
+  if (_useLocalServer) {
+    try {
+      const resLoad = await fetch(`${_localServerUrl}/api/db/${tabela}`)
+      if (resLoad.ok) {
+        const list = await resLoad.json()
+        const match = list.find(r => r.id === id || (numeroOS && r.numero_os === Number(numeroOS)))
+        if (match) {
+          match.status = novoStatus
+          match.updated_at = new Date().toISOString()
+          const resSave = await fetch(`${_localServerUrl}/api/db/${tabela}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(match)
+          })
+          if (resSave.ok) return true
+        }
+      }
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbUpdateStatus de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
+
+  if (!isSupabaseConfigured()) return false
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
 
@@ -201,40 +256,27 @@ export async function dbUpdateStatus(tabela, id, novoStatus, numeroOS = null) {
           .update({ status: novoStatus, updated_at: new Date().toISOString() })
           .eq('id', id)
           .select('id, status')
-
-        if (!error && data && data.length > 0) {
-          console.log(`[Supabase] Status atualizado via ID em ${realTable} (${id}) → ${novoStatus}`)
-          return true
-        }
+        if (!error && data && data.length > 0) return true
       }
-
       if (numeroOS) {
         const { data, error } = await client
           .from(realTable)
           .update({ status: novoStatus, updated_at: new Date().toISOString() })
           .eq('numero_os', Number(numeroOS))
           .select('id, status')
-
-        if (!error && data && data.length > 0) {
-          console.log(`[Supabase] Status atualizado via numero_os em ${realTable} (${numeroOS}) → ${novoStatus}`)
-          return true
-        }
+        if (!error && data && data.length > 0) return true
       }
-
       if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 500))
     } catch (err) {
-      console.error(`[Supabase] Exceção na tentativa ${tentativa} de atualizar status:`, err)
       if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 500))
     }
   }
   return false
 }
 
-
 export async function dbDelete(tabela, id) {
   if (!id) return false
 
-  // Registra ID deletado no localStorage para que mesclarDados nunca ressuscite o item
   try {
     const key = `PROGUNS_DELETED_${tabela.toUpperCase()}`
     const deleted = JSON.parse(localStorage.getItem(key) || '[]')
@@ -243,6 +285,17 @@ export async function dbDelete(tabela, id) {
       localStorage.setItem(key, JSON.stringify(deleted))
     }
   } catch (e) {}
+
+  if (_useLocalServer) {
+    try {
+      const res = await fetch(`${_localServerUrl}/api/db/${tabela}/${id}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) return true
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbDelete de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
 
   if (!isSupabaseConfigured()) return true
   const client = getSupabaseClient()
@@ -261,13 +314,27 @@ export async function dbDelete(tabela, id) {
 }
 
 export async function dbUpsertAll(tabela, registros) {
-  if (!isSupabaseConfigured() || !registros?.length) return false
+  if (!registros?.length) return false
+
+  if (_useLocalServer) {
+    try {
+      const res = await fetch(`${_localServerUrl}/api/db/${tabela}/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registros)
+      })
+      if (res.ok) return true
+    } catch (e) {
+      console.warn(`[Local Server] Falha no dbUpsertAll de ${tabela}, tentando Supabase Nuvem...`, e)
+    }
+  }
+
+  if (!isSupabaseConfigured()) return false
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
     const validos = registros.filter(r => r && r.id)
     if (validos.length === 0) return false
-
     const { error } = await client.from(realTable).upsert(validos, { onConflict: 'id' })
     if (error) {
       console.error(`[Supabase] Erro ao salvar lista em ${realTable}:`, error)
@@ -280,9 +347,36 @@ export async function dbUpsertAll(tabela, registros) {
   }
 }
 
-// ─── Realtime: escuta mudanças de outras sessões em tempo real ───────────────
-
 export function subscribeToTable(tabela, onUpdate) {
+  if (_useLocalServer) {
+    try {
+      const host = window.location.hostname || 'localhost'
+      const wsUrl = `ws://${host}:3001`
+      const socket = new WebSocket(wsUrl)
+      
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ action: 'join', channel: getTableName(tabela) }))
+      }
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.event === 'reload' && (data.table === tabela || getTableName(data.table) === getTableName(tabela))) {
+            if (typeof onUpdate === 'function') onUpdate()
+          }
+        } catch (e) {}
+      }
+
+      return {
+        unsubscribe: () => {
+          socket.close()
+        }
+      }
+    } catch (e) {
+      console.warn('[Local WS] Falha ao assinar canal local, usando Supabase...', e)
+    }
+  }
+
   if (!isSupabaseConfigured()) return null
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)

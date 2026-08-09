@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.proguns_armas (
     orgao_registro TEXT DEFAULT 'SIGMA',
     numero_craf TEXT,
     validade_craf TEXT,
+    craf_anexo_url TEXT,
     capacidade INT,
     acessorios TEXT,
     status TEXT DEFAULT 'Regular',

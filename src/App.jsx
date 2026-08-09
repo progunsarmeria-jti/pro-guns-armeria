@@ -160,11 +160,11 @@ const ss = {
 
 export default function App() {
   const params = new URLSearchParams(window.location.search)
-  const isUploadGTMobileRoute = params.get('action') === 'upload_gt'
-  const uploadGTSessionId = params.get('session_id')
+  const action = params.get('action')
+  const uploadSessionId = params.get('session_id')
 
-  if (isUploadGTMobileRoute && uploadGTSessionId) {
-    return <TelaUploadGTMobile sessionId={uploadGTSessionId} />
+  if ((action === 'upload_gt' || action === 'upload_craf') && uploadSessionId) {
+    return <TelaUploadGTMobile sessionId={uploadSessionId} action={action} />
   }
 
   const [activeTab, setActiveTab] = useState('home')

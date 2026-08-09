@@ -3,7 +3,7 @@ import { Camera, UploadCloud, CheckCircle2, Loader, FileText, AlertTriangle } fr
 import { getSupabaseClient, isSupabaseConfigured, uploadGTFile } from '../lib/supabase'
 import { compressImage } from '../lib/imageCompressor'
 
-export default function TelaUploadGTMobile({ sessionId }) {
+export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
@@ -49,11 +49,12 @@ export default function TelaUploadGTMobile({ sessionId }) {
 
       // 2. Fazer upload do arquivo no Storage
       const ext = fileToUpload.name.split('.').pop() || 'png'
-      const fileName = `${sessionId}_${Date.now()}.${ext}`
+      const fileName = `${action === 'upload_craf' ? 'craf' : 'gt'}_${sessionId}_${Date.now()}.${ext}`
       const publicUrl = await uploadGTFile(fileToUpload, fileName)
 
       // 2. Transmitir o link para o computador via Realtime Broadcast
-      const channel = client.channel(`upload_gt_${sessionId}`)
+      const channelName = action === 'upload_craf' ? `upload_craf_${sessionId}` : `upload_gt_${sessionId}`
+      const channel = client.channel(channelName)
       await channel.subscribe()
       await channel.send({
         type: 'broadcast',
@@ -104,7 +105,7 @@ export default function TelaUploadGTMobile({ sessionId }) {
             PRÓ GUNS ARMERIA
           </h2>
           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
-            Digitalização de Guia de Tráfego (GT)
+            {action === 'upload_craf' ? 'Digitalização de CRAF da Arma' : 'Digitalização de Guia de Tráfego (GT)'}
           </p>
         </div>
 
@@ -114,7 +115,9 @@ export default function TelaUploadGTMobile({ sessionId }) {
             <div>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#FFFFFF' }}>Documento Enviado!</h3>
               <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
-                O computador da recepção já recebeu a Guia de Tráfego e ela foi anexada à O.S.
+                {action === 'upload_craf'
+                  ? 'O computador da recepção já recebeu o CRAF e ele foi anexado ao cadastro da arma.'
+                  : 'O computador da recepção já recebeu a Guia de Tráfego e ela foi anexada à O.S.'}
               </p>
             </div>
             <p style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>
@@ -164,7 +167,9 @@ export default function TelaUploadGTMobile({ sessionId }) {
                   disabled={loading}
                 />
                 <Camera size={32} color="#EF4444" />
-                <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>Tirar Foto da Guia</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                  {action === 'upload_craf' ? 'Tirar Foto do CRAF' : 'Tirar Foto da Guia'}
+                </span>
                 <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>ou selecionar PDF/Foto</span>
               </label>
             </div>
@@ -195,7 +200,7 @@ export default function TelaUploadGTMobile({ sessionId }) {
                 ) : previewUrl ? (
                   <img
                     src={previewUrl}
-                    alt="Preview da Guia"
+                    alt={action === 'upload_craf' ? 'Preview do CRAF' : 'Preview da Guia'}
                     style={{ width: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
                   />
                 ) : null}

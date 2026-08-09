@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Search, Eye, Edit, Trash2, ArrowLeft, Plus, Phone, Mail, MapPin, Shield,
   FileText, DollarSign, Receipt, MessageCircle, History, Calendar, Award, Printer, X, ChevronRight,
-  Crosshair, BookmarkCheck
+  Crosshair, BookmarkCheck, QrCode, Camera, UploadCloud, Loader, ExternalLink
 } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
 import CustomSelect from './CustomSelect'
 import { maskCPF, maskRG, maskTelefone } from '../lib/masks'
-import { dbUpsert, dbDelete } from '../lib/supabase'
+import { dbUpsert, dbDelete, getSupabaseClient, getUrl, getKey } from '../lib/supabase'
+import { compressImage } from '../lib/imageCompressor'
 import { CATEGORIAS_BASE, TIPOS_BASE, ORGAOS_REGISTRO_BASE, CALIBRES_BASE, FABRICANTES_BASE, MODELOS_BASE } from '../lib/initialData'
 
 export default function ModuloClientes({
@@ -64,8 +65,34 @@ export default function ModuloClientes({
     numero_sigma_sinarm: '',
     numero_craf: '',
     validade_craf: '',
+    craf_anexo_url: '',
     status: 'Regular'
   })
+
+  const [crafSessionId, setCrafSessionId] = useState('')
+  const [showCrafQrModal, setShowCrafQrModal] = useState(false)
+  const [subindoCraf, setSubindoCraf] = useState(false)
+
+  useEffect(() => {
+    if (!showCrafQrModal || !crafSessionId) return
+    const client = getSupabaseClient()
+    if (!client) return
+
+    const channelName = `upload_craf_${crafSessionId}`
+    const channel = client.channel(channelName)
+      .on('broadcast', { event: 'file_uploaded' }, ({ payload }) => {
+        if (payload?.url) {
+          setArmaForm(prev => ({ ...prev, craf_anexo_url: payload.url }))
+          setShowCrafQrModal(false)
+          alert('Foto do CRAF recebida e anexada com sucesso!')
+        }
+      })
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [showCrafQrModal, crafSessionId])
 
   // Verificadores de Duplicidade para Acervo
   const handleAddMarcaAcervo = () => {
@@ -470,9 +497,12 @@ export default function ModuloClientes({
                   setActiveSubTab('acervo')
                   setArmaForm({
                     categoria: '', tipo: '', marca: '', modelo: '', calibre: '',
-                    numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
+                    numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '',
+                    craf_anexo_url: '',
+                    status: 'Regular'
                   })
                   setArmaParaEditar(null)
+                  setCrafSessionId(`craf_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
                   setShowModalNovaArma(true)
                 }}
                 style={{
@@ -694,9 +724,12 @@ export default function ModuloClientes({
                         onClick={() => {
                           setArmaForm({
                             categoria: '', tipo: '', marca: '', modelo: '', calibre: '',
-                            numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '', status: 'Regular'
+                            numero_serie: '', orgao_registro: 'SIGMA', numero_sigma_sinarm: '', numero_craf: '', validade_craf: '',
+                            craf_anexo_url: '',
+                            status: 'Regular'
                           })
                           setArmaParaEditar(null)
+                          setCrafSessionId(`craf_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
                           setShowModalNovaArma(true)
                         }}
                       >
@@ -745,7 +778,20 @@ export default function ModuloClientes({
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.2rem', backgroundColor: 'var(--bg-dark)', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                                 <div><strong>N° Série:</strong> <span style={{ color: '#FFF', fontWeight: '700' }}>{arma.numero_serie}</span></div>
                                 <div><strong>Órgão/Registro:</strong> {arma.orgao_registro || 'SIGMA'} ({arma.numero_sigma_sinarm || 'N/A'})</div>
-                                <div><strong>CRAF:</strong> {arma.numero_craf || 'N/A'} (Val: {arma.validade_craf || 'N/A'})</div>
+                                <div>
+                                    <strong>CRAF:</strong> {arma.numero_craf || 'N/A'} (Val: {arma.validade_craf || 'N/A'})
+                                    {arma.craf_anexo_url && (
+                                      <a
+                                        href={arma.craf_anexo_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{ marginLeft: '0.5rem', color: '#60A5FA', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}
+                                      >
+                                        <FileText size={12} />
+                                        <span>Ver CRAF</span>
+                                      </a>
+                                    )}
+                                  </div>
                               </div>
 
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.3rem', gap: '0.3rem', flexWrap: 'wrap' }}>
@@ -789,8 +835,10 @@ export default function ModuloClientes({
                                         numero_sigma_sinarm: arma.numero_sigma_sinarm || '',
                                         numero_craf: arma.numero_craf || '',
                                         validade_craf: arma.validade_craf || '',
+                                        craf_anexo_url: arma.craf_anexo_url || '',
                                         status: arma.status || 'Regular'
                                       })
+                                      setCrafSessionId(`craf_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
                                       setShowModalNovaArma(true)
                                     }}
                                   >
@@ -1295,6 +1343,97 @@ export default function ModuloClientes({
                   </div>
                 </div>
 
+                {/* Controles de Anexo do CRAF */}
+                <div style={{ borderTop: '1px solid rgba(217, 119, 6, 0.2)', paddingTop: '0.6rem', marginTop: '0.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>ANEXAR DOCUMENTO DO CRAF (PDF OU FOTO)</label>
+                  
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {/* Botão de Upload Local */}
+                    <label className="btn-secondary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', margin: 0 }}>
+                      <UploadCloud size={14} />
+                      <span>{subindoCraf ? 'Enviando...' : 'Anexar PDF / Foto local'}</span>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files[0]
+                          if (!file) return
+                          setSubindoCraf(true)
+                          try {
+                            const fileToUpload = await compressImage(file)
+                            const ext = fileToUpload.name.split('.').pop() || 'png'
+                            const fName = `${crafSessionId}_local_${Date.now()}.${ext}`
+                            const publicUrl = await uploadGTFile(fileToUpload, fName)
+                            if (publicUrl) {
+                              setArmaForm(prev => ({ ...prev, craf_anexo_url: publicUrl }))
+                              alert('CRAF anexado com sucesso!')
+                            } else {
+                              alert('Erro ao anexar arquivo.')
+                            }
+                          } catch (err) {
+                            console.error(err)
+                            alert('Erro ao anexar arquivo: ' + err.message)
+                          } finally {
+                            setSubindoCraf(false)
+                          }
+                        }}
+                        style={{ display: 'none' }}
+                        disabled={subindoCraf}
+                      />
+                    </label>
+
+                    {/* Botão de QR Code Celular */}
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setShowCrafQrModal(true)}
+                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      <Camera size={14} />
+                      <span>Tirar Foto com o Celular (QR Code)</span>
+                    </button>
+                  </div>
+
+                  {/* Exibição do Arquivo Anexado */}
+                  {armaForm.craf_anexo_url && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem',
+                      backgroundColor: 'rgba(255,255,255,0.05)',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '0.75rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#60A5FA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <FileText size={14} style={{ flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>CRAF Anexado</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                        <a
+                          href={armaForm.craf_anexo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-secondary"
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'none' }}
+                        >
+                          <ExternalLink size={12} />
+                          <span>Visualizar</span>
+                        </a>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', color: '#F87171' }}
+                          onClick={() => setArmaForm(prev => ({ ...prev, craf_anexo_url: '' }))}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.8rem' }}>
                   <button type="button" className="btn-secondary" onClick={() => setShowModalNovaArma(false)}>Cancelar</button>
                   <button type="submit" className="btn-gold">Salvar no Acervo</button>
@@ -1576,6 +1715,53 @@ export default function ModuloClientes({
                 <button type="submit" className="btn-gold">Salvar Cliente</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Code Celular para CRAF */}
+      {showCrafQrModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000
+        }}>
+          <div className="card" style={{ padding: '1.5rem', width: '90%', maxWidth: '340px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)' }}>Digitalizar CRAF com Celular</h3>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Aponte a câmera do seu celular para o QR Code abaixo para abrir a câmera móvel e tirar a foto do CRAF.
+            </p>
+            
+            {/* QR Code Container */}
+            <div style={{
+              padding: '0.5rem',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  `${window.location.origin}${window.location.pathname}?action=upload_craf&session_id=${crafSessionId}&sb_url=${encodeURIComponent(getUrl())}&sb_key=${encodeURIComponent(getKey())}`
+                )}`}
+                alt="QR Code de Digitalização"
+                style={{ width: '180px', height: '180px' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--gold-accent)' }}>
+              <Loader size={12} style={{ animation: 'spin 1.5s linear infinite' }} />
+              <span>Aguardando envio do celular...</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowCrafQrModal(false)}
+              style={{ width: '100%', padding: '0.35rem 0', fontSize: '0.78rem' }}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}

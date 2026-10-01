@@ -456,102 +456,33 @@ export default function App() {
     'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
   ]
 
-  // Helper de Fusão Inteligente
+  // Helper de Fusão Inteligente: Supabase é a Fonte da Verdade Única Central
   const mesclarDados = (remotos, locais, tabela) => {
-    const remotosList = Array.isArray(remotos) ? remotos : []
-    const locaisList = Array.isArray(locais) ? locais : []
-    const deletedIds = ls.get(`PROGUNS_DELETED_${tabela.toUpperCase()}`, [])
-    const demoIdsToIgnore = [
-      'c1', 'c2', 'c3', 'c4',
-      'a1', 'a2', 'a3', 'a4', 'a5',
-      'o1', 'o2', 'o3', 'o4',
-      'p1', 'p2', 'p3', 'p4',
-      'orc1', 'orc_1', 'orc_2',
-      'fin_1', 'fin_2', 'fin_3', 'f1',
-      'log_1001', 'log_1002',
-      'alt_1002', 'cx_20260720'
-    ]
+    // Se Supabase retornou os dados da nuvem com sucesso:
+    if (remotos !== null && Array.isArray(remotos)) {
+      const demoIdsToIgnore = [
+        'c1', 'c2', 'c3', 'c4',
+        'a1', 'a2', 'a3', 'a4', 'a5',
+        'o1', 'o2', 'o3', 'o4',
+        'p1', 'p2', 'p3', 'p4',
+        'orc1', 'orc_1', 'orc_2',
+        'fin_1', 'fin_2', 'fin_3', 'f1',
+        'log_1001', 'log_1002',
+        'alt_1002', 'cx_20260720'
+      ]
+      const remotosLimpos = remotos.filter(r => r?.id && !demoIdsToIgnore.includes(String(r.id)))
 
-    const mapa = new Map()
-
-    // 1º Insere cache local do navegador
-    locaisList.forEach(item => {
-      if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
-        mapa.set(String(item.id), item)
+      // Ordenação padrão para manter consistência em todos os dispositivos
+      if (tabela === 'usuarios' || tabela === 'clientes') {
+        remotosLimpos.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
+      } else if (tabela === 'ordens') {
+        remotosLimpos.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
       }
-    })
-
-    // 2º Se Supabase retornou dados (remotos !== null), os dados remotos atualizados SOBRESCREVEM o cache local antigo
-    // EXCEÇÃO CRÍTICA para O.S.: se o local tem status mais avançado no fluxo, ele vence
-    if (remotos !== null) {
-      remotosList.forEach(item => {
-        if (item?.id && !deletedIds.includes(String(item.id)) && !demoIdsToIgnore.includes(String(item.id))) {
-          // Busca no mapa local por ID ou por numero_os
-          let localObj = mapa.get(String(item.id))
-          let localKey = String(item.id)
-          if (!localObj && item.numero_os && tabela === 'ordens') {
-            for (const [k, v] of mapa.entries()) {
-              if (Number(v.numero_os) === Number(item.numero_os)) {
-                localObj = v
-                localKey = k
-                break
-              }
-            }
-          }
-          if (!localObj) localObj = {}
-
-          if (localKey !== String(item.id) && localKey !== 'undefined') {
-            mapa.delete(localKey)
-          }
-
-          if (tabela === 'ordens' && localObj.status && item.status) {
-            const prioLocal  = STATUS_ORDEM_PRIORIDADE.indexOf(localObj.status)
-            const prioRemoto = STATUS_ORDEM_PRIORIDADE.indexOf(item.status)
-
-            if (prioLocal > prioRemoto) {
-              // Local está mais avançado no fluxo de trabalho
-              const merged = { ...item, ...localObj }
-              mapa.set(String(item.id), merged)
-              if (isSupabaseConfigured()) dbUpsert('ordens', merged)
-              return
-            }
-
-            if (prioRemoto > prioLocal) {
-              // Remoto está mais avançado: remoto substitui o local
-              const merged = { ...localObj, ...item }
-              mapa.set(String(item.id), merged)
-              return
-            }
-
-            if (prioLocal === prioRemoto && localObj.updated_at && item.updated_at) {
-              if (localObj.updated_at > item.updated_at) {
-                const merged = { ...item, ...localObj }
-                mapa.set(String(item.id), merged)
-                if (isSupabaseConfigured()) dbUpsert('ordens', merged)
-                return
-              }
-            }
-          }
-
-          mapa.set(String(item.id), { ...localObj, ...item })
-        }
-      })
+      return remotosLimpos
     }
 
-    const mesclado = Array.from(mapa.values())
-
-    if (tabela === 'usuarios' || tabela === 'clientes') {
-      mesclado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
-    } else if (tabela === 'ordens') {
-      mesclado.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
-    }
-
-    const faltantesNoSupabase = mesclado.filter(m => !remotosList.some(r => String(r.id) === String(m.id)))
-    if (faltantesNoSupabase.length > 0 && isSupabaseConfigured()) {
-      dbUpsertAll(tabela, faltantesNoSupabase)
-    }
-
-    return mesclado
+    // Se estiver offline ou sem retorno da nuvem, usa o cache local
+    return Array.isArray(locais) ? locais : []
   }
 
   // ─── CARREGAR DADOS DO SUPABASE ──────────────────────────────────────────────
@@ -585,6 +516,26 @@ export default function App() {
       const localAlertas    = ls.get('PROGUNS_ALERTAS', INITIAL_ALERTAS)
       const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
       const localVendas     = ls.get('PROGUNS_VENDAS', [])
+      const localConfig     = ls.get('PROGUNS_CONFIG', INITIAL_CONFIG)
+
+      // Carga Inicial Automática: Se as tabelas do Supabase foram recém-criadas e estão vazias,
+      // envia os dados atuais deste PC Master para inicializar a nuvem
+      if (Array.isArray(dbUsuarios) && dbUsuarios.length === 0 && localUsuarios.length > 0) {
+        console.log('[Supabase] Nuvem vazia detectada. Inicializando dados na nuvem a partir deste PC...')
+        await Promise.all([
+          dbUpsertAll('usuarios', localUsuarios),
+          localClientes?.length ? dbUpsertAll('clientes', localClientes) : Promise.resolve(),
+          localArmas?.length ? dbUpsertAll('armas', localArmas) : Promise.resolve(),
+          localOrdens?.length ? dbUpsertAll('ordens', localOrdens) : Promise.resolve(),
+          localOrcamentos?.length ? dbUpsertAll('orcamentos', localOrcamentos) : Promise.resolve(),
+          localFinanceiro?.length ? dbUpsertAll('financeiro', localFinanceiro) : Promise.resolve(),
+          localEstoque?.length ? dbUpsertAll('estoque', localEstoque) : Promise.resolve(),
+          localCaixas?.length ? dbUpsertAll('caixas', localCaixas) : Promise.resolve(),
+          localAlertas?.length ? dbUpsertAll('alertas', localAlertas) : Promise.resolve(),
+          localConfig ? dbUpsert('config', { id: 'main_config', ...localConfig }) : Promise.resolve(),
+        ])
+        return carregarDoSupabase(silencioso)
+      }
 
       const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
       const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')

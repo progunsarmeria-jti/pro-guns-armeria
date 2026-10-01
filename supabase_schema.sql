@@ -192,6 +192,29 @@ CREATE TABLE IF NOT EXISTS public.proguns_alertas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 11. Tabela de Logs de Auditoria do Sistema
+CREATE TABLE IF NOT EXISTS public.proguns_logs (
+    id TEXT PRIMARY KEY,
+    usuario JSONB DEFAULT '{}'::jsonb,
+    acao TEXT NOT NULL,
+    descricao TEXT,
+    os_id TEXT,
+    os_numero INT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 12. Tabela de Vendas Rápidas (PDV)
+CREATE TABLE IF NOT EXISTS public.proguns_vendas (
+    id TEXT PRIMARY KEY,
+    numero_venda INT,
+    cliente_nome TEXT,
+    itens JSONB DEFAULT '[]'::jsonb,
+    valor_total DECIMAL(10,2) DEFAULT 0.00,
+    forma_pagamento TEXT,
+    status TEXT DEFAULT 'Concluído',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- ==========================================================
 -- DESATIVAR RLS PARA ACESSO DIRETO VIA CHAVE ANÔNIMA
 -- ==========================================================
@@ -205,6 +228,8 @@ ALTER TABLE public.proguns_usuarios DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_estoque DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_caixas DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proguns_alertas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proguns_vendas DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================================
 -- HABILITAR SUPABASE REALTIME (NOTIFICAÇÕES VIA WEBSOCKET)
@@ -241,6 +266,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_alertas') THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_alertas;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_logs') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_logs;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'proguns_vendas') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_vendas;
+    END IF;
 END $$;
 
 -- Configurar Replica Identity para payload completo em atualizações
@@ -254,5 +285,8 @@ ALTER TABLE public.proguns_usuarios REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_estoque REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_caixas REPLICA IDENTITY FULL;
 ALTER TABLE public.proguns_alertas REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_logs REPLICA IDENTITY FULL;
+ALTER TABLE public.proguns_vendas REPLICA IDENTITY FULL;
+
 
 

@@ -28,10 +28,12 @@ const TABLE_MAP = {
   financeiro: 'proguns_financeiro',
   usuarios: 'proguns_usuarios',
   empresa_config: 'proguns_config',
+  config: 'proguns_config',
   logs: 'proguns_logs',
   estoque: 'proguns_estoque',
   caixas: 'proguns_caixas',
-  alertas: 'proguns_alertas'
+  alertas: 'proguns_alertas',
+  vendas: 'proguns_vendas'
 }
 
 export const getTableName = (tabela) => TABLE_MAP[tabela] || tabela

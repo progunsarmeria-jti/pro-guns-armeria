@@ -340,7 +340,9 @@ export default function ModalImportarNFe({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Margem sugerida p/ novos itens:</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--gold-primary)', fontWeight: '600' }}>
+                    Margem de Lucro a Aplicar (% sobre o custo):
+                  </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <input
                       type="number"

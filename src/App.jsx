@@ -865,6 +865,7 @@ export default function App() {
                 config={config}
                 notasFiscais={notasFiscais}
                 setNotasFiscais={setNotasFiscais}
+                clientes={clientes}
               />
             )}
 

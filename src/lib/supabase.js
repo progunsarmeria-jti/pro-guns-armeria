@@ -33,7 +33,8 @@ const TABLE_MAP = {
   estoque: 'proguns_estoque',
   caixas: 'proguns_caixas',
   alertas: 'proguns_alertas',
-  vendas: 'proguns_vendas'
+  vendas: 'proguns_vendas',
+  notas_fiscais: 'proguns_notas_fiscais'
 }
 
 export const getTableName = (tabela) => TABLE_MAP[tabela] || tabela
@@ -166,9 +167,31 @@ export async function dbUpsert(tabela, registro) {
         registroSeguro[k] = v
       }
     }
-    const { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
+    let { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
     if (error) {
-      console.error(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message)
+      console.warn(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message)
+
+      // Se o erro for de coluna ainda não existente no Supabase (ex: novas colunas fiscais)
+      // Remove a coluna rejeitada e tenta novamente para não perder a gravação
+      if (error.message && error.message.includes('Could not find the') && error.message.includes('column')) {
+        let registroLimpo = { ...registroSeguro }
+        let retryError = error
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const colMatch = retryError?.message?.match(/Could not find the '([^']+)' column/)
+          if (colMatch && colMatch[1]) {
+            delete registroLimpo[colMatch[1]]
+            const res = await client.from(realTable).upsert(registroLimpo, { onConflict: 'id' })
+            retryError = res.error
+            if (!retryError) {
+              console.log(`[Supabase] Registro em ${realTable} salvo com sucesso após contornar coluna pendente '${colMatch[1]}'.`)
+              return true
+            }
+          } else {
+            break
+          }
+        }
+      }
+
       const { error: err1 } = await client.from(realTable).upsert(registroSeguro)
       if (!err1) return true
       return false

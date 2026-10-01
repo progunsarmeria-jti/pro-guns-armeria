@@ -269,7 +269,8 @@ export default function App() {
   const [caixas,     setCaixas]     = useState(() => getInitial('PROGUNS_CAIXAS',     INITIAL_CAIXAS))
   const [alertas,    setAlertas]    = useState(() => getInitial('PROGUNS_ALERTAS',    INITIAL_ALERTAS))
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
-  const [vendas,     setVendas]     = useState(() => getInitial('PROGUNS_VENDAS',     []))
+  const [vendas,       setVendas]       = useState(() => getInitial('PROGUNS_VENDAS',     []))
+  const [notasFiscais, setNotasFiscais] = useState(() => getInitial('PROGUNS_NOTAS_FISCAIS', []))
   const [config,     setConfig]     = useState(() => sanitizeConfig(ls.get('PROGUNS_CONFIG', INITIAL_CONFIG)))
 
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
@@ -335,6 +336,7 @@ export default function App() {
   useEffect(() => { ls.set('PROGUNS_CAIXAS', caixas) }, [caixas])
   useEffect(() => { ls.set('PROGUNS_ALERTAS', alertas) }, [alertas])
   useEffect(() => { ls.set('PROGUNS_VENDAS', vendas) }, [vendas])
+  useEffect(() => { ls.set('PROGUNS_NOTAS_FISCAIS', notasFiscais) }, [notasFiscais])
 
   // ─── MECANISMO INTELIGENTE DE INTEGRIDADE DA BASE DE DADOS (PURGA DE ÓRFÃOS & CORREÇÃO DE STATUS) ─────
   useEffect(() => {
@@ -523,7 +525,7 @@ export default function App() {
     if (!isSupabaseConfigured()) return
     if (!silencioso) setSyncStatus('loading')
     try {
-      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs, dbVendas, dbConfig] = await Promise.all([
+      const [dbClientes, dbOrdens, dbOrcamentos, dbFinanceiro, dbUsuarios, dbArmas, dbEstoque, dbCaixas, dbAlertas, dbLogs, dbVendas, dbNotasFiscais, dbConfig] = await Promise.all([
         dbLoad('clientes'),
         dbLoad('ordens'),
         dbLoad('orcamentos'),
@@ -535,21 +537,23 @@ export default function App() {
         dbLoad('alertas'),
         dbLoad('logs'),
         dbLoad('vendas'),
+        dbLoad('notas_fiscais'),
         dbLoad('config')
       ])
 
-      const localClientes   = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
-      const localOrdens     = ls.get('PROGUNS_ORDENS', INITIAL_ORDENS)
-      const localOrcamentos = ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS)
-      const localFinanceiro = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
-      const localUsuarios   = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
-      const localArmas      = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
-      const localEstoque    = ls.get('PROGUNS_ESTOQUE', INITIAL_ESTOQUE)
-      const localCaixas     = ls.get('PROGUNS_CAIXAS', INITIAL_CAIXAS)
-      const localAlertas    = ls.get('PROGUNS_ALERTAS', INITIAL_ALERTAS)
-      const localLogs       = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
-      const localVendas     = ls.get('PROGUNS_VENDAS', [])
-      const localConfig     = ls.get('PROGUNS_CONFIG', INITIAL_CONFIG)
+      const localClientes     = ls.get('PROGUNS_CLIENTES', INITIAL_CLIENTES)
+      const localOrdens       = ls.get('PROGUNS_ORDENS', INITIAL_ORDENS)
+      const localOrcamentos   = ls.get('PROGUNS_ORCAMENTOS', INITIAL_ORCAMENTOS)
+      const localFinanceiro   = ls.get('PROGUNS_FINANCEIRO', INITIAL_FINANCEIRO)
+      const localUsuarios     = ls.get('PROGUNS_USUARIOS', INITIAL_USUARIOS)
+      const localArmas        = ls.get('PROGUNS_ARMAS', INITIAL_ARMAS)
+      const localEstoque      = ls.get('PROGUNS_ESTOQUE', INITIAL_ESTOQUE)
+      const localCaixas       = ls.get('PROGUNS_CAIXAS', INITIAL_CAIXAS)
+      const localAlertas      = ls.get('PROGUNS_ALERTAS', INITIAL_ALERTAS)
+      const localLogs         = ls.get('PROGUNS_LOGS', INITIAL_LOGS)
+      const localVendas       = ls.get('PROGUNS_VENDAS', [])
+      const localNotasFiscais = ls.get('PROGUNS_NOTAS_FISCAIS', [])
+      const localConfig       = ls.get('PROGUNS_CONFIG', INITIAL_CONFIG)
 
       // Carga Inicial Automática: Se as tabelas do Supabase foram recém-criadas e estão vazias,
       // envia os dados atuais deste PC Master para inicializar a nuvem
@@ -570,17 +574,18 @@ export default function App() {
         return carregarDoSupabase(silencioso)
       }
 
-      const finalClientes   = mesclarDados(dbClientes, localClientes, 'clientes')
-      const finalOrdens     = mesclarDados(dbOrdens, localOrdens, 'ordens')
-      const finalOrcamentos = mesclarDados(dbOrcamentos, localOrcamentos, 'orcamentos')
-      const finalFinanceiro = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
-      const finalUsuarios   = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
-      const finalArmas      = mesclarDados(dbArmas, localArmas, 'armas')
-      const finalEstoque    = mesclarDados(dbEstoque, localEstoque, 'estoque')
-      const finalCaixas     = mesclarDados(dbCaixas, localCaixas, 'caixas')
-      const finalAlertas    = mesclarDados(dbAlertas, localAlertas, 'alertas')
-      const finalLogs       = mesclarDados(dbLogs, localLogs, 'logs')
-      const finalVendas     = mesclarDados(dbVendas, localVendas, 'vendas')
+      const finalClientes     = mesclarDados(dbClientes, localClientes, 'clientes')
+      const finalOrdens       = mesclarDados(dbOrdens, localOrdens, 'ordens')
+      const finalOrcamentos   = mesclarDados(dbOrcamentos, localOrcamentos, 'orcamentos')
+      const finalFinanceiro   = mesclarDados(dbFinanceiro, localFinanceiro, 'financeiro')
+      const finalUsuarios     = mesclarDados(dbUsuarios, localUsuarios, 'usuarios')
+      const finalArmas        = mesclarDados(dbArmas, localArmas, 'armas')
+      const finalEstoque      = mesclarDados(dbEstoque, localEstoque, 'estoque')
+      const finalCaixas       = mesclarDados(dbCaixas, localCaixas, 'caixas')
+      const finalAlertas      = mesclarDados(dbAlertas, localAlertas, 'alertas')
+      const finalLogs         = mesclarDados(dbLogs, localLogs, 'logs')
+      const finalVendas       = mesclarDados(dbVendas, localVendas, 'vendas')
+      const finalNotasFiscais = mesclarDados(dbNotasFiscais, localNotasFiscais, 'notas_fiscais')
 
       setClientes(prev => JSON.stringify(prev) === JSON.stringify(finalClientes) ? prev : finalClientes)
       setOrdens(prev => JSON.stringify(prev) === JSON.stringify(finalOrdens) ? prev : finalOrdens)
@@ -593,6 +598,7 @@ export default function App() {
       setAlertas(prev => JSON.stringify(prev) === JSON.stringify(finalAlertas) ? prev : finalAlertas)
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
       setVendas(prev => JSON.stringify(prev) === JSON.stringify(finalVendas) ? prev : finalVendas)
+      setNotasFiscais(prev => JSON.stringify(prev) === JSON.stringify(finalNotasFiscais) ? prev : finalNotasFiscais)
 
       if (Array.isArray(dbConfig)) {
         const remoteCfg = dbConfig.find(c => c.id === 'main_config') || dbConfig[0]
@@ -857,6 +863,8 @@ export default function App() {
                 estoque={estoque} setEstoque={setEstoque}
                 usuarioLogado={usuarioLogado}
                 config={config}
+                notasFiscais={notasFiscais}
+                setNotasFiscais={setNotasFiscais}
               />
             )}
 

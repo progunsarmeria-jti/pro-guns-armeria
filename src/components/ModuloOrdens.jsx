@@ -1595,12 +1595,16 @@ export default function ModuloOrdens({
                     <h1 style={{ fontSize: '1.25rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
                     </h1>
-                    <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
-                      {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.1rem 0' }}>
-                      CNPJ: {config?.cnpj || '12.345.678/0001-99'} | CR: {config?.cr_armeria || 'CR-998877/2ª RM'}
-                    </div>
+                    {config?.razao_social && (
+                      <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
+                        {config.razao_social}
+                      </div>
+                    )}
+                    {(config?.cnpj || config?.cr_armeria) && (
+                      <div style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                        {[config?.cnpj ? `CNPJ: ${config.cnpj}` : null, config?.cr_armeria ? `CR: ${config.cr_armeria}` : null].filter(Boolean).join(' | ')}
+                      </div>
+                    )}
                     <div style={{ textAlign: 'left', fontSize: '0.75rem', color: '#374151', marginTop: '0.5rem', fontWeight: '600' }}>
                       Data e Hora de Abertura: {formatarDataHora(activeDoc.created_at || activeDoc.data_abertura)}
                     </div>
@@ -2087,32 +2091,40 @@ export default function ModuloOrdens({
                     {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
                   </h1>
 
-                  {/* 3º Subtítulo: Razão Social (Fonte tamanho menor, Centralizado abaixo do Nome Fantasia) */}
-                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
-                    {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
-                  </div>
+                  {/* 3º Subtítulo: Razão Social */}
+                  {config?.razao_social && (
+                    <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', margin: '0.1rem 0', textTransform: 'uppercase' }}>
+                      {config.razao_social}
+                    </div>
+                  )}
 
-                  {/* 4º: CNPJ (Centralizado abaixo da Razão Social) */}
-                  <div style={{ fontSize: '0.8rem', color: '#4B5563', margin: '0.1rem 0' }}>
-                    CNPJ: {config?.cnpj || '12.345.678/0001-99'}
-                  </div>
+                  {/* 4º: CNPJ */}
+                  {config?.cnpj && (
+                    <div style={{ fontSize: '0.8rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                      CNPJ: {config.cnpj}
+                    </div>
+                  )}
 
                   {/* 5º: N° do CR e Região Militar */}
-                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937', margin: '0.1rem 0' }}>
-                    CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
-                  </div>
+                  {(config?.cr_armeria || config?.rm_armeria) && (
+                    <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937', margin: '0.1rem 0' }}>
+                      {[config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.rm_armeria ? config.rm_armeria : null].filter(Boolean).join(' — ')}
+                    </div>
+                  )}
 
                   {/* 5º.1: Endereço Institucional da Armeria */}
                   {(config?.endereco || config?.cidade) && (
                     <div style={{ fontSize: '0.78rem', color: '#374151', margin: '0.1rem 0' }}>
-                      📍 {config?.endereco || 'Av. das Armas, 1000 - Centro'}{config?.cidade ? ` — ${config.cidade}/${config.uf || ''}` : ''}
+                      📍 {config?.endereco || ''}{config?.cidade ? ` — ${config.cidade}/${config.uf || ''}` : ''}
                     </div>
                   )}
 
                   {/* 5º.2: Contatos Institucionais (Telefone, WhatsApp, Email) */}
-                  <div style={{ fontSize: '0.78rem', color: '#4B5563', margin: '0.1rem 0' }}>
-                    📞 Tel: {config?.telefone || '(11) 3344-5566'} | 📱 WhatsApp: {config?.whatsapp || '(11) 98888-7777'}{config?.email ? ` | ✉️ ${config.email}` : ''}
-                  </div>
+                  {(config?.telefone || config?.whatsapp || config?.email) && (
+                    <div style={{ fontSize: '0.78rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                      {[config?.telefone ? `📞 Tel: ${config.telefone}` : null, config?.whatsapp ? `📱 WhatsApp: ${config.whatsapp}` : null, config?.email ? `✉️ ${config.email}` : null].filter(Boolean).join(' | ')}
+                    </div>
+                  )}
 
                   {/* 6º: Data e Hora de Abertura (Lado Esquerdo) */}
                   <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>

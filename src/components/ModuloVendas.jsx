@@ -691,15 +691,21 @@ export default function ModuloVendas({
                 <h1 style={{ fontSize: '1.35rem', fontWeight: '800', fontFamily: 'Cinzel, serif', color: '#000000', margin: '0.2rem 0 0.1rem 0', textTransform: 'uppercase' }}>
                   {config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}
                 </h1>
-                <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', textTransform: 'uppercase' }}>
-                  {config?.razao_social || 'SANTOS E OLIVIERA JUNIOR LTDA'}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>
-                  CNPJ: {config?.cnpj || '12.345.678/0001-99'}
-                </div>
-                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937' }}>
-                  CR: {config?.cr_armeria || 'CR-998877/2ª RM'} — {config?.rm_armeria || '2ª Região Militar'}
-                </div>
+                {config?.razao_social && (
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151', textTransform: 'uppercase' }}>
+                    {config.razao_social}
+                  </div>
+                )}
+                {config?.cnpj && (
+                  <div style={{ fontSize: '0.8rem', color: '#4B5563' }}>
+                    CNPJ: {config.cnpj}
+                  </div>
+                )}
+                {(config?.cr_armeria || config?.rm_armeria) && (
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#1F2937' }}>
+                    {[config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.rm_armeria ? config.rm_armeria : null].filter(Boolean).join(' — ')}
+                  </div>
+                )}
                 <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
                   Data: {formatarData(reciboModalVenda.data)} às {reciboModalVenda.hora || ''}
                 </div>

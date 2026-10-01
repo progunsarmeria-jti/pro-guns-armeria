@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Settings, Building, Database, Save, CheckCircle2, Key, Wrench, Plus, Trash2, Edit, Tag, X, ListOrdered, ArrowUp, ArrowDown, RotateCcw, Bell, Volume2, LayoutGrid, Home } from 'lucide-react'
 import CustomSelect from './CustomSelect'
-import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys } from '../lib/supabase'
+import { isSupabaseConfigured, saveSupabaseKeys, clearSupabaseKeys, dbUpsert } from '../lib/supabase'
 import { maskCNPJ, maskTelefone } from '../lib/masks'
 import { INITIAL_CONFIG } from '../lib/initialData'
 
@@ -93,7 +93,7 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
 
   useEffect(() => {
     if (config) {
-      setFormData(prev => ({ ...INITIAL_CONFIG, ...config, ...prev }))
+      setFormData(prev => ({ ...INITIAL_CONFIG, ...prev, ...config }))
     }
   }, [config])
 

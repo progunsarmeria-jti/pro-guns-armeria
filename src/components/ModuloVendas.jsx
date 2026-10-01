@@ -706,6 +706,16 @@ export default function ModuloVendas({
                     {[config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.rm_armeria ? config.rm_armeria : null].filter(Boolean).join(' — ')}
                   </div>
                 )}
+                {(config?.endereco || config?.cidade) && (
+                  <div style={{ fontSize: '0.78rem', color: '#374151', margin: '0.1rem 0' }}>
+                    📍 {config?.endereco || ''}{config?.cidade ? ` — ${config.cidade}/${config.uf || ''}` : ''}
+                  </div>
+                )}
+                {(config?.telefone || config?.whatsapp || config?.email) && (
+                  <div style={{ fontSize: '0.78rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                    {[config?.telefone ? `📞 Tel: ${config.telefone}` : null, config?.whatsapp ? `📱 WhatsApp: ${config.whatsapp}` : null, config?.email ? `✉️ ${config.email}` : null].filter(Boolean).join(' | ')}
+                  </div>
+                )}
                 <div style={{ textAlign: 'left', fontSize: '0.8rem', color: '#374151', marginTop: '0.75rem', fontWeight: '600' }}>
                   Data: {formatarData(reciboModalVenda.data)} às {reciboModalVenda.hora || ''}
                 </div>

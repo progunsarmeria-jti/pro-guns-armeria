@@ -219,7 +219,7 @@ export default function Sidebar({
               {config?.nome_fantasia || 'Pró Guns Armeria'}
             </div>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-              {config?.cr_armeria || 'CR-998877/2ª RM'}
+              {config?.cr_armeria || ''}
             </div>
           </div>
         </div>

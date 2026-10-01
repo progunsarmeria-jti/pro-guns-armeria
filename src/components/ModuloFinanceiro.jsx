@@ -565,7 +565,11 @@ export default function ModuloFinanceiro({ financeiro = [], setFinanceiro, usuar
           <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '1rem', marginBottom: '1.2rem' }}>
             <div>
               <h2 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0 }}>{config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}</h2>
-              <div style={{ fontSize: '0.82rem', color: '#444' }}>{config?.cr_armeria || 'CR-998877/2ª RM'} | CNPJ: {config?.cnpj || '12.345.678/0001-99'}</div>
+              {(config?.cr_armeria || config?.cnpj) && (
+                <div style={{ fontSize: '0.82rem', color: '#444' }}>
+                  {[config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.cnpj ? `CNPJ: ${config.cnpj}` : null].filter(Boolean).join(' | ')}
+                </div>
+              )}
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: '800' }}>DEMONSTRATIVO FINANCEIRO DRE</div>

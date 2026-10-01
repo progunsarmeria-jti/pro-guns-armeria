@@ -1159,7 +1159,7 @@ export default function ModuloClientes({
                 <div style={{ marginTop: '2.5rem', textAlign: 'center', fontSize: '0.8rem' }}>
                   <div style={{ borderTop: '1px solid #000', width: '220px', margin: '0 auto', paddingTop: '0.3rem' }}>
                     {config?.nome_fantasia || 'Pró Guns Armeria'}
-                    <br /> {config?.cr_armeria || 'CR-998877/2ª RM'}
+                    {config?.cr_armeria && <><br /> CR: {config.cr_armeria}</>}
                   </div>
                 </div>
               </div>

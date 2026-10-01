@@ -355,9 +355,11 @@ export default function ModuloOrcamentos({ orcamentos, setOrcamentos, clientes, 
                   <h2 style={{ fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Cinzel, serif' }}>
                     {(config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA').toUpperCase()}
                   </h2>
-                  <div style={{ fontSize: '0.8rem', color: '#444' }}>
-                    {config?.cr_armeria || 'CR-998877/2ª RM'} — CNPJ: {config?.cnpj || '12.345.678/0001-99'}
-                  </div>
+                  {(config?.cr_armeria || config?.cnpj) && (
+                    <div style={{ fontSize: '0.8rem', color: '#444' }}>
+                      {[config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.cnpj ? `CNPJ: ${config.cnpj}` : null].filter(Boolean).join(' — ')}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.8rem', fontWeight: '700', marginTop: '0.3rem' }}>ORÇAMENTO E PROPOSTA COMERCIAL #{modalVerOrcamento.numero_orcamento}</div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>

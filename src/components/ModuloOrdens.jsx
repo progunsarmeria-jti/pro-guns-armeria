@@ -1602,7 +1602,17 @@ export default function ModuloOrdens({
                     )}
                     {(config?.cnpj || config?.cr_armeria) && (
                       <div style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.1rem 0' }}>
-                        {[config?.cnpj ? `CNPJ: ${config.cnpj}` : null, config?.cr_armeria ? `CR: ${config.cr_armeria}` : null].filter(Boolean).join(' | ')}
+                        {[config?.cnpj ? `CNPJ: ${config.cnpj}` : null, config?.cr_armeria ? `CR: ${config.cr_armeria}` : null, config?.rm_armeria ? config.rm_armeria : null].filter(Boolean).join(' | ')}
+                      </div>
+                    )}
+                    {(config?.endereco || config?.cidade) && (
+                      <div style={{ fontSize: '0.75rem', color: '#374151', margin: '0.1rem 0' }}>
+                        📍 {config?.endereco || ''}{config?.cidade ? ` — ${config.cidade}/${config.uf || ''}` : ''}
+                      </div>
+                    )}
+                    {(config?.telefone || config?.whatsapp || config?.email) && (
+                      <div style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.1rem 0' }}>
+                        {[config?.telefone ? `📞 Tel: ${config.telefone}` : null, config?.whatsapp ? `📱 WhatsApp: ${config.whatsapp}` : null, config?.email ? `✉️ ${config.email}` : null].filter(Boolean).join(' | ')}
                       </div>
                     )}
                     <div style={{ textAlign: 'left', fontSize: '0.75rem', color: '#374151', marginTop: '0.5rem', fontWeight: '600' }}>

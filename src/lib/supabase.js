@@ -6,17 +6,17 @@ const DEFAULT_SUPABASE_KEY = 'sb_publishable_8saf-ghPOB_703jfDbdT3A_DVvRjYLr'
 
 // Lê credenciais salvas pelo usuário em Configurações, ou na URL (para sincronia mobile), ou .env, ou credenciais padrão
 export const getUrl = () => {
-  const params = new URLSearchParams(window.location.search)
-  const urlParam = params.get('sb_url')
+  const urlParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sb_url') : null
   if (urlParam) return decodeURIComponent(urlParam)
-  return localStorage.getItem('PROGUNS_SUPABASE_URL') || import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL
+  const lsVal = typeof localStorage !== 'undefined' ? localStorage.getItem('PROGUNS_SUPABASE_URL') : null
+  return lsVal || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || DEFAULT_SUPABASE_URL
 }
 
 export const getKey = () => {
-  const params = new URLSearchParams(window.location.search)
-  const keyParam = params.get('sb_key')
+  const keyParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sb_key') : null
   if (keyParam) return decodeURIComponent(keyParam)
-  return localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY
+  const lsVal = typeof localStorage !== 'undefined' ? localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') : null
+  return lsVal || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || DEFAULT_SUPABASE_KEY
 }
 
 // Mapeamento de nomes de tabelas isoladas para o Pró Guns Armeria (evita colisão com outros projetos no mesmo Supabase)
@@ -131,6 +131,12 @@ export async function dbLoad(tabela) {
   }
 }
 
+const PROGUNS_CONFIG_ALLOWED_COLUMNS = new Set([
+  'id', 'nome_fantasia', 'razao_social', 'cnpj', 'cr_armeria',
+  'validade_cr', 'rm_armeria', 'telefone', 'whatsapp', 'email',
+  'endereco', 'cidade', 'uf', 'logo_url', 'created_at'
+])
+
 export async function dbUpsert(tabela, registro) {
   if (!registro) return false
   
@@ -154,6 +160,9 @@ export async function dbUpsert(tabela, registro) {
     const registroSeguro = {}
     for (const [k, v] of Object.entries(registro)) {
       if (v !== null && v !== undefined) {
+        if (realTable === 'proguns_config' && !PROGUNS_CONFIG_ALLOWED_COLUMNS.has(k)) {
+          continue
+        }
         registroSeguro[k] = v
       }
     }
@@ -335,7 +344,18 @@ export async function dbUpsertAll(tabela, registros) {
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
-    const validos = registros.filter(r => r && r.id)
+    const validos = registros.filter(r => r && r.id).map(r => {
+      if (realTable === 'proguns_config') {
+        const filtered = {}
+        for (const [k, v] of Object.entries(r)) {
+          if (PROGUNS_CONFIG_ALLOWED_COLUMNS.has(k) && v !== null && v !== undefined) {
+            filtered[k] = v
+          }
+        }
+        return filtered
+      }
+      return r
+    })
     if (validos.length === 0) return false
     const { error } = await client.from(realTable).upsert(validos, { onConflict: 'id' })
     if (error) {

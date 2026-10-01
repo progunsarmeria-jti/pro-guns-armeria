@@ -185,7 +185,35 @@ export default function App() {
   }
 
   // ─── Migração Automática: Purga Completa de Dados de Demonstração ────────────────
-  const APP_DATA_VERSION = '3.0.0'
+  const LEGACY_DEMO_STRINGS = [
+    'SANTOS E OLIVIERA JUNIOR LTDA',
+    '12.345.678/0001-99',
+    'CR-998877/2ª RM',
+    '2ª Região Militar',
+    'Av. das Armas, 1000 - Centro',
+    '(11) 3344-5566',
+    '(11) 98888-7777',
+    '00.000.000/0001-00',
+    'CR-123456',
+    '(11) 3000-0000',
+    '(11) 90000-0000',
+    'Rua Principal, 100'
+  ]
+
+  const sanitizeConfig = (cfg) => {
+    if (!cfg || typeof cfg !== 'object') return { ...INITIAL_CONFIG }
+    const copy = { ...INITIAL_CONFIG, ...cfg }
+    if (LEGACY_DEMO_STRINGS.includes(copy.razao_social)) copy.razao_social = ''
+    if (LEGACY_DEMO_STRINGS.includes(copy.cnpj)) copy.cnpj = ''
+    if (LEGACY_DEMO_STRINGS.includes(copy.cr_armeria)) copy.cr_armeria = ''
+    if (LEGACY_DEMO_STRINGS.includes(copy.rm_armeria)) copy.rm_armeria = ''
+    if (LEGACY_DEMO_STRINGS.includes(copy.telefone)) copy.telefone = ''
+    if (LEGACY_DEMO_STRINGS.includes(copy.whatsapp)) copy.whatsapp = ''
+    if (copy.endereco && (copy.endereco.includes('Av. das Armas') || copy.endereco.includes('Rua Principal'))) copy.endereco = ''
+    return copy
+  }
+
+  const APP_DATA_VERSION = '3.1.0'
   if (ls.get('PROGUNS_DATA_VERSION', null) !== APP_DATA_VERSION) {
     const DEMO_IDS_ALL = ['c1', 'c2', 'c3', 'c4', 'a1', 'a2', 'a3', 'a4', 'a5', 'o1', 'o2', 'o3', 'o4', 'orc1', 'orc_1', 'orc_2', 'fin_1', 'fin_2', 'fin_3', 'f1', 'log_1001', 'log_1002', 'alt_1002', 'cx_20260720']
 
@@ -207,6 +235,11 @@ export default function App() {
     purgarDemo('PROGUNS_ORCAMENTOS')
     purgarDemo('PROGUNS_FINANCEIRO')
     purgarDemo('PROGUNS_LOGS')
+
+    const savedConfig = ls.get('PROGUNS_CONFIG', null)
+    if (savedConfig) {
+      ls.set('PROGUNS_CONFIG', sanitizeConfig(savedConfig))
+    }
 
     // Se Supabase estiver configurado, envia a deleção dos IDs demo
     if (isSupabaseConfigured()) {
@@ -237,7 +270,7 @@ export default function App() {
   const [alertas,    setAlertas]    = useState(() => getInitial('PROGUNS_ALERTAS',    INITIAL_ALERTAS))
   const [logs,       setLogs]       = useState(() => getInitial('PROGUNS_LOGS',       INITIAL_LOGS))
   const [vendas,     setVendas]     = useState(() => getInitial('PROGUNS_VENDAS',     []))
-  const [config,     setConfig]     = useState(() => ls.get('PROGUNS_CONFIG',     INITIAL_CONFIG))
+  const [config,     setConfig]     = useState(() => sanitizeConfig(ls.get('PROGUNS_CONFIG', INITIAL_CONFIG)))
 
   const [usuarioLogado, setUsuarioLogado] = useState(() => {
     localStorage.removeItem('PROGUNS_AUTH_USER')
@@ -561,18 +594,38 @@ export default function App() {
       setLogs(prev => JSON.stringify(prev) === JSON.stringify(finalLogs) ? prev : finalLogs)
       setVendas(prev => JSON.stringify(prev) === JSON.stringify(finalVendas) ? prev : finalVendas)
 
-      if (Array.isArray(dbConfig) && dbConfig.length > 0) {
+      if (Array.isArray(dbConfig)) {
         const remoteCfg = dbConfig.find(c => c.id === 'main_config') || dbConfig[0]
-        if (remoteCfg) {
+        const cleanLocal = sanitizeConfig(localConfig)
+        const hasRealLocal = Boolean(cleanLocal.razao_social || cleanLocal.cnpj || cleanLocal.cr_armeria)
+        const hasRealRemote = Boolean(remoteCfg?.razao_social || remoteCfg?.cnpj || remoteCfg?.cr_armeria)
+
+        if (remoteCfg && hasRealRemote) {
           const remoteCopy = { ...remoteCfg }
           delete remoteCopy.id
           setConfig(prev => {
-            const merged = { ...INITIAL_CONFIG, ...prev, ...remoteCopy }
+            const cleanPrev = sanitizeConfig(prev)
+            const cleanRemote = sanitizeConfig(remoteCopy)
+            const merged = { ...cleanPrev }
+            for (const [k, v] of Object.entries(cleanRemote)) {
+              if (v !== null && v !== undefined && v !== '') {
+                merged[k] = v
+              }
+            }
             if (Array.isArray(remoteCopy.ordem_menu) && remoteCopy.ordem_menu.length > 0) {
               merged.ordem_menu = remoteCopy.ordem_menu
             }
             ls.set('PROGUNS_CONFIG', merged)
             return merged
+          })
+        } else if (hasRealLocal && !hasRealRemote) {
+          console.log('[Supabase] Enviando configuracoes institucionais locais deste PC para o Supabase...')
+          dbUpsert('config', { id: 'main_config', ...cleanLocal })
+        } else {
+          setConfig(prev => {
+            const cleanPrev = sanitizeConfig(prev)
+            ls.set('PROGUNS_CONFIG', cleanPrev)
+            return cleanPrev
           })
         }
       }

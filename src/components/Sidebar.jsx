@@ -1,5 +1,5 @@
 import React from 'react'
-import { Home, Bell, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet, ShoppingCart } from 'lucide-react'
+import { Home, Bell, Users, FileText, Calculator, DollarSign, Settings, UserCheck, Shield, X, Package, Wallet, ShoppingCart, Download } from 'lucide-react'
 
 export default function Sidebar({
   activeTab,
@@ -203,9 +203,36 @@ export default function Sidebar({
         </nav>
       </div>
 
+      {/* Botão de Instalação do App */}
+      <div style={{ padding: '0.4rem 0.85rem' }}>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('proguns:prompt-install'))}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            padding: '0.55rem',
+            borderRadius: '8px',
+            backgroundColor: 'rgba(197, 160, 89, 0.12)',
+            border: '1px solid rgba(197, 160, 89, 0.35)',
+            color: 'var(--gold-primary)',
+            fontSize: '0.78rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          title="Instalar no Computador ou Celular"
+        >
+          <Download size={14} color="var(--gold-accent)" />
+          <span>Instalar Aplicativo</span>
+        </button>
+      </div>
+
       {/* Footer do Sidebar com a Logo Pequena e Dados da Armeria Dinâmicos */}
       <div style={{
-        marginTop: 'auto',
+        marginTop: '0.5rem',
         padding: '0.75rem 0.85rem',
         borderTop: '1px solid var(--border-color)',
         backgroundColor: 'rgba(0,0,0,0.25)'

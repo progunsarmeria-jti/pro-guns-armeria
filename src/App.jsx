@@ -14,6 +14,7 @@ import ModuloUsuarios from './components/ModuloUsuarios'
 import ModuloVendas from './components/ModuloVendas'
 import ModalLogin from './components/ModalLogin'
 import TelaUploadGTMobile from './components/TelaUploadGTMobile'
+import PromptInstalarApp from './components/PromptInstalarApp'
 import { AlertTriangle, RefreshCw, CheckCircle2, Loader } from 'lucide-react'
 
 import {
@@ -920,6 +921,8 @@ export default function App() {
           </ErrorBoundary>
         </main>
       </div>
+
+      <PromptInstalarApp />
 
       {modalLoginAberto && (
         <ModalLogin

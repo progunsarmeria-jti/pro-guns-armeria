@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Bell, Database, Shield, Wrench, Check, X, MessageCircle, UserCheck, LogOut, Key, Menu } from 'lucide-react'
+import { Bell, Database, Shield, Wrench, Check, X, MessageCircle, UserCheck, LogOut, Key, Menu, Download } from 'lucide-react'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 export default function Navbar({
@@ -249,6 +249,29 @@ export default function Navbar({
           <Database size={12} />
           <span>{isSupabaseConfigured() ? 'Supabase' : 'Local'}</span>
         </div>
+
+        {/* BOTÃO INSTALAR APLICATIVO (PWA) */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('proguns:prompt-install'))}
+          title="Instalar Pró Guns Armeria no Computador ou Celular"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            fontSize: '0.72rem',
+            fontWeight: '700',
+            padding: '0.3rem 0.65rem',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(197, 160, 89, 0.15)',
+            border: '1px solid var(--gold-primary)',
+            color: 'var(--gold-primary)',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Download size={13} color="var(--gold-accent)" />
+          <span className="desktop-only">Instalar App</span>
+        </button>
 
         {/* 3°: BOTÃO DE SAIR (LOGOFF) */}
         {usuarioLogado && (

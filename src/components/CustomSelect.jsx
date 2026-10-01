@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Search, ChevronDown, Plus, Check } from 'lucide-react'
 
 export default function CustomSelect({
@@ -15,19 +16,69 @@ export default function CustomSelect({
   const [searchTerm, setSearchTerm] = useState('')
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [customInputValue, setCustomInputValue] = useState('')
+  const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, width: 220, openUp: false })
+  
   const containerRef = useRef(null)
+  const buttonRef = useRef(null)
+  const dropdownRef = useRef(null)
 
-  // Fechar dropdown ao clicar fora
+  // Atualizar coordenadas absolutas para posicionamento flutuante (Portal)
+  const updateCoords = () => {
+    if (!buttonRef.current) return
+    const rect = buttonRef.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+    const menuEstimatedHeight = 280
+    const openUp = spaceBelow < menuEstimatedHeight && spaceAbove > spaceBelow
+
+    setCoords({
+      top: rect.bottom + 4,
+      bottom: window.innerHeight - rect.top + 4,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 220) - 12)),
+      width: Math.max(rect.width, 220),
+      openUp
+    })
+  }
+
+  // Monitorar clique fora e fechamento por Escape
   useEffect(() => {
+    if (!isOpen) return
+
+    updateCoords()
+
     function handleClickOutside(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      if (
+        containerRef.current && !containerRef.current.contains(event.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(event.target)
+      ) {
         setIsOpen(false)
         setShowCustomInput(false)
       }
     }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        setShowCustomInput(false)
+      }
+    }
+
+    const handleScrollOrResize = () => {
+      updateCoords()
+    }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('resize', handleScrollOrResize)
+    window.addEventListener('scroll', handleScrollOrResize, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('resize', handleScrollOrResize)
+      window.removeEventListener('scroll', handleScrollOrResize, true)
+    }
+  }, [isOpen])
 
   // Lista filtrada em tempo real
   const filteredOptions = options.filter(opt =>
@@ -53,6 +104,150 @@ export default function CustomSelect({
     setIsOpen(false)
   }
 
+  const handleToggleOpen = (e) => {
+    e.stopPropagation()
+    if (!isOpen) {
+      updateCoords()
+    }
+    setIsOpen(!isOpen)
+  }
+
+  // Conteúdo do Menu Popover renderizado diretamente no body (evita corte por overflow:hidden)
+  const menuPopover = isOpen && (
+    <div
+      ref={dropdownRef}
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: 'fixed',
+        top: coords.openUp ? 'auto' : `${coords.top}px`,
+        bottom: coords.openUp ? `${coords.bottom}px` : 'auto',
+        left: `${coords.left}px`,
+        width: `${coords.width}px`,
+        maxWidth: 'calc(100vw - 20px)',
+        backgroundColor: '#121418',
+        border: '1px solid var(--gold-accent)',
+        borderRadius: '8px',
+        boxShadow: '0 20px 45px rgba(0,0,0,0.95), 0 0 15px rgba(212, 175, 55, 0.25)',
+        zIndex: 999999,
+        overflow: 'hidden'
+      }}
+    >
+      {/* Input de Pesquisa Rápida */}
+      <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', backgroundColor: '#161920', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Search size={14} color="var(--text-muted)" />
+        <input
+          type="text"
+          autoFocus
+          placeholder="Pesquisar..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{
+            width: '100%',
+            background: 'transparent',
+            border: 'none',
+            color: '#FFF',
+            fontSize: '0.82rem',
+            outline: 'none',
+            textTransform: 'uppercase'
+          }}
+        />
+      </div>
+
+      {/* Lista de Opções */}
+      <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '0.25rem 0' }}>
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map(opt => {
+            const isSelected = value === opt
+            return (
+              <div
+                key={opt}
+                onClick={() => handleSelectOption(opt)}
+                style={{
+                  padding: '0.65rem 0.9rem',
+                  fontSize: '0.84rem',
+                  fontWeight: isSelected ? '700' : '400',
+                  color: isSelected ? 'var(--gold-accent)' : 'var(--text-main)',
+                  backgroundColor: isSelected ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  textTransform: 'uppercase',
+                  transition: 'background 0.1s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(139, 38, 42, 0.3)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = isSelected ? 'rgba(212, 175, 55, 0.12)' : 'transparent'}
+              >
+                <span>{opt}</span>
+                {isSelected && <Check size={14} color="var(--gold-accent)" />}
+              </div>
+            )
+          })
+        ) : (
+          <div style={{ padding: '0.75rem 0.9rem', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            Nenhum item encontrado
+          </div>
+        )}
+
+        {/* Opção + Cadastrar Novo */}
+        {allowCustom && !showCustomInput && (
+          <div
+            onClick={() => setShowCustomInput(true)}
+            style={{
+              padding: '0.65rem 0.9rem',
+              fontSize: '0.84rem',
+              fontWeight: '700',
+              color: '#FBBF24',
+              borderTop: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)'
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.18)'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.08)'}
+          >
+            <Plus size={14} />
+            <span>{customLabel}</span>
+          </div>
+        )}
+
+        {/* Campo de Cadastro Rápido de Novo Item */}
+        {showCustomInput && (
+          <div style={{ padding: '0.6rem', borderTop: '1px solid var(--border-color)', backgroundColor: '#1A1D24', display: 'flex', gap: '0.4rem' }}>
+            <input
+              type="text"
+              autoFocus
+              placeholder="Novo item..."
+              value={customInputValue}
+              onChange={e => setCustomInputValue(e.target.value)}
+              style={{
+                flex: 1,
+                backgroundColor: '#161920',
+                border: '1px solid var(--border-color)',
+                color: '#FFF',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '4px',
+                fontSize: '0.82rem',
+                outline: 'none',
+                textTransform: 'uppercase'
+              }}
+            />
+            <button
+              type="button"
+              className="btn-gold"
+              style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+              onClick={handleConfirmCustom}
+            >
+              Adicionar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
       {label && (
@@ -63,8 +258,9 @@ export default function CustomSelect({
 
       {/* Botão de Disparo do Dropdown */}
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleOpen}
         style={{
           width: '100%',
           backgroundColor: '#161920',
@@ -89,135 +285,8 @@ export default function CustomSelect({
         <ChevronDown size={16} color="var(--text-muted)" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
       </button>
 
-      {/* Popover / Overlay do Dropdown */}
-      {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          backgroundColor: '#121418',
-          border: '1px solid var(--gold-accent)',
-          borderRadius: '8px',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.85)',
-          zIndex: 99999,
-          overflow: 'hidden'
-        }}>
-          {/* Input de Pesquisa Rápida */}
-          <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', backgroundColor: '#161920', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Search size={14} color="var(--text-muted)" />
-            <input
-              type="text"
-              autoFocus
-              placeholder="Pesquisar..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                border: 'none',
-                color: '#FFF',
-                fontSize: '0.82rem',
-                outline: 'none',
-                textTransform: 'uppercase'
-              }}
-            />
-          </div>
-
-          {/* Lista de Opções */}
-          <div style={{ maxHeight: '200px', overflowY: 'auto', padding: '0.25rem 0' }}>
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map(opt => {
-                const isSelected = value === opt
-                return (
-                  <div
-                    key={opt}
-                    onClick={() => handleSelectOption(opt)}
-                    style={{
-                      padding: '0.6rem 0.9rem',
-                      fontSize: '0.84rem',
-                      fontWeight: isSelected ? '700' : '400',
-                      color: isSelected ? 'var(--gold-accent)' : 'var(--text-main)',
-                      backgroundColor: isSelected ? 'rgba(212, 175, 55, 0.12)' : 'transparent',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      textTransform: 'uppercase',
-                      transition: 'background 0.1s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(139, 38, 42, 0.3)'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = isSelected ? 'rgba(212, 175, 55, 0.12)' : 'transparent'}
-                  >
-                    <span>{opt}</span>
-                    {isSelected && <Check size={14} color="var(--gold-accent)" />}
-                  </div>
-                )
-              })
-            ) : (
-              <div style={{ padding: '0.75rem 0.9rem', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                Nenhum item encontrado
-              </div>
-            )}
-
-            {/* Opção + Cadastrar Novo */}
-            {allowCustom && !showCustomInput && (
-              <div
-                onClick={() => setShowCustomInput(true)}
-                style={{
-                  padding: '0.65rem 0.9rem',
-                  fontSize: '0.84rem',
-                  fontWeight: '700',
-                  color: '#FBBF24',
-                  borderTop: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  backgroundColor: 'rgba(245, 158, 11, 0.08)'
-                }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.18)'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.08)'}
-              >
-                <Plus size={14} />
-                <span>{customLabel}</span>
-              </div>
-            )}
-
-            {/* Campo de Cadastro Rápido de Novo Item */}
-            {showCustomInput && (
-              <div style={{ padding: '0.6rem', borderTop: '1px solid var(--border-color)', backgroundColor: '#1A1D24', display: 'flex', gap: '0.4rem' }}>
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Novo item..."
-                  value={customInputValue}
-                  onChange={e => setCustomInputValue(e.target.value)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#161920',
-                    border: '1px solid var(--border-color)',
-                    color: '#FFF',
-                    padding: '0.4rem 0.6rem',
-                    borderRadius: '4px',
-                    fontSize: '0.82rem',
-                    outline: 'none',
-                    textTransform: 'uppercase'
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn-gold"
-                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                  onClick={handleConfirmCustom}
-                >
-                  Adicionar
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Renderização via Portal diretamente no body */}
+      {typeof document !== 'undefined' && createPortal(menuPopover, document.body)}
     </div>
   )
 }

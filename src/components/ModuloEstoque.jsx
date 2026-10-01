@@ -45,7 +45,8 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
     categoria: listaCategoriasConfig[0] || 'COMPONENTES & PEÇAS',
     preco_custo: '',
     preco_venda: '',
-    quantidade: '0',
+    estoque_atual: 0,
+    quantidade_entrada: '',
     estoque_minimo: '2',
     localizacao: 'Armeria - Prateleira A'
   })
@@ -62,10 +63,11 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
     setFormItem({
       codigo_sku: `PECA-${Math.floor(1000 + Math.random() * 9000)}`,
       nome: '',
-      categoria: 'Componentes & Peças',
+      categoria: listaCategoriasConfig[0] || 'COMPONENTES & PEÇAS',
       preco_custo: '',
       preco_venda: '',
-      quantidade: '5',
+      estoque_atual: 0,
+      quantidade_entrada: '',
       estoque_minimo: '2',
       localizacao: 'Armeria - Prateleira A'
     })
@@ -77,10 +79,11 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
     setFormItem({
       codigo_sku: item.codigo_sku || '',
       nome: item.nome || '',
-      categoria: item.categoria || 'Componentes & Peças',
+      categoria: item.categoria || listaCategoriasConfig[0] || 'COMPONENTES & PEÇAS',
       preco_custo: item.preco_custo ? item.preco_custo.toString() : '',
       preco_venda: item.preco_venda ? item.preco_venda.toString() : '',
-      quantidade: item.quantidade ? item.quantidade.toString() : '0',
+      estoque_atual: item.quantidade || 0,
+      quantidade_entrada: '0',
       estoque_minimo: item.estoque_minimo ? item.estoque_minimo.toString() : '2',
       localizacao: item.localizacao || ''
     })
@@ -91,6 +94,10 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
     e.preventDefault()
     if (!formItem.nome) return
 
+    const entrada = parseInt(formItem.quantidade_entrada) || 0
+    const estoqueAtual = itemEdicao ? (parseInt(formItem.estoque_atual) || 0) : 0
+    const quantidadeFinal = Math.max(0, estoqueAtual + entrada)
+
     const novoItemObj = {
       id: itemEdicao ? itemEdicao.id : `p_${Date.now()}`,
       codigo_sku: formItem.codigo_sku || `SKU-${Date.now()}`,
@@ -98,7 +105,7 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
       categoria: formItem.categoria,
       preco_custo: parseFloat(formItem.preco_custo) || 0,
       preco_venda: parseFloat(formItem.preco_venda) || 0,
-      quantidade: parseInt(formItem.quantidade) || 0,
+      quantidade: quantidadeFinal,
       estoque_minimo: parseInt(formItem.estoque_minimo) || 2,
       localizacao: formItem.localizacao
     }
@@ -328,7 +335,7 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
       {/* ── MODAL CRIAR/EDITAR ITEM DE ESTOQUE ────────────────────────────────── */}
       {modalItem && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '520px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '560px' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'var(--gold-primary)', marginBottom: '1rem' }}>
               {itemEdicao ? 'Editar Peça do Estoque' : 'Cadastrar Nova Peça no Estoque'}
             </h3>
@@ -365,15 +372,84 @@ export default function ModuloEstoque({ estoque = [], setEstoque, usuarioLogado,
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {/* CAMPOS DE ESTOQUE: ESTOQUE ATUAL, QUANTIDADE (ENTRADA) E ESTOQUE MÍNIMO */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Quantidade Atual *</label>
-                  <input required type="number" min="0" className="input-field" value={formItem.quantidade} onChange={e => setFormItem({...formItem, quantidade: e.target.value})} placeholder="0" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    Estoque atual
+                  </label>
+                  <input
+                    type="text"
+                    readOnly
+                    disabled
+                    className="input-field"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderColor: 'rgba(255, 255, 255, 0.12)',
+                      color: '#9CA3AF',
+                      cursor: 'not-allowed',
+                      fontWeight: '700'
+                    }}
+                    value={`${formItem.estoque_atual || 0} un.`}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Campo não editável</span>
                 </div>
+
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Estoque Mínimo (Alerta) *</label>
-                  <input required type="number" min="1" className="input-field" value={formItem.estoque_minimo} onChange={e => setFormItem({...formItem, estoque_minimo: e.target.value})} placeholder="2" />
+                  <label style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: '700', display: 'block', marginBottom: '0.25rem' }}>
+                    Quantidade *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    className="input-field"
+                    style={{ borderColor: 'var(--border-gold)' }}
+                    value={formItem.quantidade_entrada}
+                    onChange={e => setFormItem({...formItem, quantidade_entrada: e.target.value})}
+                    placeholder="0"
+                  />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--gold-primary)' }}>
+                    {itemEdicao ? 'Entrada a somar (+)' : 'Entrada no estoque'}
+                  </span>
                 </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    Estoque mínimo alerta *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    className="input-field"
+                    value={formItem.estoque_minimo}
+                    onChange={e => setFormItem({...formItem, estoque_minimo: e.target.value})}
+                    placeholder="2"
+                  />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Alerta de reposição</span>
+                </div>
+              </div>
+
+              {/* Box explicativo dinâmico de saldo resultante */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                border: '1px solid rgba(217, 119, 6, 0.25)',
+                padding: '0.65rem 0.9rem',
+                borderRadius: '8px',
+                fontSize: '0.82rem'
+              }}>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {itemEdicao
+                    ? `Saldo atual (${formItem.estoque_atual || 0} un.) + Entrada (${parseInt(formItem.quantidade_entrada) || 0} un.) =`
+                    : 'Estoque inicial registrado:'}
+                </span>
+                <span style={{ fontWeight: '700', color: 'var(--gold-primary)', fontSize: '0.95rem' }}>
+                  {((parseInt(formItem.estoque_atual) || 0) + (parseInt(formItem.quantidade_entrada) || 0))} un. em estoque
+                </span>
               </div>
 
               <div>

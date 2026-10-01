@@ -23,6 +23,7 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
   const [formData, setFormData] = useState(() => config || INITIAL_CONFIG)
   const [supaUrl, setSupaUrl] = useState(localStorage.getItem('PROGUNS_SUPABASE_URL') || '')
   const [supaKey, setSupaKey] = useState(localStorage.getItem('PROGUNS_SUPABASE_ANON_KEY') || '')
+  const [salvando, setSalvando] = useState(false)
   const [salvoFeedback, setSalvoFeedback] = useState(false)
 
   // Aba Principal Ativa: 'dados' | 'categorias' | 'servicos' | 'menu_ordem' | 'supabase'
@@ -107,11 +108,28 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
     }
   }
 
-  const handleSalvarConfig = (e) => {
-    if (e) e.preventDefault()
-    atualizarConfig(formData)
-    setSalvoFeedback(true)
-    setTimeout(() => setSalvoFeedback(false), 3000)
+  const handleSalvarConfig = async (e) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    setSalvando(true)
+    try {
+      atualizarConfig(formData)
+      try {
+        localStorage.setItem('PROGUNS_CONFIG', JSON.stringify(formData))
+      } catch (err) {}
+      if (isSupabaseConfigured()) {
+        await dbUpsert('config', { id: 'main_config', ...formData })
+      }
+      setSalvoFeedback(true)
+      setTimeout(() => setSalvoFeedback(false), 4000)
+    } catch (err) {
+      console.error('[Config] Erro ao salvar:', err)
+      alert('Erro ao salvar: ' + (err.message || err))
+    } finally {
+      setSalvando(false)
+    }
   }
 
   const handleConectarSupabase = (e) => {
@@ -544,13 +562,19 @@ export default function ModuloConfiguracoes({ config, setConfig, ordens = [], se
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
               {salvoFeedback && (
-                <span style={{ fontSize: '0.85rem', color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <CheckCircle2 size={16} /> Dados institucionais salvos!
+                <span style={{ fontSize: '0.88rem', color: '#34D399', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                  <CheckCircle2 size={18} /> Dados institucionais salvos com sucesso!
                 </span>
               )}
-              <button type="submit" className="btn-gold">
+              <button 
+                type="submit" 
+                onClick={handleSalvarConfig}
+                className="btn-gold"
+                disabled={salvando}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', opacity: salvando ? 0.7 : 1, cursor: salvando ? 'not-allowed' : 'pointer' }}
+              >
                 <Save size={16} />
-                <span>Salvar Dados da Armeria</span>
+                <span>{salvando ? 'Salvando...' : 'Salvar Dados da Armeria'}</span>
               </button>
             </div>
           </form>

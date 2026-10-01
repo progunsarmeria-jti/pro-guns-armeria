@@ -21,7 +21,8 @@ import {
   FileCheck,
   Edit,
   Trash2,
-  Shield
+  Shield,
+  User
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { isSupabaseConfigured, dbDelete, dbUpsertAll, dbUpsert, dbUpdate } from '../lib/supabase'
@@ -46,6 +47,7 @@ export default function ModuloCaixa({
   config
 }) {
   // hojeStr é YYYY-MM-DD para comparações internas; exibição usa formatarData()
+  // hojeStr é YYYY-MM-DD para comparações internas; exibição usa formatarData()
   const hojeStr = hojeISO()
   const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
@@ -53,12 +55,18 @@ export default function ModuloCaixa({
   const [abaCaixaAtiva, setAbaCaixaAtiva] = useState('atual')
 
   // Caixa do dia atual (se existir)
-  const caixaAtual = caixas.find(c => c.data === hojeStr) || null
+  const caixaAtual = (caixas || []).find(c => c && c.data === hojeStr) || null
+
+  // Caixas anteriores que ainda continuam com status ABERTO (pendentes de encerramento)
+  const caixasAnterioresAbertos = (caixas || []).filter(c => c && c.data !== hojeStr && c.status === 'ABERTO')
+  const temCaixaPendente = caixasAnterioresAbertos.length > 0
+  const caixaPendenteMaisAntigo = temCaixaPendente ? [...caixasAnterioresAbertos].sort((a, b) => a.data.localeCompare(b.data))[0] : null
 
   // Modais State
   const [modalAbrirCaixa, setModalAbrirCaixa] = useState(false)
   const [modalNovoLancamento, setModalNovoLancamento] = useState(false)
   const [modalFecharCaixa, setModalFecharCaixa] = useState(false)
+  const [caixaParaFechar, setCaixaParaFechar] = useState(null)
   const [modalRelatorioIntegra, setModalRelatorioIntegra] = useState(null)
 
   // Modais de Edição e Exclusão com Senha Master
@@ -87,58 +95,136 @@ export default function ModuloCaixa({
   const [debitoInformado, setDebitoInformado] = useState('')
   const [obsFechamento, setObsFechamento] = useState('')
 
-  // ─── Cálculos e Métricas Padrão Tiro Digital ─────────────────────────────────
-  const movimentacoes = Array.isArray(caixaAtual?.movimentacoes) ? caixaAtual.movimentacoes : []
-  
-  // 1. Vendas / OS Geradas no Caixa
-  const vendasGeradasList = movimentacoes.filter(m => m && (m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO'))
-  const qtdVendasGeradas = vendasGeradasList.length
-  const valorTotalVendasGeradas = vendasGeradasList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
+  // ─── Helper de Cálculo de Métricas por Caixa ───────────────────────────────
+  const calcularMetricasCaixa = (cx) => {
+    if (!cx) {
+      return {
+        movimentacoes: [],
+        qtdVendasGeradas: 0,
+        valorTotalVendasGeradas: 0,
+        totalDinheiro: 0,
+        qtdDinheiro: 0,
+        totalPix: 0,
+        qtdPix: 0,
+        totalCredito: 0,
+        qtdCredito: 0,
+        totalDebito: 0,
+        qtdDebito: 0,
+        totalPagosRecebidos: 0,
+        qtdTotalPagamentos: 0,
+        sangriasList: [],
+        totalSangrias: 0,
+        reforcosList: [],
+        totalReforcos: 0,
+        saldoInicial: 0,
+        saldoFinalDinheiroGaveta: 0
+      }
+    }
 
-  // 2. Pagamentos Recebidos por Modalidade (Valor e Qtd de Transações)
-  const pagamentosDinheiro = movimentacoes.filter(m => m && m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
-  const totalDinheiro      = pagamentosDinheiro.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
-  const qtdDinheiro        = pagamentosDinheiro.length
+    const movs = Array.isArray(cx.movimentacoes) ? cx.movimentacoes : []
+    const vnds = movs.filter(m => m && (m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO' || m.tipo === 'RECEBIMENTO_VENDA'))
+    const qtdVendas = vnds.length
+    const valVendas = vnds.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const pagamentosPix      = movimentacoes.filter(m => m && m.forma_pagamento === 'PIX')
-  const totalPix           = pagamentosPix.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
-  const qtdPix             = pagamentosPix.length
+    const din = movs.filter(m => m && m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
+    const totDin = din.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const pagamentosCredito  = movimentacoes.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
-  const totalCredito       = pagamentosCredito.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
-  const qtdCredito         = pagamentosCredito.length
+    const pix = movs.filter(m => m && m.forma_pagamento === 'PIX')
+    const totPix = pix.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const pagamentosDebito   = movimentacoes.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
-  const totalDebito        = pagamentosDebito.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
-  const qtdDebito          = pagamentosDebito.length
+    const cred = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
+    const totCred = cred.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const totalPagosRecebidos = totalDinheiro + totalPix + totalCredito + totalDebito
-  const qtdTotalPagamentos  = qtdDinheiro + qtdPix + qtdCredito + qtdDebito
+    const deb = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
+    const totDeb = deb.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  // 3. Sangrias e Reforços
-  const sangriasList = movimentacoes.filter(m => m && m.tipo === 'SANGRIA')
-  const totalSangrias = sangriasList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
+    const sangrias = movs.filter(m => m && m.tipo === 'SANGRIA')
+    const totSangrias = sangrias.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const reforcosList = movimentacoes.filter(m => m && (m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO'))
-  const totalReforcos = reforcosList.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
+    const reforcos = movs.filter(m => m && (m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO'))
+    const totReforcos = reforcos.reduce((acc, m) => acc + (parseFloat(m?.valor) || 0), 0)
 
-  const saldoInicial = parseFloat(caixaAtual?.saldo_inicial) || 0
-  const saldoFinalDinheiroGaveta = saldoInicial + totalDinheiro + totalReforcos - totalSangrias
+    const saldoIni = parseFloat(cx.saldo_inicial) || 0
+    const saldoGaveta = saldoIni + totDin + totReforcos - totSangrias
 
-  // ─── Handler Abertura de Caixa ───────────────────────────────────────────────
+    return {
+      movimentacoes: movs,
+      qtdVendasGeradas: qtdVendas,
+      valorTotalVendasGeradas: valVendas,
+      totalDinheiro: totDin,
+      qtdDinheiro: din.length,
+      totalPix: totPix,
+      qtdPix: pix.length,
+      totalCredito: totCred,
+      qtdCredito: cred.length,
+      totalDebito: totDeb,
+      qtdDebito: deb.length,
+      totalPagosRecebidos: totDin + totPix + totCred + totDeb,
+      qtdTotalPagamentos: din.length + pix.length + cred.length + deb.length,
+      sangriasList: sangrias,
+      totalSangrias: totSangrias,
+      reforcosList: reforcos,
+      totalReforcos: totReforcos,
+      saldoInicial: saldoIni,
+      saldoFinalDinheiroGaveta: saldoGaveta
+    }
+  }
+
+  // ─── Métricas do Caixa do Dia Atual ──────────────────────────────────────────
+  const metricasAtual = calcularMetricasCaixa(caixaAtual)
+  const movimentacoes = metricasAtual.movimentacoes
+  const qtdVendasGeradas = metricasAtual.qtdVendasGeradas
+  const valorTotalVendasGeradas = metricasAtual.valorTotalVendasGeradas
+  const totalDinheiro = metricasAtual.totalDinheiro
+  const qtdDinheiro = metricasAtual.qtdDinheiro
+  const totalPix = metricasAtual.totalPix
+  const qtdPix = metricasAtual.qtdPix
+  const totalCredito = metricasAtual.totalCredito
+  const qtdCredito = metricasAtual.qtdCredito
+  const totalDebito = metricasAtual.totalDebito
+  const qtdDebito = metricasAtual.qtdDebito
+  const totalPagosRecebidos = metricasAtual.totalPagosRecebidos
+  const qtdTotalPagamentos = metricasAtual.qtdTotalPagamentos
+  const totalSangrias = metricasAtual.totalSangrias
+  const totalReforcos = metricasAtual.totalReforcos
+  const saldoInicial = metricasAtual.saldoInicial
+  const saldoFinalDinheiroGaveta = metricasAtual.saldoFinalDinheiroGaveta
+
+  // Caixa alvo que está no modal de fechamento (pode ser o de hoje ou um anterior pendente)
+  const cxSendoFechado = caixaParaFechar || caixaAtual
+  const metricasSendoFechado = calcularMetricasCaixa(cxSendoFechado)
+
+  // ─── Handler Abertura de Caixa (Regra: Apenas 1 caixa por dia e sem pendências) ─
   const handleAbrirCaixa = (e) => {
     e.preventDefault()
+
+    // 1. Validação: Não permitir abrir se houver caixa de dia anterior aberto
+    if (temCaixaPendente) {
+      alert(`BLOQUEIO DE SEGURANÇA:\nExiste o caixa do dia ${formatarData(caixaPendenteMaisAntigo.data)} pendente de fechamento.\n\nPor conformidade fiscal e auditoria, encerre o caixa pendente antes de abrir o dia de hoje.`)
+      return
+    }
+
+    // 2. Validação: Apenas 1 caixa aberto por dia
+    if (caixaAtual) {
+      alert(`Já existe um caixa registrado para a data de hoje (${formatarData(hojeStr)}) com status "${caixaAtual.status}". Não é permitido abrir múltiplos caixas no mesmo dia.`)
+      return
+    }
+
     const fundo = parseFloat(fundoTrocoInicial) || 0
     const horaAgora = `${hojeStr} ${horaAgoraStr}`
+    const nomeOperador = usuarioLogado?.nome_completo || 'Operador Responsável'
     
-    // Cria movimentação inicial de reforço da abertura
+    // Cria movimentação inicial de reforço da abertura com identificação do usuário
     const movAbertura = {
       id: `mov_abertura_${Date.now()}`,
       tipo: 'REFORCO',
       descricao: 'Abertura do caixa recepção (Fundo de troco)',
       forma_pagamento: 'Dinheiro',
       valor: fundo,
-      hora: horaAgoraStr
+      hora: horaAgoraStr,
+      usuario_nome: nomeOperador,
+      usuario_id: usuarioLogado?.id || null,
+      usuario_cargo: usuarioLogado?.cargo || usuarioLogado?.perfil || 'Recepção'
     }
 
     const novoCaixa = {
@@ -146,7 +232,7 @@ export default function ModuloCaixa({
       data: hojeStr,
       hora_abertura: horaAgora,
       hora_fechamento: null,
-      operador_abertura: usuarioLogado?.nome_completo || 'WELTON PEREIRA LACERDA',
+      operador_abertura: nomeOperador,
       operador_fechamento: null,
       saldo_inicial: fundo,
       status: 'ABERTO',
@@ -163,13 +249,17 @@ export default function ModuloCaixa({
   // ─── Handler Novo Lançamento no Caixa ────────────────────────────────────────
   const handleSalvarLancamento = (e) => {
     e.preventDefault()
-    if (!caixaAtual || caixaAtual.status !== 'ABERTO') return
+    if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+      alert('Não há caixa aberto no momento para registrar este lançamento.')
+      return
+    }
 
     const val = parseFloat(valorLancamento) || 0
     if (val <= 0) return
 
     let desc = descricaoLancamento
     let osNumero = null
+    const nomeOperador = usuarioLogado?.nome_completo || 'Operador Responsável'
 
     if (tipoLancamento === 'RECEBIMENTO_OS') {
       const osFound = ordens.find(o => String(o.id) === String(osSelecionadaId))
@@ -201,7 +291,10 @@ export default function ModuloCaixa({
       forma_pagamento: formaPagamento,
       valor: val,
       hora: horaAgoraStr,
-      os_numero: osNumero
+      os_numero: osNumero,
+      usuario_nome: nomeOperador,
+      usuario_id: usuarioLogado?.id || null,
+      usuario_cargo: usuarioLogado?.cargo || usuarioLogado?.perfil || 'Recepção'
     }
 
     const caixasAtualizados = caixas.map(c => {
@@ -227,7 +320,8 @@ export default function ModuloCaixa({
         data_vencimento: hojeStr,
         data_pagamento: hojeStr,
         status: 'Pago',
-        forma_pagamento: formaPagamento
+        forma_pagamento: formaPagamento,
+        usuario_nome: nomeOperador
       }
       setFinanceiro([novoFin, ...financeiro])
       if (isSupabaseConfigured()) {
@@ -243,7 +337,8 @@ export default function ModuloCaixa({
         data_vencimento: hojeStr,
         data_pagamento: hojeStr,
         status: 'Pago',
-        forma_pagamento: 'Dinheiro'
+        forma_pagamento: 'Dinheiro',
+        usuario_nome: nomeOperador
       }
       setFinanceiro([novoFin, ...financeiro])
       if (isSupabaseConfigured()) {
@@ -259,24 +354,27 @@ export default function ModuloCaixa({
     setPecaSelecionadaId('')
   }
 
-  // ─── Handler Fechamento de Caixa ─────────────────────────────────────────────
+  // ─── Handler Fechamento de Caixa (Caixa Atual ou Caixa Anterior Pendente) ────
   const handleFecharCaixa = (e) => {
     if (e) e.preventDefault()
-    if (!caixaAtual) return
+    const cxAlvo = caixaParaFechar || caixaAtual
+    if (!cxAlvo) return
 
+    const metAlvo = calcularMetricasCaixa(cxAlvo)
     const dinInf = parseFloat(dinheiroInformado) || 0
     const pixInf = parseFloat(pixInformado) || 0
     const credInf = parseFloat(creditoInformado) || 0
     const debInf = parseFloat(debitoInformado) || 0
 
-    const divDinheiro = dinInf - (saldoFinalDinheiroGaveta || 0)
+    const divDinheiro = dinInf - (metAlvo.saldoFinalDinheiroGaveta || 0)
     const horaFechamentoCompleta = `${hojeStr} ${horaAgoraStr}`
+    const nomeOperadorFechamento = usuarioLogado?.nome_completo || 'Operador Responsável'
 
     const caixaAtualizadoItem = {
-      ...caixaAtual,
+      ...cxAlvo,
       status: 'FECHADO',
       hora_fechamento: horaFechamentoCompleta,
-      operador_fechamento: usuarioLogado?.nome_completo || 'WELTON PEREIRA LACERDA',
+      operador_fechamento: nomeOperadorFechamento,
       conferencia: {
         dinheiro_informado: dinInf,
         pix_informado: pixInf,
@@ -288,7 +386,7 @@ export default function ModuloCaixa({
     }
 
     const caixasAtualizados = (caixas || []).map(c => {
-      if (c && c.id === caixaAtual.id) {
+      if (c && c.id === cxAlvo.id) {
         if (isSupabaseConfigured()) {
           dbUpsert('caixas', caixaAtualizadoItem)
         }
@@ -302,6 +400,7 @@ export default function ModuloCaixa({
     }
 
     setModalFecharCaixa(false)
+    setCaixaParaFechar(null)
     setDinheiroInformado('')
     setPixInformado('')
     setCreditoInformado('')
@@ -315,45 +414,22 @@ export default function ModuloCaixa({
   // Helper de Cálculo de Dados do Relatório na Íntegra (Modelo Tiro Digital)
   const getRelatorioData = (targetCaixa) => {
     if (!targetCaixa) return null
-    const movs = Array.isArray(targetCaixa.movimentacoes) ? targetCaixa.movimentacoes : []
-    
-    const vnds = movs.filter(m => m && (m.tipo === 'RECEBIMENTO_OS' || m.tipo === 'VENDA_BALCAO'))
-    const totalVendas = vnds.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-    
-    const din = movs.filter(m => m && m.forma_pagamento === 'Dinheiro' && m.tipo !== 'SANGRIA' && m.tipo !== 'REFORCO')
-    const pix = movs.filter(m => m && m.forma_pagamento === 'PIX')
-    const cred = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Crédito'))
-    const deb = movs.filter(m => m && m.forma_pagamento && String(m.forma_pagamento).includes('Débito'))
-    
-    const totDin = din.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-    const totPix = pix.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-    const totCred = cred.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-    const totDeb = deb.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-    const totPagos = totDin + totPix + totCred + totDeb
-
-    const sangrias = movs.filter(m => m && m.tipo === 'SANGRIA')
-    const totSangrias = sangrias.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-
-    const reforcos = movs.filter(m => m && (m.tipo === 'REFORCO' || m.tipo === 'SUPRIMENTO'))
-    const totReforcos = reforcos.reduce((a, b) => a + (parseFloat(b?.valor) || 0), 0)
-
-    const saldoIni = parseFloat(targetCaixa.saldo_inicial) || 0
-    const saldoFinalDin = saldoIni + totDin + totReforcos - totSangrias
-
+    const met = calcularMetricasCaixa(targetCaixa)
     return {
-      vendasCount: vnds.length,
-      totalVendas: Number(totalVendas) || 0,
-      totalPagos: Number(totPagos) || 0,
-      saldoFinalDin: Number(saldoFinalDin) || 0,
-      saldoIni: Number(saldoIni) || 0,
-      totSangrias: Number(totSangrias) || 0,
-      totReforcos: Number(totReforcos) || 0,
-      totDin: Number(totDin) || 0, qtdDin: din.length,
-      totPix: Number(totPix) || 0, qtdPix: pix.length,
-      totCred: Number(totCred) || 0, qtdCred: cred.length,
-      totDeb: Number(totDeb) || 0, qtdDeb: deb.length,
-      sangrias,
-      reforcos
+      vendasCount: met.qtdVendasGeradas,
+      totalVendas: met.valorTotalVendasGeradas,
+      totalPagos: met.totalPagosRecebidos,
+      saldoFinalDin: met.saldoFinalDinheiroGaveta,
+      saldoIni: met.saldoInicial,
+      totSangrias: met.totalSangrias,
+      totReforcos: met.totalReforcos,
+      totDin: met.totalDinheiro, qtdDin: met.qtdDinheiro,
+      totPix: met.totalPix, qtdPix: met.qtdPix,
+      totCred: met.totalCredito, qtdCred: met.qtdCredito,
+      totDeb: met.totalDebito, qtdDeb: met.qtdDebito,
+      sangrias: met.sangriasList,
+      reforcos: met.reforcosList,
+      movimentacoes: met.movimentacoes
     }
   }
 
@@ -445,18 +521,56 @@ export default function ModuloCaixa({
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {!caixaAtual || caixaAtual.status === 'FECHADO' ? (
+          {temCaixaPendente ? (
+            <button
+              className="btn-secondary"
+              style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                color: '#F87171',
+                borderColor: '#EF4444',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onClick={() => {
+                setCaixaParaFechar(caixaPendenteMaisAntigo)
+                setModalFecharCaixa(true)
+              }}
+              title="Existe caixa anterior aberto! Feche o caixa pendente antes de abrir o dia de hoje."
+            >
+              <AlertTriangle size={16} />
+              <span>Fechar Caixa Pendente ({formatarData(caixaPendenteMaisAntigo.data)})</span>
+            </button>
+          ) : !caixaAtual ? (
             <button className="btn-gold" onClick={() => setModalAbrirCaixa(true)}>
               <Unlock size={16} />
               <span>Abrir Caixa do Dia</span>
             </button>
+          ) : caixaAtual.status === 'FECHADO' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="badge badge-red" style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem', fontWeight: '700' }}>
+                Caixa de Hoje Encerrado
+              </span>
+              <button className="btn-secondary" onClick={() => setModalRelatorioIntegra(caixaAtual)} style={{ fontSize: '0.82rem' }}>
+                <Printer size={16} />
+                <span>Ver Íntegra</span>
+              </button>
+            </div>
           ) : (
             <>
               <button className="btn-gold" onClick={() => setModalNovoLancamento(true)}>
                 <Plus size={16} />
                 <span>Registrar Pagamento / Venda</span>
               </button>
-              <button className="btn-secondary" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', borderColor: '#EF4444' }} onClick={() => setModalFecharCaixa(true)}>
+              <button
+                className="btn-secondary"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', borderColor: '#EF4444' }}
+                onClick={() => {
+                  setCaixaParaFechar(caixaAtual)
+                  setModalFecharCaixa(true)
+                }}
+              >
                 <Lock size={16} />
                 <span>Fechar Caixa</span>
               </button>
@@ -464,6 +578,63 @@ export default function ModuloCaixa({
           )}
         </div>
       </div>
+
+      {/* BANNER DE BLOQUEIO SE HOUVER CAIXAS ANTERIORES PENDENTES */}
+      {temCaixaPendente && (
+        <div className="card" style={{
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderColor: 'rgba(239, 68, 68, 0.35)',
+          borderLeft: '5px solid #EF4444',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          padding: '1rem 1.25rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              backgroundColor: 'rgba(239, 68, 68, 0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+              <AlertTriangle size={22} color="#F87171" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.98rem', fontWeight: '800', color: '#F87171' }}>
+                BLOQUEIO DE SEGURANÇA: {caixasAnterioresAbertos.length === 1 ? 'EXISTE 1 CAIXA ANTERIOR PENDENTE DE FECHAMENTO' : `EXISTEM ${caixasAnterioresAbertos.length} CAIXAS ANTERIORES PENDENTES`}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#E2E8F0', marginTop: '0.2rem', lineHeight: '1.4' }}>
+                O caixa do dia <strong style={{ color: '#FFF' }}>{formatarData(caixaPendenteMaisAntigo.data)}</strong> (Aberto por: <em>{caixaPendenteMaisAntigo.operador_abertura}</em>) ainda está com status <span className="badge badge-red" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>ABERTO</span>.
+                <br />
+                Por conformidade fiscal e auditoria, <strong style={{ color: '#FCA5A5' }}>o caixa de hoje só poderá ser aberto após o encerramento do caixa pendente</strong>.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn-gold"
+              style={{ backgroundColor: '#DC2626', color: '#FFF', fontWeight: '700' }}
+              onClick={() => {
+                setCaixaParaFechar(caixaPendenteMaisAntigo)
+                setModalFecharCaixa(true)
+              }}
+            >
+              <Lock size={15} />
+              <span>Encerrar Caixa ({formatarData(caixaPendenteMaisAntigo.data)})</span>
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => setAbaCaixaAtiva('historico')}
+              style={{ fontSize: '0.8rem' }}
+            >
+              <Clock size={15} />
+              <span>Ver no Histórico</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SELETOR DE ABAS PRINCIPAIS DO CAIXA: CAIXA DO DIA vs HISTÓRICO */}
       <div style={{
@@ -495,7 +666,9 @@ export default function ModuloCaixa({
         >
           <Wallet size={16} />
           <span>Caixa do Dia ({formatarData(hojeStr)})</span>
-          {caixaAtual?.status === 'ABERTO' ? (
+          {!caixaAtual ? (
+            <span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>NÃO INICIADO</span>
+          ) : caixaAtual.status === 'ABERTO' ? (
             <span className="badge badge-green" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>ABERTO</span>
           ) : (
             <span className="badge badge-red" style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>FECHADO</span>
@@ -644,13 +817,14 @@ export default function ModuloCaixa({
                   <th style={{ padding: '0.75rem 1rem' }}>TIPO</th>
                   <th style={{ padding: '0.75rem 1rem' }}>DESCRIÇÃO</th>
                   <th style={{ padding: '0.75rem 1rem' }}>FORMA PAGAMENTO</th>
+                  <th style={{ padding: '0.75rem 1rem' }}>RESPONSÁVEL / OPERADOR</th>
                   <th style={{ padding: '0.75rem 1rem' }}>VALOR (R$)</th>
                 </tr>
               </thead>
               <tbody>
                 {movimentacoes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                       Nenhuma movimentação no caixa do dia ainda.
                     </td>
                   </tr>
@@ -660,7 +834,7 @@ export default function ModuloCaixa({
                       <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{m.hora}</td>
                       <td style={{ padding: '0.75rem 1rem' }}>
                         <span className={`badge ${m.tipo === 'SANGRIA' ? 'badge-red' : m.tipo === 'REFORCO' ? 'badge-yellow' : 'badge-green'}`}>
-                          {m.tipo === 'RECEBIMENTO_OS' ? 'Recebimento O.S' : m.tipo === 'VENDA_BALCAO' ? 'Venda Balcão' : m.tipo}
+                          {m.tipo === 'RECEBIMENTO_OS' ? 'Recebimento O.S' : (m.tipo === 'VENDA_BALCAO' || m.tipo === 'RECEBIMENTO_VENDA') ? 'Venda Balcão' : m.tipo}
                         </span>
                       </td>
                       <td style={{ padding: '0.75rem 1rem', fontWeight: '600' }}>{m.descricao}</td>
@@ -674,6 +848,23 @@ export default function ModuloCaixa({
                         }}>
                           {m.forma_pagamento}
                         </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          backgroundColor: 'rgba(255,255,255,0.06)',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          fontSize: '0.78rem'
+                        }}>
+                          <User size={13} color="var(--gold-accent)" />
+                          <span style={{ fontWeight: '600', color: 'var(--text-main)' }}>
+                            {m.usuario_nome || m.usuario || caixaAtual?.operador_abertura || 'Operador'}
+                          </span>
+                        </div>
                       </td>
                       <td style={{ padding: '0.75rem 1rem', fontWeight: '700', color: m.tipo === 'SANGRIA' ? '#F87171' : '#34D399' }}>
                         {m.tipo === 'SANGRIA' ? '-' : '+'} R$ {fmtBRL(m.valor)}
@@ -728,7 +919,29 @@ export default function ModuloCaixa({
                       </span>
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {cx.status === 'ABERTO' && (
+                          <button
+                            className="btn-secondary"
+                            style={{
+                              padding: '0.3rem 0.55rem',
+                              fontSize: '0.75rem',
+                              backgroundColor: 'rgba(239,68,68,0.15)',
+                              color: '#F87171',
+                              borderColor: 'rgba(239,68,68,0.4)',
+                              fontWeight: '700'
+                            }}
+                            onClick={() => {
+                              setCaixaParaFechar(cx)
+                              setModalFecharCaixa(true)
+                            }}
+                            title="Encerrar e Fechar este Caixa Pendente"
+                          >
+                            <Lock size={13} />
+                            <span>Fechar</span>
+                          </button>
+                        )}
+
                         <button
                           className="btn-secondary"
                           style={{ padding: '0.3rem 0.55rem', fontSize: '0.75rem' }}
@@ -937,41 +1150,41 @@ export default function ModuloCaixa({
       )}
 
       {/* ── MODAL FECHAR CAIXA ────────────────────────────────────────────────── */}
-      {modalFecharCaixa && (
+      {modalFecharCaixa && cxSendoFechado && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
           <div className="card" style={{ width: '100%', maxWidth: '520px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#F87171', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Lock size={20} /> Encerrar e Fechar Caixa
+            <h3 style={{ fontSize: '1.2rem', color: '#F87171', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Lock size={20} /> Encerrar e Fechar Caixa ({formatarData(cxSendoFechado.data)})
             </h3>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              Confirme os valores contados em caixa para emissão do relatório final da íntegra.
+              Aberto em: <strong>{cxSendoFechado.hora_abertura}</strong> por <strong>{cxSendoFechado.operador_abertura}</strong>. Confirme os valores contados para conferência e fechamento.
             </p>
 
             <form onSubmit={handleFecharCaixa} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#34D399' }}>Contagem Dinheiro Gaveta (R$) *</label>
-                  <input required type="number" step="0.01" className="input-field" value={dinheiroInformado} onChange={e => setDinheiroInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(saldoFinalDinheiroGaveta)}`} />
+                  <input required type="number" step="0.01" className="input-field" value={dinheiroInformado} onChange={e => setDinheiroInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(metricasSendoFechado.saldoFinalDinheiroGaveta)}`} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#60A5FA' }}>Total Extrato PIX (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={pixInformado} onChange={e => setPixInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalPix)}`} />
+                  <input type="number" step="0.01" className="input-field" value={pixInformado} onChange={e => setPixInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(metricasSendoFechado.totalPix)}`} />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#A78BFA' }}>Cartão Crédito Máquina (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={creditoInformado} onChange={e => setCreditoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalCredito)}`} />
+                  <input type="number" step="0.01" className="input-field" value={creditoInformado} onChange={e => setCreditoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(metricasSendoFechado.totalCredito)}`} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#F59E0B' }}>Cartão Débito Máquina (R$)</label>
-                  <input type="number" step="0.01" className="input-field" value={debitoInformado} onChange={e => setDebitoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(totalDebito)}`} />
+                  <input type="number" step="0.01" className="input-field" value={debitoInformado} onChange={e => setDebitoInformado(e.target.value)} placeholder={`Esperado R$ ${fmtBRL(metricasSendoFechado.totalDebito)}`} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setModalFecharCaixa(false)}>Cancelar</button>
+                <button type="button" className="btn-secondary" onClick={() => { setModalFecharCaixa(false); setCaixaParaFechar(null) }}>Cancelar</button>
                 <button type="submit" className="btn-gold" style={{ backgroundColor: '#DC2626', color: '#FFF' }}>
                   Encerrar e Gerar Íntegra
                 </button>
@@ -1120,14 +1333,16 @@ export default function ModuloCaixa({
                   <tr style={{ borderBottom: '1px solid #D1D5DB', backgroundColor: '#F3F4F6' }}>
                     <th style={{ padding: '0.5rem' }}>Horário</th>
                     <th style={{ padding: '0.5rem' }}>Valor</th>
-                    <th style={{ padding: '0.5rem' }}>Obs.</th>
+                    <th style={{ padding: '0.5rem' }}>Operador Responsável</th>
+                    <th style={{ padding: '0.5rem' }}>Obs. / Motivo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {relData.sangrias.map((s, idx) => (
                     <tr key={s?.id || idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
                       <td style={{ padding: '0.5rem' }}>{s?.hora || '-'}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(s?.valor)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '700', color: '#DC2626' }}>R$ {fmtBRL(s?.valor)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>{s?.usuario_nome || s?.usuario || modalRelatorioIntegra.operador_abertura || 'Operador'}</td>
                       <td style={{ padding: '0.5rem' }}>{s?.descricao || '-'}</td>
                     </tr>
                   ))}
@@ -1149,14 +1364,16 @@ export default function ModuloCaixa({
                   <tr style={{ borderBottom: '1px solid #D1D5DB', backgroundColor: '#F3F4F6' }}>
                     <th style={{ padding: '0.5rem' }}>Horário</th>
                     <th style={{ padding: '0.5rem' }}>Valor</th>
-                    <th style={{ padding: '0.5rem' }}>Obs.</th>
+                    <th style={{ padding: '0.5rem' }}>Operador Responsável</th>
+                    <th style={{ padding: '0.5rem' }}>Obs. / Motivo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {relData.reforcos.map((r, idx) => (
                     <tr key={r?.id || idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
                       <td style={{ padding: '0.5rem' }}>{r?.hora || '-'}</td>
-                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>R$ {fmtBRL(r?.valor)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '700', color: '#059669' }}>R$ {fmtBRL(r?.valor)}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: '600' }}>{r?.usuario_nome || r?.usuario || modalRelatorioIntegra.operador_abertura || 'Operador'}</td>
                       <td style={{ padding: '0.5rem' }}>{r?.descricao || '-'}</td>
                     </tr>
                   ))}
@@ -1164,7 +1381,55 @@ export default function ModuloCaixa({
               </table>
             )}
 
-            {/* 5. Vendas a Prazo Registradas */}
+            {/* 5. Extrato Detalhado de Movimentações (Auditoria por Usuário) */}
+            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#111827', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.4rem', marginBottom: '0.6rem' }}>
+              Extrato Detalhado de Movimentações ({relData.movimentacoes?.length || 0})
+            </h3>
+            {(!relData.movimentacoes || relData.movimentacoes.length === 0) ? (
+              <div style={{ fontSize: '0.8rem', color: '#6B7280', fontStyle: 'italic', marginBottom: '1.5rem' }}>
+                Nenhuma movimentação detalhada registrada.
+              </div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #D1D5DB', backgroundColor: '#F3F4F6' }}>
+                    <th style={{ padding: '0.5rem' }}>Horário</th>
+                    <th style={{ padding: '0.5rem' }}>Tipo</th>
+                    <th style={{ padding: '0.5rem' }}>Descrição</th>
+                    <th style={{ padding: '0.5rem' }}>Forma Pagto</th>
+                    <th style={{ padding: '0.5rem' }}>Operador Responsável</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'right' }}>Valor (R$)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {relData.movimentacoes.map((m, idx) => (
+                    <tr key={m?.id || idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '0.45rem', color: '#4B5563' }}>{m?.hora || '-'}</td>
+                      <td style={{ padding: '0.45rem' }}>
+                        <span style={{
+                          padding: '0.15rem 0.4rem',
+                          borderRadius: '4px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          backgroundColor: m?.tipo === 'SANGRIA' ? '#FEE2E2' : m?.tipo === 'REFORCO' ? '#FEF3C7' : '#D1FAE5',
+                          color: m?.tipo === 'SANGRIA' ? '#991B1B' : m?.tipo === 'REFORCO' ? '#92400E' : '#065F46'
+                        }}>
+                          {m?.tipo === 'RECEBIMENTO_OS' ? 'Recebimento O.S' : (m?.tipo === 'VENDA_BALCAO' || m?.tipo === 'RECEBIMENTO_VENDA') ? 'Venda Balcão' : m?.tipo}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.45rem', fontWeight: '600' }}>{m?.descricao || '-'}</td>
+                      <td style={{ padding: '0.45rem' }}>{m?.forma_pagamento || '-'}</td>
+                      <td style={{ padding: '0.45rem', fontWeight: '600' }}>{m?.usuario_nome || m?.usuario || modalRelatorioIntegra.operador_abertura || 'Operador'}</td>
+                      <td style={{ padding: '0.45rem', textAlign: 'right', fontWeight: '700', color: m?.tipo === 'SANGRIA' ? '#DC2626' : '#059669' }}>
+                        {m?.tipo === 'SANGRIA' ? '-' : '+'} R$ {fmtBRL(m?.valor)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* 6. Vendas a Prazo Registradas */}
             <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#111827', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.4rem', marginBottom: '0.6rem' }}>
               Vendas a Prazo Registradas
             </h3>

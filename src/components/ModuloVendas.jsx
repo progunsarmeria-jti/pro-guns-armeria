@@ -163,7 +163,7 @@ export default function ModuloVendas({
 
     // 2. Lançar no Caixa ABERTO da Recepção
     if (setCaixas && caixas) {
-      const caixaAberto = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas[0]
+      const caixaAberto = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas.find(c => c.status === 'ABERTO')
       if (caixaAberto) {
         const novaMovCaixa = {
           id: `mov_v_${Date.now()}`,
@@ -172,14 +172,17 @@ export default function ModuloVendas({
           forma_pagamento: formaPagamento,
           valor: valorFinalCarrinho,
           hora: horaAgoraStr,
-          usuario: usuarioLogado?.nome_completo || 'Operador'
+          usuario: usuarioLogado?.nome_completo || 'Operador Responsável',
+          usuario_nome: usuarioLogado?.nome_completo || 'Operador Responsável',
+          usuario_id: usuarioLogado?.id || null,
+          usuario_cargo: usuarioLogado?.cargo || usuarioLogado?.perfil || 'Recepção'
         }
         const movsAnteriores = Array.isArray(caixaAberto.movimentacoes) ? caixaAberto.movimentacoes : []
         const saldoAnterior = parseFloat(caixaAberto.saldo_final || caixaAberto.saldo_inicial) || 0
         const caixaAtualizado = {
           ...caixaAberto,
           saldo_final: saldoAnterior + valorFinalCarrinho,
-          movimentacoes: [novaMovCaixa, ...movsAnteriores]
+          movimentacoes: [...movsAnteriores, novaMovCaixa]
         }
         setCaixas(prev => prev.map(c => c.id === caixaAberto.id ? caixaAtualizado : c))
         dbUpsert('caixas', caixaAtualizado)

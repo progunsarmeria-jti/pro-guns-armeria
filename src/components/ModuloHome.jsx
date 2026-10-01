@@ -43,8 +43,10 @@ export default function ModuloHome({
 
   // Métricas adicionais para Estoque, Caixa e Financeiro
   const estoqueBaixoCount    = estoque.filter(item => item.quantidade <= item.estoque_minimo).length
-  const caixaHoje            = caixas.find(c => c.data === new Date().toISOString().split('T')[0]) || caixas[0]
-  const caixaStatus          = caixaHoje ? caixaHoje.status : 'FECHADO'
+  const hojeStrHome          = new Date().toISOString().split('T')[0]
+  const caixaHoje            = caixas.find(c => c && c.data === hojeStrHome) || null
+  const temCaixaPendenteHome = caixas.some(c => c && c.data !== hojeStrHome && c.status === 'ABERTO')
+  const caixaStatus          = caixaHoje ? caixaHoje.status : (temCaixaPendenteHome ? 'PENDENTE ANTERIOR' : 'NÃO INICIADO')
   const receitasMes          = financeiro.filter(f => f.tipo === 'Receita' && f.status === 'Pago').reduce((acc, f) => acc + f.valor, 0)
   const orcamentosPendentes  = orcamentos.filter(o => o.status === 'Pendente').length
 
@@ -126,9 +128,9 @@ export default function ModuloHome({
       id: 'bloco_caixa',
       title: 'Caixa da Recepção',
       badgeCount: caixaStatus,
-      badgeColor: caixaStatus === 'ABERTO' ? '#10B981' : '#6B7280',
+      badgeColor: caixaStatus === 'ABERTO' ? '#10B981' : (caixaStatus === 'PENDENTE ANTERIOR' ? '#EF4444' : '#6B7280'),
       icon: Wallet,
-      subtitle: caixaHoje ? `${caixaHoje.movimentacoes?.length || 0} mov. hoje` : 'Sem caixa aberto',
+      subtitle: caixaHoje ? `${caixaHoje.movimentacoes?.length || 0} mov. hoje` : (temCaixaPendenteHome ? 'Existe caixa anterior aberto!' : 'Nenhum caixa aberto hoje'),
       onClick: () => setActiveTab('caixa'),
       reqPerm: 'ver_caixa'
     },

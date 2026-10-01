@@ -20,7 +20,9 @@ export default function Sidebar({
   const ordensEmAberto = (ordens || []).filter(o => o.status !== 'CONCLUÍDO').length
   const orcamentosPendentes = (orcamentos || []).filter(o => o.status === 'Pendente').length
   const estoqueBaixoCount = (estoque || []).filter(i => (i.quantidade || 0) <= (i.estoque_minimo || 2)).length
-  const caixaHoje = (caixas || []).find(c => c.data === new Date().toISOString().split('T')[0])
+  const hojeStrSidebar = new Date().toISOString().split('T')[0]
+  const caixaHoje = (caixas || []).find(c => c && c.data === hojeStrSidebar)
+  const temCaixaPendenteSidebar = (caixas || []).some(c => c && c.data !== hojeStrSidebar && c.status === 'ABERTO')
   const perfilUsuario = usuarioLogado?.perfil || 'recepcao'
   const alertasValidos = (alertas || []).filter(a => {
     if (a.ordem_id || a.os_numero) {
@@ -69,7 +71,7 @@ export default function Sidebar({
     return true
   })
   const alertasPendentesCount = alertasValidos.filter(a => a.status === 'PENDENTE').length
-  const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : null
+  const caixaBadge = caixaHoje?.status === 'ABERTO' ? 'ABERTO' : (temCaixaPendenteSidebar ? 'PENDENTE' : null)
 
   const menuItemsOriginal = [
     { id: 'home',          label: 'Home (Início)',     icon: Home,         badgeCount: ordensEmAberto || null,                  reqPerm: 'ver_home' },

@@ -646,8 +646,8 @@ export default function ModuloOrdens({
 
     // 3. Lança no Caixa Aberto da Recepção daquele momento
     if (caixas && setCaixas) {
-      const caixaAbertoHoje = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas[0]
-      if (caixaAbertoHoje) {
+      const caixaAberto = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas.find(c => c.status === 'ABERTO')
+      if (caixaAberto) {
         const novaMovCaixa = {
           id: `mov_os_${Date.now()}`,
           tipo: 'RECEBIMENTO_OS',
@@ -655,10 +655,13 @@ export default function ModuloOrdens({
           forma_pagamento: formaPagamentoCheckout,
           valor: valorCobrado,
           hora: horaAgoraStr,
-          os_numero: ordem.numero_os
+          os_numero: ordem.numero_os,
+          usuario_nome: usuarioLogado?.nome_completo || 'Operador Responsável',
+          usuario_id: usuarioLogado?.id || null,
+          usuario_cargo: usuarioLogado?.cargo || usuarioLogado?.perfil || 'Recepção'
         }
         const caixasAtualizados = caixas.map(c => {
-          if (c.id === caixaAbertoHoje.id) {
+          if (c.id === caixaAberto.id) {
             const cxAtt = { ...c, movimentacoes: [...(c.movimentacoes || []), novaMovCaixa] }
             if (isSupabaseConfigured()) {
               dbUpsert('caixas', cxAtt)
@@ -684,7 +687,8 @@ export default function ModuloOrdens({
         data_vencimento: hojeStr,
         data_pagamento: hojeStr,
         status: 'Pago',
-        forma_pagamento: formaPagamentoCheckout
+        forma_pagamento: formaPagamentoCheckout,
+        usuario_nome: usuarioLogado?.nome_completo || 'Operador Responsável'
       }
       setFinanceiro([novoLancamentoFin, ...financeiro])
       if (isSupabaseConfigured()) {

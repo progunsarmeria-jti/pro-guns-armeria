@@ -877,112 +877,126 @@ export default function ModuloOrdens({
 
       {/* ── LISTA DE ORDENS ── */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {/* Cabeçalho da Tabela */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '60px 1fr 1fr 160px 100px 60px',
-          backgroundColor: 'var(--bg-input)',
-          borderBottom: '1px solid var(--border-color)',
-          padding: '0.6rem 1rem',
-          fontSize: '0.7rem',
-          fontWeight: '800',
-          color: 'var(--text-muted)',
-          letterSpacing: '0.4px'
-        }}>
-          <div>OS #</div>
-          <div>CLIENTE</div>
-          <div>EQUIPAMENTO</div>
-          <div>STATUS</div>
-          <div>VALOR</div>
-          <div></div>
-        </div>
-
-        {ordensFiltradas.length === 0 && (
-          <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Nenhuma ordem de serviço encontrada.
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          {/* Cabeçalho da Tabela */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '65px 1.2fr 1.2fr 150px 110px 125px',
+            gap: '0.6rem',
+            minWidth: '780px',
+            backgroundColor: 'var(--bg-input)',
+            borderBottom: '1px solid var(--border-color)',
+            padding: '0.6rem 1rem',
+            fontSize: '0.7rem',
+            fontWeight: '800',
+            color: 'var(--text-muted)',
+            letterSpacing: '0.4px',
+            alignItems: 'center'
+          }}>
+            <div>OS #</div>
+            <div>CLIENTE</div>
+            <div>EQUIPAMENTO</div>
+            <div>STATUS</div>
+            <div style={{ textAlign: 'right', paddingRight: '0.4rem' }}>VALOR</div>
+            <div style={{ textAlign: 'right', paddingRight: '0.4rem' }}>AÇÕES</div>
           </div>
-        )}
 
-        {ordensFiltradas.map((ordem, idx) => {
-          const cfg = STATUS_CONFIG[ordem.status] || { color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' }
-          const expandida = ordemExpandida === ordem.id
+          {ordensFiltradas.length === 0 && (
+            <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Nenhuma ordem de serviço encontrada.
+            </div>
+          )}
 
-          return (
-            <div key={ordem.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              {/* LINHA PRINCIPAL */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '60px 1fr 1fr 160px 100px 60px',
-                  padding: '0.75rem 1rem',
-                  alignItems: 'center',
-                  backgroundColor: expandida ? 'rgba(255,255,255,0.03)' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s'
-                }}
-                onClick={() => setOrdemExpandida(expandida ? null : ordem.id)}
-              >
-                <div style={{ fontWeight: '800', color: 'var(--red-light)', fontSize: '0.83rem', whiteSpace: 'nowrap' }}>
-                  #{ordem.numero_os}
-                </div>
+          {ordensFiltradas.map((ordem, idx) => {
+            const cfg = STATUS_CONFIG[ordem.status] || { color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' }
+            const expandida = ordemExpandida === ordem.id
 
-                <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
-                  <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.83rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ordem.cliente_nome?.toUpperCase()}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ordem.categoria_arma || 'Arma de Fogo'}
-                  </div>
-                </div>
-
-                <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
-                  <div style={{ fontWeight: '600', color: 'var(--gold-accent)', fontSize: '0.81rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ordem.marca_arma} {ordem.modelo_arma}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ordem.calibre_arma} · S/N: {ordem.numero_serie_arma || ordem.numero_serie || '—'}
-                  </div>
-                </div>
-
-                <div style={{ overflow: 'hidden' }}>
-                  <span style={{
-                    display: 'inline-flex',
+            return (
+              <div key={ordem.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', minWidth: '780px' }}>
+                {/* LINHA PRINCIPAL */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '65px 1.2fr 1.2fr 150px 110px 125px',
+                    gap: '0.6rem',
+                    padding: '0.75rem 1rem',
                     alignItems: 'center',
-                    gap: '0.35rem',
-                    maxWidth: '100%',
-                    overflow: 'hidden'
-                  }}>
+                    backgroundColor: expandida ? 'rgba(255,255,255,0.03)' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s'
+                  }}
+                  onClick={() => setOrdemExpandida(expandida ? null : ordem.id)}
+                >
+                  <div style={{ fontWeight: '800', color: 'var(--red-light)', fontSize: '0.83rem', whiteSpace: 'nowrap' }}>
+                    #{ordem.numero_os}
+                  </div>
+
+                  <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
+                    <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.83rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ordem.cliente_nome?.toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ordem.categoria_arma || 'Arma de Fogo'}
+                    </div>
+                  </div>
+
+                  <div style={{ overflow: 'hidden', paddingRight: '0.5rem' }}>
+                    <div style={{ fontWeight: '600', color: 'var(--gold-accent)', fontSize: '0.81rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ordem.marca_arma} {ordem.modelo_arma}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ordem.calibre_arma} · S/N: {ordem.numero_serie_arma || ordem.numero_serie || '—'}
+                    </div>
+                  </div>
+
+                  <div style={{ overflow: 'hidden' }}>
                     <span style={{
-                      width: '7px', height: '7px',
-                      borderRadius: '50%',
-                      backgroundColor: cfg.color,
-                      flexShrink: 0,
-                      display: 'inline-block'
-                    }} />
-                    <span style={{
-                      fontSize: '0.68rem',
-                      fontWeight: '600',
-                      color: 'var(--text-muted)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      maxWidth: '100%',
+                      overflow: 'hidden'
                     }}>
-                      {ordem.status}
+                      <span style={{
+                        width: '7px', height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: cfg.color,
+                        flexShrink: 0,
+                        display: 'inline-block'
+                      }} />
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: '600',
+                        color: 'var(--text-muted)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {ordem.status}
+                      </span>
                     </span>
-                  </span>
-                </div>
+                  </div>
 
-                <div style={{ fontWeight: '800', color: ordem.valor_servico ? '#FBBF24' : 'var(--text-muted)', fontSize: '0.83rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {ordem.valor_servico ? `R$ ${parseFloat(ordem.valor_servico).toFixed(2)}` : '—'}
-                </div>
+                  <div style={{
+                    fontWeight: '800',
+                    color: ordem.valor_servico ? '#FBBF24' : 'var(--text-muted)',
+                    fontSize: '0.83rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    textAlign: 'right',
+                    paddingRight: '0.4rem'
+                  }}>
+                    {ordem.valor_servico ? `R$ ${parseFloat(ordem.valor_servico).toFixed(2)}` : '—'}
+                  </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setDocModalOrdem(ordem) }}
-                    style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.25rem' }}
-                    title="Visualizar / Imprimir O.S."
-                  >
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', alignItems: 'center', paddingRight: '0.2rem' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setDocModalOrdem(ordem) }}
+                      style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.25rem' }}
+                      title="Visualizar / Imprimir O.S."
+                    >
                     <Printer size={16} />
                   </button>
                   <button
@@ -1211,6 +1225,7 @@ export default function ModuloOrdens({
             </div>
           )
         })}
+        </div>
       </div>
 
       {/* ── MODAL ENTRADA DE EQUIPAMENTO ── */}

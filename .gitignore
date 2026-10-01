@@ -22,3 +22,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment and sensitive files
+.env
+.env.*
+env
+**/env
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+local-server/*.db
+local-server/node_modules/
+local-server/package-lock.json

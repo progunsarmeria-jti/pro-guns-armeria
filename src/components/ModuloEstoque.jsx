@@ -437,7 +437,7 @@ export default function ModuloEstoque({
             Gestão Integrada de Estoques
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Controle segregado de Armas (PCE Serializado), Munições (Lotes CBC), Peças e Suprimentos de Armaria.
+            Controle segregado de Armas, Munições, Peças e Suprimentos de Armaria.
           </p>
         </div>
 
@@ -512,9 +512,9 @@ export default function ModuloEstoque({
         paddingBottom: '0.4rem'
       }}>
         {[
-          { id: 'TODOS', label: 'Visão Geral (Todos)', icon: Package, count: totalItensGerais },
-          { id: 'ARMA', label: 'Armas de Fogo (Cofre)', icon: Shield, count: totalArmasNoCofre, badge: `${armasRestritas} Restritas` },
-          { id: 'MUNICAO', label: 'Munições (Lotes CBC)', icon: Target, count: `${totalCaixasMunicao} cx`, badge: `${totalCartuchos} un.` },
+          { id: 'TODOS', label: 'Visão Geral', icon: Package, count: totalItensGerais },
+          { id: 'ARMA', label: 'Armas de Fogo', icon: Shield, count: totalArmasNoCofre, badge: `${armasRestritas} Restritas` },
+          { id: 'MUNICAO', label: 'Munições', icon: Target, count: `${totalCaixasMunicao} cx`, badge: `${totalCartuchos} un.` },
           { id: 'PECA', label: 'Peças & Componentes', icon: Wrench, count: pecasList.length },
           { id: 'SUPRIMENTO', label: 'Suprimentos & Limpeza', icon: Droplets, count: suprimentosList.length }
         ].map(tab => {
@@ -730,7 +730,7 @@ export default function ModuloEstoque({
               abaAtiva === 'ARMA'
                 ? 'Buscar por nº de série, modelo, calibre ou cliente...'
                 : abaAtiva === 'MUNICAO'
-                ? 'Buscar por calibre, lote CBC ou projétil...'
+                ? 'Buscar por calibre, lote do fabricante ou projétil...'
                 : 'Buscar por nome, código SKU, barras (EAN) ou NCM...'
             }
             value={busca}

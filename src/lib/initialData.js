@@ -319,9 +319,11 @@ export const MODELOS_BASE = [
   "SUPERNOVA", "STOCK II", "STOCK III", "DEFORCE", "HI-POWER", "BUCK MARK", "SXP", "MODEL 70"
 ];
 
+import { ITENS_TESTE } from './seedEstoque';
+
 export const INITIAL_LOGS = [];
 
-export const INITIAL_ESTOQUE = [];
+export const INITIAL_ESTOQUE = ITENS_TESTE;
 
 export const INITIAL_CAIXAS = [];
 

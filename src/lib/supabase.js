@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Credenciais padrão de fallback da Pró Guns Armeria (Supabase)
-const DEFAULT_SUPABASE_URL = 'https://xknexpjapjanozsuowod.supabase.co'
-const DEFAULT_SUPABASE_KEY = 'sb_publishable_HAFcm7qicaIH-FrexVz3lQ_mqRRhurR'
+const DEFAULT_SUPABASE_URL = 'https://moddyvtltodywvtzzwft.supabase.co'
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_8saf-ghPOB_703jfDbdT3A_DVvRjYLr'
 
 // Lê credenciais salvas pelo usuário em Configurações, ou na URL (para sincronia mobile), ou .env, ou credenciais padrão
 export const getUrl = () => {

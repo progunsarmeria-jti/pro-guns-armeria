@@ -1,5 +1,5 @@
 // Service Worker para PWA Pró Guns Armeria
-const CACHE_NAME = 'proguns-cache-v9';
+const CACHE_NAME = 'proguns-cache-v10';
 
 const STATIC_ASSETS = [
   '/',

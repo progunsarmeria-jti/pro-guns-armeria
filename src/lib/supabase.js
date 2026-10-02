@@ -167,16 +167,26 @@ export async function dbUpsert(tabela, registro) {
         registroSeguro[k] = v
       }
     }
+    // Compatibilidade automática para tabela de vendas
+    if (realTable === 'proguns_vendas') {
+      if (registroSeguro.valor_total === undefined && registroSeguro.valor_final !== undefined) {
+        registroSeguro.valor_total = registroSeguro.valor_final
+      }
+      if (!registroSeguro.status && (registroSeguro.status_venda || registroSeguro.status_tramite_arma)) {
+        registroSeguro.status = registroSeguro.status_venda || 'CONCLUIDA'
+      }
+    }
+
     let { error } = await client.from(realTable).upsert(registroSeguro, { onConflict: 'id' })
     if (error) {
       console.warn(`[Supabase] Erro ao salvar registro em ${realTable}:`, error.message)
 
-      // Se o erro for de coluna ainda não existente no Supabase (ex: novas colunas fiscais)
-      // Remove a coluna rejeitada e tenta novamente para não perder a gravação
+      // Se o erro for de coluna ainda não existente no Supabase (ex: novas colunas fiscais ou de trâmite de armas)
+      // Remove dinamicamente a coluna rejeitada e tenta novamente até gravar com sucesso
       if (error.message && error.message.includes('Could not find the') && error.message.includes('column')) {
         let registroLimpo = { ...registroSeguro }
         let retryError = error
-        for (let attempt = 0; attempt < 5; attempt++) {
+        for (let attempt = 0; attempt < 35; attempt++) {
           const colMatch = retryError?.message?.match(/Could not find the '([^']+)' column/)
           if (colMatch && colMatch[1]) {
             delete registroLimpo[colMatch[1]]

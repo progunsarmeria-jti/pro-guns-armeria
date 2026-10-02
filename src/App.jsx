@@ -492,33 +492,61 @@ export default function App() {
     'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
   ]
 
-  // Helper de Fusão Inteligente: Supabase é a Fonte da Verdade Única Central
+  // Helper de Fusão Inteligente: Preservação Absoluta de Registros Locais & Nuvem
   const mesclarDados = (remotos, locais, tabela) => {
-    // Se Supabase retornou os dados da nuvem com sucesso:
-    if (remotos !== null && Array.isArray(remotos)) {
-      const demoIdsToIgnore = [
-        'c1', 'c2', 'c3', 'c4',
-        'a1', 'a2', 'a3', 'a4', 'a5',
-        'o1', 'o2', 'o3', 'o4',
-        'p1', 'p2', 'p3', 'p4',
-        'orc1', 'orc_1', 'orc_2',
-        'fin_1', 'fin_2', 'fin_3', 'f1',
-        'log_1001', 'log_1002',
-        'alt_1002', 'cx_20260720'
-      ]
-      const remotosLimpos = remotos.filter(r => r?.id && !demoIdsToIgnore.includes(String(r.id)))
+    const demoIdsToIgnore = [
+      'c1', 'c2', 'c3', 'c4',
+      'a1', 'a2', 'a3', 'a4', 'a5',
+      'o1', 'o2', 'o3', 'o4',
+      'p1', 'p2', 'p3', 'p4',
+      'orc1', 'orc_1', 'orc_2',
+      'fin_1', 'fin_2', 'fin_3', 'f1',
+      'log_1001', 'log_1002',
+      'alt_1002', 'cx_20260720'
+    ]
+    const remotosLimpos = (Array.isArray(remotos) ? remotos : []).filter(r => r?.id && !demoIdsToIgnore.includes(String(r.id)))
+    const locaisLimpos = (Array.isArray(locais) ? locais : []).filter(l => l?.id && !demoIdsToIgnore.includes(String(l.id)))
 
-      // Ordenação padrão para manter consistência em todos os dispositivos
-      if (tabela === 'usuarios' || tabela === 'clientes') {
-        remotosLimpos.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
-      } else if (tabela === 'ordens') {
-        remotosLimpos.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
-      }
-      return remotosLimpos
+    // Se não há dados da nuvem (offline ou erro), preserva integralmente os registros locais
+    if (!remotos || !Array.isArray(remotos)) {
+      return locaisLimpos
     }
 
-    // Se estiver offline ou sem retorno da nuvem, usa o cache local
-    return Array.isArray(locais) ? locais : []
+    // Mapa único indexado por ID para garantir que nenhuma venda ou registro local se perca
+    const mapa = new Map()
+
+    // 1. Carrega dados remotos
+    remotosLimpos.forEach(item => {
+      mapa.set(String(item.id), item)
+    })
+
+    // 2. Mescla dados locais (se o registro ainda não subiu para a nuvem, preserva e envia)
+    locaisLimpos.forEach(itemLocal => {
+      const id = String(itemLocal.id)
+      if (!mapa.has(id)) {
+        mapa.set(id, itemLocal)
+        if (isSupabaseConfigured()) {
+          dbUpsert(tabela, itemLocal)
+        }
+      } else {
+        // Mescla campos para não perder dados enriquecidos localmente
+        const itemRemoto = mapa.get(id)
+        mapa.set(id, { ...itemRemoto, ...itemLocal })
+      }
+    })
+
+    const resultado = Array.from(mapa.values())
+
+    // Ordenação padrão para manter consistência em todos os dispositivos
+    if (tabela === 'usuarios' || tabela === 'clientes') {
+      resultado.sort((a, b) => (a.nome_completo || '').localeCompare(b.nome_completo || ''))
+    } else if (tabela === 'ordens') {
+      resultado.sort((a, b) => (Number(b.numero_os) || 0) - (Number(a.numero_os) || 0))
+    } else if (tabela === 'vendas') {
+      resultado.sort((a, b) => (Number(b.numero_venda) || 0) - (Number(a.numero_venda) || 0) || String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    }
+
+    return resultado
   }
 
   // ─── CARREGAR DADOS DO SUPABASE ──────────────────────────────────────────────
@@ -570,6 +598,7 @@ export default function App() {
           localEstoque?.length ? dbUpsertAll('estoque', localEstoque) : Promise.resolve(),
           localCaixas?.length ? dbUpsertAll('caixas', localCaixas) : Promise.resolve(),
           localAlertas?.length ? dbUpsertAll('alertas', localAlertas) : Promise.resolve(),
+          localVendas?.length ? dbUpsertAll('vendas', localVendas) : Promise.resolve(),
           localConfig ? dbUpsert('config', { id: 'main_config', ...localConfig }) : Promise.resolve(),
         ])
         return carregarDoSupabase(silencioso)
@@ -677,6 +706,7 @@ export default function App() {
       subscribeToTable('alertas',    () => carregarDoSupabase(true)),
       subscribeToTable('usuarios',   () => carregarDoSupabase(true)),
       subscribeToTable('config',     () => carregarDoSupabase(true)),
+      subscribeToTable('vendas',     () => carregarDoSupabase(true)),
     ].filter(Boolean)
 
     return () => { channels.forEach(ch => { try { ch.unsubscribe() } catch(e) {} }) }

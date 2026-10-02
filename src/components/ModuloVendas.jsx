@@ -740,136 +740,184 @@ export default function ModuloVendas({
                   })}
                 </div>
 
-                {/* Grade de Produtos */}
+                {/* Tabela de Produtos Tipo Planilha (Estilo Excel / Linhas e Colunas) */}
                 <div style={{
                   flex: 1,
                   overflowY: 'auto',
                   minHeight: 0,
-                  paddingRight: '0.25rem',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
-                  gap: '0.65rem',
-                  alignContent: 'start'
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-input)'
                 }}>
-                  {produtosFiltradosCatalogo.length > 0 ? (
-                    produtosFiltradosCatalogo.map(item => {
-                      const itemNoCart = carrinho.find(c => String(c.item_id) === String(item.id))
-                      const qtdNoCart = itemNoCart ? itemNoCart.quantidade : 0
-                      const qtdEstoque = parseInt(item.quantidade) || 0
-                      const semEstoque = qtdNoCart >= qtdEstoque
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#13161C', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                      <tr>
+                        <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800' }}>PRODUTO / ITEM</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800' }}>SKU / CÓDIGO</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800' }}>CATEGORIA</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>DISPONÍVEL</th>
+                        <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800', textAlign: 'right' }}>VALOR UNIT.</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>NO CARRINHO</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>AÇÃO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {produtosFiltradosCatalogo.length > 0 ? (
+                        produtosFiltradosCatalogo.map((item, idx) => {
+                          const itemNoCart = carrinho.find(c => String(c.item_id) === String(item.id))
+                          const qtdNoCart = itemNoCart ? itemNoCart.quantidade : 0
+                          const qtdEstoque = parseInt(item.quantidade) || 0
+                          const semEstoque = qtdNoCart >= qtdEstoque
+                          const catNorm = normalizarCategoria(item)
 
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => !semEstoque && handleAdicionarAoCarrinho(item, 1)}
-                          style={{
-                            backgroundColor: itemNoCart ? 'rgba(245, 158, 11, 0.06)' : 'var(--bg-input)',
-                            border: itemNoCart ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)',
-                            borderRadius: '8px',
-                            padding: '0.75rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            gap: '0.5rem',
-                            cursor: semEstoque ? 'not-allowed' : 'pointer',
-                            opacity: semEstoque ? 0.6 : 1,
-                            transition: 'all 0.15s ease',
-                            position: 'relative'
-                          }}
-                          onMouseEnter={e => {
-                            if (!semEstoque) e.currentTarget.style.borderColor = '#F59E0B'
-                          }}
-                          onMouseLeave={e => {
-                            if (!semEstoque) e.currentTarget.style.borderColor = itemNoCart ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-color)'
-                          }}
-                        >
-                          {/* Badge de calibre ou categoria */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.3rem' }}>
-                            <span style={{
-                              fontSize: '0.66rem',
-                              fontWeight: '700',
-                              color: '#F59E0B',
-                              backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                              padding: '0.15rem 0.4rem',
-                              borderRadius: '4px',
-                              textTransform: 'uppercase'
-                            }}>
-                              {item.calibre || normalizarCategoria(item)}
-                            </span>
-                            {qtdNoCart > 0 && (
-                              <span style={{
-                                fontSize: '0.66rem',
-                                fontWeight: '800',
-                                color: '#10B981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                                border: '1px solid rgba(16, 185, 129, 0.3)',
-                                padding: '0.1rem 0.35rem',
-                                borderRadius: '10px'
-                              }}>
-                                {qtdNoCart} no carrinho
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Nome do Produto */}
-                          <div>
-                            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.25', marginBottom: '0.2rem' }}>
-                              {item.nome}
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                              SKU: {item.codigo_sku || 'S/N'} {item.fabricante ? `• ${item.fabricante}` : ''}
-                            </div>
-                          </div>
-
-                          {/* Preço e Estoque / Botão */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.4rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div>
-                              <div style={{ fontSize: '0.68rem', color: qtdEstoque <= 2 ? '#F87171' : 'var(--text-muted)', fontWeight: '600' }}>
-                                Disp: {qtdEstoque} {item.unidade || 'UN'}
-                              </div>
-                              <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#10B981' }}>
-                                R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              disabled={semEstoque}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAdicionarAoCarrinho(item, 1)
-                              }}
+                          return (
+                            <tr
+                              key={item.id}
+                              onClick={() => !semEstoque && handleAdicionarAoCarrinho(item, 1)}
                               style={{
-                                backgroundColor: semEstoque ? '#374151' : '#10B981',
-                                borderColor: semEstoque ? '#4B5563' : '#059669',
-                                color: '#FFF',
-                                borderRadius: '6px',
-                                padding: '0.35rem 0.6rem',
-                                fontSize: '0.72rem',
-                                fontWeight: '700',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                                backgroundColor: itemNoCart
+                                  ? 'rgba(245, 158, 11, 0.08)'
+                                  : idx % 2 === 0
+                                  ? 'rgba(255, 255, 255, 0.015)'
+                                  : 'transparent',
                                 cursor: semEstoque ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                border: 'none'
+                                transition: 'background-color 0.12s ease',
+                                opacity: semEstoque ? 0.55 : 1
+                              }}
+                              onMouseEnter={e => {
+                                if (!semEstoque) e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.14)'
+                              }}
+                              onMouseLeave={e => {
+                                if (!semEstoque) {
+                                  e.currentTarget.style.backgroundColor = itemNoCart
+                                    ? 'rgba(245, 158, 11, 0.08)'
+                                    : idx % 2 === 0
+                                    ? 'rgba(255, 255, 255, 0.015)'
+                                    : 'transparent'
+                                }
                               }}
                             >
-                              <Plus size={14} />
-                              {semEstoque ? 'Esgotado' : 'Adicionar'}
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div style={{ gridColumn: '1 / -1', padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
-                      <Package size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.5rem auto', opacity: 0.5 }} />
-                      <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>Nenhum produto encontrado</div>
-                      <div style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
-                        Tente selecionar outra categoria ou limpar o termo de pesquisa.
-                      </div>
-                    </div>
-                  )}
+                              {/* PRODUTO / ITEM */}
+                              <td style={{ padding: '0.5rem 0.75rem' }}>
+                                <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.82rem' }}>
+                                  {item.nome}
+                                </div>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem' }}>
+                                  {item.calibre && (
+                                    <span style={{ color: '#F59E0B', fontWeight: '700' }}>
+                                      {item.calibre}
+                                    </span>
+                                  )}
+                                  {item.calibre && item.fabricante && <span>•</span>}
+                                  {item.fabricante && <span>{item.fabricante}</span>}
+                                </div>
+                              </td>
+
+                              {/* SKU / CÓDIGO */}
+                              <td style={{ padding: '0.5rem 0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.74rem' }}>
+                                {item.codigo_sku || 'S/N'}
+                              </td>
+
+                              {/* CATEGORIA */}
+                              <td style={{ padding: '0.5rem 0.6rem' }}>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  padding: '0.15rem 0.4rem',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                  color: 'var(--text-muted)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}>
+                                  {getCategoryIcon(catNorm)}
+                                  {catNorm}
+                                </span>
+                              </td>
+
+                              {/* DISPONÍVEL */}
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: '800',
+                                  color: qtdEstoque <= 2 ? '#F87171' : '#34D399',
+                                  backgroundColor: qtdEstoque <= 2 ? 'rgba(248, 113, 113, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                  padding: '0.15rem 0.45rem',
+                                  borderRadius: '4px'
+                                }}>
+                                  {qtdEstoque} {item.unidade || 'UN'}
+                                </span>
+                              </td>
+
+                              {/* VALOR UNIT. */}
+                              <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#10B981', fontSize: '0.86rem' }}>
+                                R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
+                              </td>
+
+                              {/* NO CARRINHO */}
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                                {qtdNoCart > 0 ? (
+                                  <span style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: '800',
+                                    color: '#F59E0B',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '10px'
+                                  }}>
+                                    {qtdNoCart} no carrinho
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'rgba(255, 255, 255, 0.2)', fontSize: '0.75rem' }}>-</span>
+                                )}
+                              </td>
+
+                              {/* AÇÃO */}
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  disabled={semEstoque}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAdicionarAoCarrinho(item, 1)
+                                  }}
+                                  style={{
+                                    backgroundColor: semEstoque ? '#374151' : '#10B981',
+                                    border: 'none',
+                                    color: '#FFF',
+                                    borderRadius: '4px',
+                                    padding: '0.25rem 0.55rem',
+                                    fontSize: '0.72rem',
+                                    fontWeight: '700',
+                                    cursor: semEstoque ? 'not-allowed' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.2rem'
+                                  }}
+                                  title={semEstoque ? 'Estoque esgotado' : 'Adicionar ao carrinho'}
+                                >
+                                  <Plus size={13} />
+                                  {semEstoque ? 'Esgotado' : 'Incluir'}
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="7" style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            <Package size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.5rem auto', opacity: 0.5 }} />
+                            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>Nenhum produto encontrado</div>
+                            <div style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                              Tente selecionar outra categoria ou limpar o termo de pesquisa.
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 

@@ -27,13 +27,21 @@ ADD COLUMN IF NOT EXISTS operador text,
 ADD COLUMN IF NOT EXISTS dados_tramite_arma jsonb,
 ADD COLUMN IF NOT EXISTS dados_regulamento_municao jsonb;
 
--- 2. Índices de Otimização e Rastreio
+-- 2. Expansão de Especificações Técnicas de Armas no Estoque (proguns_estoque)
+ALTER TABLE proguns_estoque
+ADD COLUMN IF NOT EXISTS quantidade_raias text,
+ADD COLUMN IF NOT EXISTS sentido_raias text,
+ADD COLUMN IF NOT EXISTS tipo_funcionamento text,
+ADD COLUMN IF NOT EXISTS possui_carregadores boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS quantidade_carregadores text;
+
+-- 3. Índices de Otimização e Rastreio
 CREATE INDEX IF NOT EXISTS idx_proguns_vendas_numero ON proguns_vendas (numero_venda);
 CREATE INDEX IF NOT EXISTS idx_proguns_vendas_status_tramite ON proguns_vendas (status_tramite_arma);
 CREATE INDEX IF NOT EXISTS idx_proguns_vendas_data ON proguns_vendas (data);
 CREATE INDEX IF NOT EXISTS idx_proguns_vendas_cliente_cpf ON proguns_vendas (cliente_cpf);
 
--- 3. Habilita Realtime e desativa RLS se necessário
+-- 4. Habilita Realtime e desativa RLS se necessário
 ALTER TABLE proguns_vendas DISABLE ROW LEVEL SECURITY;
 ALTER TABLE proguns_vendas REPLICA IDENTITY FULL;
 
@@ -43,3 +51,4 @@ BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.proguns_vendas;
     END IF;
 END $$;
+

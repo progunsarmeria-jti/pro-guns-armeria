@@ -45,19 +45,20 @@ export const isSupabaseConfigured = () => {
   return Boolean(url && key && url.startsWith('http'))
 }
 
+// Cliente singleton (reutilizado durante toda a sessão para manter conexões e Realtime estáveis)
+let _client = null
 export const getSupabaseClient = () => {
   if (!isSupabaseConfigured()) return null
-  return createClient(getUrl(), getKey())
+  if (!_client) {
+    _client = createClient(getUrl(), getKey())
+  }
+  return _client
 }
 
-// Cliente singleton (reutilizado durante a sessão)
-let _client = null
 export const supabase = new Proxy({}, {
   get(_, prop) {
-    if (!_client && isSupabaseConfigured()) {
-      _client = createClient(getUrl(), getKey())
-    }
-    return _client ? _client[prop] : undefined
+    const c = getSupabaseClient()
+    return c ? c[prop] : undefined
   }
 })
 
@@ -79,6 +80,13 @@ export let _useLocalServer = false
 export let _localServerUrl = 'http://localhost:3001'
 
 export const checkLocalServer = async () => {
+  // Quando o Supabase em nuvem está configurado com credenciais válidas,
+  // SEMPRE prioriza o Supabase Cloud diretamente para sincronização multiusuário em tempo real entre PCs e Tablets!
+  if (isSupabaseConfigured()) {
+    _useLocalServer = false
+    return false
+  }
+
   try {
     const host = window.location.hostname || 'localhost'
     const port = '3001'
@@ -436,17 +444,27 @@ export function subscribeToTable(tabela, onUpdate) {
   const client = getSupabaseClient()
   const realTable = getTableName(tabela)
   try {
+    const channelName = `realtime_${realTable}`
     const channel = client
-      .channel(`realtime_${realTable}_${Date.now()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: realTable }, () => {
-        if (typeof onUpdate === 'function') onUpdate()
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: realTable }, (payload) => {
+        if (typeof onUpdate === 'function') onUpdate(payload)
       })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           if (typeof onUpdate === 'function') onUpdate()
         }
       })
-    return channel
+
+    return {
+      unsubscribe: () => {
+        try {
+          client.removeChannel(channel)
+        } catch (e) {
+          try { channel.unsubscribe() } catch (err) {}
+        }
+      }
+    }
   } catch (err) {
     console.error(`[Supabase Realtime] Erro ao inscrever no canal ${realTable}:`, err)
     return null

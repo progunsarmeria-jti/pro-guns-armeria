@@ -218,7 +218,11 @@ export default function ModalNovaOSArmeria({
       valor_servico: 0,
       valor_taxamento: 0,
       status: 'NÃO INICIADO',
-      created_at: new Date().toISOString()
+      itens_laudo: [],
+      diagnostico_armeiro: null,
+      solucao_proposta: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
     // Se marcado para salvar no Acervo e a arma ainda não constar no cadastro do cliente
@@ -244,7 +248,9 @@ export default function ModalNovaOSArmeria({
       dbUpsert('armas', novaArmaAcervo)
     }
 
-    setOrdens([novaOSObj, ...ordens])
+    const proximasOrdens = [novaOSObj, ...ordens]
+    setOrdens(proximasOrdens)
+    try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximasOrdens)) } catch(e) {}
     dbUpsert('ordens', novaOSObj)
     registrarLog({
       usuario: usuarioLogado,

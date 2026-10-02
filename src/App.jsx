@@ -347,7 +347,7 @@ export default function App() {
       let alterado = false
       const agora = new Date().toISOString()
       const corrigidos = prevOrdens.map(o => {
-        if (o.status === 'EM ANÁLISE' && ((Array.isArray(o.itens_laudo) && o.itens_laudo.length > 0) || o.diagnostico_armeiro || (o.valor_servico && parseFloat(o.valor_servico) > 0))) {
+        if ((o.status === 'EM ANÁLISE' || o.status === 'NÃO INICIADO') && ((Array.isArray(o.itens_laudo) && o.itens_laudo.length > 0) || o.diagnostico_armeiro || (o.valor_servico && parseFloat(o.valor_servico) > 0))) {
           alterado = true
           const corrigida = { ...o, status: 'AGUARDANDO APROVAÇÃO', updated_at: agora }
           // Também corrige no Supabase via UPDATE direto (evita que o sync reverta)
@@ -492,7 +492,7 @@ export default function App() {
     'APROVADO', 'EM MANUTENÇÃO', 'AGUARDANDO RETIRADA', 'CONCLUÍDO'
   ]
 
-  // Helper de Fusão Inteligente: Preservação Absoluta de Registros Locais & Nuvem
+  // Helper de Fusão Inteligente: Supabase Cloud como Autoridade Central & Preservação Segura Offline
   const mesclarDados = (remotos, locais, tabela) => {
     const demoIdsToIgnore = [
       'c1', 'c2', 'c3', 'c4',
@@ -504,34 +504,50 @@ export default function App() {
       'log_1001', 'log_1002',
       'alt_1002', 'cx_20260720'
     ]
-    const remotosLimpos = (Array.isArray(remotos) ? remotos : []).filter(r => r?.id && !demoIdsToIgnore.includes(String(r.id)))
-    const locaisLimpos = (Array.isArray(locais) ? locais : []).filter(l => l?.id && !demoIdsToIgnore.includes(String(l.id)))
+    let deletedIds = []
+    try {
+      deletedIds = JSON.parse(localStorage.getItem(`PROGUNS_DELETED_${tabela.toUpperCase()}`) || '[]')
+    } catch(e) {}
+
+    const remotosLimpos = (Array.isArray(remotos) ? remotos : []).filter(r => r?.id && !demoIdsToIgnore.includes(String(r.id)) && !deletedIds.includes(String(r.id)))
+    const locaisLimpos = (Array.isArray(locais) ? locais : []).filter(l => l?.id && !demoIdsToIgnore.includes(String(l.id)) && !deletedIds.includes(String(l.id)))
 
     // Se não há dados da nuvem (offline ou erro), preserva integralmente os registros locais
     if (!remotos || !Array.isArray(remotos)) {
       return locaisLimpos
     }
 
-    // Mapa único indexado por ID para garantir que nenhuma venda ou registro local se perca
+    // Mapa único indexado por ID para garantir sincronia multiusuário sem perder registros
     const mapa = new Map()
 
-    // 1. Carrega dados remotos
+    // 1. Carrega dados remotos (a nuvem Supabase é a autoridade máxima centralizada)
     remotosLimpos.forEach(item => {
       mapa.set(String(item.id), item)
     })
 
-    // 2. Mescla dados locais (se o registro ainda não subiu para a nuvem, preserva e envia)
+    // 2. Mescla dados locais
     locaisLimpos.forEach(itemLocal => {
       const id = String(itemLocal.id)
+      if (deletedIds.includes(id)) {
+        mapa.delete(id)
+        return
+      }
+
       if (!mapa.has(id)) {
-        mapa.set(id, itemLocal)
-        if (isSupabaseConfigured()) {
-          dbUpsert(tabela, itemLocal)
+        // Se o registro não existe no Supabase: se foi criado recentemente offline, envia para a nuvem
+        const criadoEm = itemLocal.created_at ? new Date(itemLocal.created_at).getTime() : 0
+        const agoraMs = Date.now()
+        const ehRecente = criadoEm > (agoraMs - 24 * 60 * 60 * 1000)
+
+        if (ehRecente || remotosLimpos.length === 0) {
+          mapa.set(id, itemLocal)
+          if (isSupabaseConfigured()) {
+            dbUpsert(tabela, itemLocal)
+          }
         }
       } else {
-        // Mescla campos para não perder dados enriquecidos localmente
-        const itemRemoto = mapa.get(id)
-        mapa.set(id, { ...itemRemoto, ...itemLocal })
+        // Se o registro já existe na nuvem Supabase, a versão da nuvem é a autoridade máxima e central.
+        // O itemRemoto é mantido integralmente, impedindo que cache antigo deste PC reverta status de outros usuários.
       }
     })
 

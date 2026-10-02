@@ -17,7 +17,7 @@ echo [3/3] Aguardando inicializacao dos servicos...
 timeout /t 3 /nobreak >nul
 
 echo Abrindo navegador...
-start http://localhost:5173
+start http://localhost:3000
 
 echo.
 echo ========================================================

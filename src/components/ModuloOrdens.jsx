@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { hojeISO, formatarData, formatarDataHora } from '../lib/dates'
 import { Plus, Printer, FileText, CheckCircle2, Wrench, Package, MessageCircle, DollarSign, Send, ChevronDown, X, Eye, Filter, Shield, Trash2, Lock, Edit3, Calendar, UploadCloud, Camera, Loader } from 'lucide-react'
 import ModalNovaOSArmeria from './ModalNovaOSArmeria'
@@ -123,6 +123,39 @@ export default function ModuloOrdens({
       if (setOsParaVisualizar) setOsParaVisualizar(null)
     }
   }, [osParaVisualizar])
+
+  // ─── FILTRO DE PRODUTOS PERMITIDOS EM O.S. (BLOQUEIO DE ARMAS E MUNIÇÕES) ───
+  const ehArmaOuMunicao = (item) => {
+    if (!item) return false
+    const cat = (item.categoria || '').trim().toLowerCase()
+    const nome = (item.nome || '').trim().toLowerCase()
+    const tipo = (item.tipo_estoque || '').trim().toUpperCase()
+
+    // 1. Pelo tipo explícito
+    if (tipo === 'ARMA' || tipo === 'MUNICAO') return true
+
+    // 2. Pela categoria do estoque
+    if (cat.includes('arma') || cat.includes('muni')) return true
+
+    // 3. Por atributos exclusivos de armas ou munições no estoque
+    if (item.numero_serie && !cat.includes('peça') && !cat.includes('peca') && !cat.includes('componente')) return true
+    if (item.lote_fabricante && !cat.includes('peça') && !cat.includes('peca') && !cat.includes('componente') && !cat.includes('insumo')) return true
+
+    // 4. Por prefixos ou termos no nome
+    if (nome.startsWith('pistola ') || nome.startsWith('revólver ') || nome.startsWith('revolver ') || nome.startsWith('fuzil ') || nome.startsWith('carabina ') || nome.startsWith('espingarda ')) {
+      return true
+    }
+    if (nome.startsWith('munição ') || nome.startsWith('municao ') || nome.startsWith('cartucho ')) {
+      return true
+    }
+
+    return false
+  }
+
+  // Lista de produtos do estoque permitidos para O.S. (apenas peças, componentes, suprimentos, lubrificantes e insumos)
+  const produtosDisponiveisOS = useMemo(() => {
+    return (estoque || []).filter(item => !ehArmaOuMunicao(item))
+  }, [estoque])
 
   // Recalcula valor total automaticamente a partir de itensLaudo
   const recalcularTotalLaudo = (lista) => {
@@ -537,9 +570,9 @@ export default function ModuloOrdens({
     setOrdens(prev => {
       const proximo = prev.map(o => {
         if (String(o.id) === String(ordemId) || Number(o.numero_os) === Number(ordemId)) {
-          const atualizada = { ...o, status: 'APROVADO', updated_at: agora }
+          const atualizada = { ...o, status: 'APROVADO', updated_at: agora, data_aprovacao: agora }
           if (isSupabaseConfigured()) {
-            dbUpdate('ordens', o.id, { status: 'APROVADO', updated_at: agora, numero_os: o.numero_os }, atualizada)
+            dbUpdate('ordens', o.id, { status: 'APROVADO', updated_at: agora, data_aprovacao: agora, numero_os: o.numero_os }, atualizada)
           }
           registrarLog({
             usuario: usuarioLogado,
@@ -598,6 +631,8 @@ export default function ModuloOrdens({
     const hojeStr = hojeISO()
     const horaAgoraStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
+    const agora = new Date().toISOString()
+
     // 1. Atualiza Ordem de Serviço -> status: 'CONCLUÍDO', itens_laudo e valor cobrado
     const ordemAtualizada = { 
       ...ordem, 
@@ -608,7 +643,9 @@ export default function ModuloOrdens({
       desconto_tipo: tipoDescontoCheckout,
       desconto_input: valorDescontoInput,
       forma_pagamento: formaPagamentoCheckout,
-      checkout_realizado_em: hojeStr
+      checkout_realizado_em: hojeStr,
+      updated_at: agora,
+      data_conclusao: agora
     }
 
     if (isSupabaseConfigured()) {
@@ -621,7 +658,8 @@ export default function ModuloOrdens({
         desconto_input: valorDescontoInput,
         forma_pagamento: formaPagamentoCheckout,
         checkout_realizado_em: hojeStr,
-        updated_at: new Date().toISOString(),
+        updated_at: agora,
+        data_conclusao: agora,
         numero_os: ordem.numero_os
       }, ordemAtualizada)
     } else {
@@ -633,6 +671,27 @@ export default function ModuloOrdens({
       try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(err) {}
       return proximo
     })
+
+    // Baixa de estoque das peças utilizadas na OS
+    if (estoque && setEstoque && Array.isArray(itensCheckout)) {
+      const pecasUtilizadas = itensCheckout.filter(it => it.tipo === 'PECA' && it.estoque_id)
+      if (pecasUtilizadas.length > 0) {
+        setEstoque(prevEst => {
+          const atualizado = prevEst.map(item => {
+            const usada = pecasUtilizadas.find(p => String(p.estoque_id) === String(item.id))
+            if (usada) {
+              const novaQtd = Math.max(0, (Number(item.quantidade) || 0) - (Number(usada.quantidade) || 1))
+              const attItem = { ...item, quantidade: novaQtd, updated_at: agora }
+              if (isSupabaseConfigured()) dbUpsert('estoque', attItem)
+              return attItem
+            }
+            return item
+          })
+          try { localStorage.setItem('PROGUNS_ESTOQUE', JSON.stringify(atualizado)) } catch(e) {}
+          return atualizado
+        })
+      }
+    }
 
     // 2. Registra Log de Auditoria
     registrarLog({
@@ -789,7 +848,8 @@ export default function ModuloOrdens({
   const handleSalvarEdicaoOS = (e) => {
     e.preventDefault()
     if (!modalEditarOS) return
-    const ordemAtualizada = { ...modalEditarOS }
+    const agora = new Date().toISOString()
+    const ordemAtualizada = { ...modalEditarOS, updated_at: agora }
 
     // Identifica se a O.S. estava concluída e está mudando para outro status
     const ordemOriginal = ordens.find(o => String(o.id) === String(ordemAtualizada.id))
@@ -798,7 +858,11 @@ export default function ModuloOrdens({
     }
 
     dbUpsert('ordens', ordemAtualizada)
-    setOrdens(prev => prev.map(o => String(o.id) === String(ordemAtualizada.id) ? ordemAtualizada : o))
+    setOrdens(prev => {
+      const proximo = prev.map(o => String(o.id) === String(ordemAtualizada.id) ? ordemAtualizada : o)
+      try { localStorage.setItem('PROGUNS_ORDENS', JSON.stringify(proximo)) } catch(err) {}
+      return proximo
+    })
     registrarLog({
       usuario: usuarioLogado,
       acao: 'EDIÇÃO DE O.S.',
@@ -1367,8 +1431,8 @@ export default function ModuloOrdens({
                       }}
                       style={{ fontSize: '0.8rem' }}
                     >
-                      <option value="">-- Selecione uma peça cadastrada no Estoque --</option>
-                      {(estoque || []).map(item => (
+                      <option value="">-- Selecione uma peça / componente cadastrado no Estoque --</option>
+                      {produtosDisponiveisOS.map(item => (
                         <option key={item.id} value={item.id}>
                           {item.nome} ({item.codigo_sku || 'S/SKU'}) — R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)} [{item.quantidade} un. disponíveis]
                         </option>
@@ -1830,8 +1894,8 @@ export default function ModuloOrdens({
                                 }}
                                 style={{ fontSize: '0.7rem', padding: '0.2rem', color: '#111827', backgroundColor: '#FFF', borderColor: '#D1D5DB' }}
                               >
-                                <option value="">-- Selecionar Peça --</option>
-                                {(estoque || []).map(item => (
+                                <option value="">-- Selecionar Peça / Produto --</option>
+                                {produtosDisponiveisOS.map(item => (
                                   <option key={item.id} value={item.id}>
                                     {item.nome} (R$ {parseFloat(item.preco_venda).toFixed(2)})
                                   </option>

@@ -24,6 +24,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
+import { formatarMoeda } from '../lib/masks'
 import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
 import { registrarLog } from '../lib/auditLogger'
 
@@ -348,7 +349,7 @@ export default function ModuloVendas({
     registrarLog({
       usuario: usuarioLogado,
       acao: 'VENDA DE BALCÃO',
-      descricao: `Venda #${proximoNumeroVenda} de R$ ${valorFinalCarrinho.toFixed(2)} (${formaPagamento}) realizada para ${clienteSelecionado}.`,
+      descricao: `Venda #${proximoNumeroVenda} de ${formatarMoeda(valorFinalCarrinho)} (${formaPagamento}) realizada para ${clienteSelecionado}.`,
       setLogs
     })
 
@@ -413,8 +414,8 @@ export default function ModuloVendas({
     const cliObj = (clientes || []).find(c => c.nome_completo === venda.cliente_nome)
     const tel = (cliObj?.telefone || '').replace(/\D/g, '')
     const numTel = tel.length === 10 || tel.length === 11 ? `55${tel}` : tel
-    const resumoItens = (venda.itens || []).map(i => `• ${i.quantidade}x ${i.nome} (R$ ${(parseFloat(i.subtotal) || 0).toFixed(2)})`).join('\n')
-    const msg = `Olá *${venda.cliente_nome}*, obrigado pela compra na *${config?.nome_fantasia || 'Pró Guns Armeria'}*!\n\n*COMPROVANTE DE VENDA #${venda.numero_venda}*\nData: ${formatarData(venda.data)} às ${venda.hora || ''}\n\n*Itens Adquiridos:*\n${resumoItens}\n\n*Forma de Pagamento:* ${venda.forma_pagamento}\n*Valor Total:* R$ ${(parseFloat(venda.valor_final) || 0).toFixed(2)}\n\nAgradecemos a preferência!`
+    const resumoItens = (venda.itens || []).map(i => `• ${i.quantidade}x ${i.nome} (${formatarMoeda(i.subtotal)})`).join('\n')
+    const msg = `Olá *${venda.cliente_nome}*, obrigado pela compra na *${config?.nome_fantasia || 'Pró Guns Armeria'}*!\n\n*COMPROVANTE DE VENDA #${venda.numero_venda}*\nData: ${formatarData(venda.data)} às ${venda.hora || ''}\n\n*Itens Adquiridos:*\n${resumoItens}\n\n*Forma de Pagamento:* ${venda.forma_pagamento}\n*Valor Total:* ${formatarMoeda(venda.valor_final)}\n\nAgradecemos a preferência!`
     window.open(`https://wa.me/${numTel}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
@@ -475,7 +476,7 @@ export default function ModuloVendas({
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>FATURAMENTO VENDAS</div>
             <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#10B981' }}>
-              R$ {faturamentoTotalVendas.toFixed(2)}
+              {formatarMoeda(faturamentoTotalVendas)}
             </div>
           </div>
         </div>
@@ -487,7 +488,7 @@ export default function ModuloVendas({
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>VENDAS HOJE</div>
             <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#60A5FA' }}>
-              {vendasHoje.length} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(R$ {faturamentoHoje.toFixed(2)})</span>
+              {vendasHoje.length} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({formatarMoeda(faturamentoHoje)})</span>
             </div>
           </div>
         </div>
@@ -551,7 +552,7 @@ export default function ModuloVendas({
                       </span>
                     </td>
                     <td style={{ padding: '0.85rem 1rem', fontWeight: '800', color: '#10B981', fontSize: '0.9rem' }}>
-                      R$ {(parseFloat(venda.valor_final) || 0).toFixed(2)}
+                      {formatarMoeda(venda.valor_final)}
                     </td>
                     <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
@@ -854,7 +855,7 @@ export default function ModuloVendas({
 
                               {/* VALOR UNIT. */}
                               <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#10B981', fontSize: '0.86rem', whiteSpace: 'nowrap', minWidth: '95px' }}>
-                                R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
+                                {formatarMoeda(item.preco_venda)}
                               </td>
 
                               {/* NO CARRINHO */}
@@ -1019,7 +1020,7 @@ export default function ModuloVendas({
                         {/* Linha 2: Detalhes à esquerda (SKU e Unitário), Stepper e Subtotal à direita */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.35rem' }}>
                           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            <span style={{ color: '#F59E0B', fontWeight: '700' }}>R$ {(item.preco_unitario || 0).toFixed(2)}</span> un.
+                            <span style={{ color: '#F59E0B', fontWeight: '700' }}>{formatarMoeda(item.preco_unitario)}</span> un.
                             {item.sku && <span style={{ marginLeft: '0.3rem', opacity: 0.8 }}>({item.sku})</span>}
                           </div>
 
@@ -1092,7 +1093,7 @@ export default function ModuloVendas({
 
                             {/* Subtotal */}
                             <div style={{ textAlign: 'right', minWidth: '75px', fontSize: '0.86rem', fontWeight: '800', color: '#10B981', whiteSpace: 'nowrap' }}>
-                              R$ {(item.subtotal || 0).toFixed(2)}
+                              {formatarMoeda(item.subtotal)}
                             </div>
                           </div>
                         </div>
@@ -1163,7 +1164,7 @@ export default function ModuloVendas({
                     <div>
                       <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Troco a Devolver</label>
                       <div style={{ fontSize: '0.95rem', fontWeight: '800', color: valorTrocoDevolver > 0 ? '#F59E0B' : '#FFFFFF', paddingTop: '0.2rem' }}>
-                        R$ {valorTrocoDevolver.toFixed(2)}
+                        {formatarMoeda(valorTrocoDevolver)}
                       </div>
                     </div>
                   </div>
@@ -1173,14 +1174,14 @@ export default function ModuloVendas({
                 <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      Subtotal: R$ {valorSubtotalCarrinho.toFixed(2)} {valorDescontoNum > 0 ? `| Desc: -R$ ${valorDescontoNum.toFixed(2)}` : ''}
+                      Subtotal: {formatarMoeda(valorSubtotalCarrinho)} {valorDescontoNum > 0 ? `| Desc: -${formatarMoeda(valorDescontoNum)}` : ''}
                     </div>
                     <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase' }}>
                       TOTAL DA VENDA
                     </div>
                   </div>
                   <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10B981' }}>
-                    R$ {valorFinalCarrinho.toFixed(2)}
+                    {formatarMoeda(valorFinalCarrinho)}
                   </div>
                 </div>
 
@@ -1297,8 +1298,8 @@ export default function ModuloVendas({
                     <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
                       <td style={{ padding: '0.5rem 0' }}>{it.nome}</td>
                       <td style={{ padding: '0.5rem 0', textAlign: 'center', fontWeight: '700' }}>{it.quantidade}</td>
-                      <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>R$ {(it.preco_unitario || 0).toFixed(2)}</td>
-                      <td style={{ padding: '0.5rem 0', textAlign: 'right', fontWeight: '700' }}>R$ {(it.subtotal || 0).toFixed(2)}</td>
+                      <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>{formatarMoeda(it.preco_unitario)}</td>
+                      <td style={{ padding: '0.5rem 0', textAlign: 'right', fontWeight: '700' }}>{formatarMoeda(it.subtotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1306,10 +1307,10 @@ export default function ModuloVendas({
 
               {/* RESUMO DE VALORES */}
               <div style={{ borderTop: '1.5px solid #000', paddingTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.85rem', textAlign: 'right' }}>
-                <div>Subtotal: R$ {(reciboModalVenda.valor_subtotal || 0).toFixed(2)}</div>
-                {reciboModalVenda.desconto > 0 && <div>Desconto: R$ {(reciboModalVenda.desconto || 0).toFixed(2)}</div>}
+                <div>Subtotal: {formatarMoeda(reciboModalVenda.valor_subtotal)}</div>
+                {reciboModalVenda.desconto > 0 && <div>Desconto: {formatarMoeda(reciboModalVenda.desconto)}</div>}
                 <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#000', marginTop: '0.2rem' }}>
-                  VALOR TOTAL FINAL: R$ {(reciboModalVenda.valor_final || 0).toFixed(2)}
+                  VALOR TOTAL FINAL: {formatarMoeda(reciboModalVenda.valor_final)}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#4B5563' }}>
                   Forma de Pagamento: <strong>{reciboModalVenda.forma_pagamento}</strong>

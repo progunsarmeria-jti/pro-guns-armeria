@@ -698,8 +698,15 @@ export default function ModuloVendas({
                   )}
                 </div>
 
-                {/* Abas de Categorias Rápidas com Contagem */}
-                <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem', flexShrink: 0, scrollbarWidth: 'thin' }}>
+                {/* Abas de Categorias Rápidas com Contagem - Todas visíveis em linhas sem rolagem horizontal */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.35rem',
+                  alignItems: 'center',
+                  paddingBottom: '0.1rem',
+                  flexShrink: 0
+                }}>
                   {listaCategoriasDisponiveis.map(cat => {
                     const isAtiva = categoriaAtivaPDV === cat
                     const count = categoriasComContagem[cat] || 0
@@ -711,10 +718,10 @@ export default function ModuloVendas({
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.4rem',
-                          padding: '0.4rem 0.75rem',
-                          borderRadius: '20px',
-                          fontSize: '0.74rem',
+                          gap: '0.35rem',
+                          padding: '0.3rem 0.65rem',
+                          borderRadius: '16px',
+                          fontSize: '0.73rem',
                           fontWeight: isAtiva ? '800' : '600',
                           whiteSpace: 'nowrap',
                           cursor: 'pointer',
@@ -727,8 +734,8 @@ export default function ModuloVendas({
                         {getCategoryIcon(cat)}
                         <span>{cat}</span>
                         <span style={{
-                          fontSize: '0.66rem',
-                          padding: '0.1rem 0.35rem',
+                          fontSize: '0.65rem',
+                          padding: '0.08rem 0.35rem',
                           borderRadius: '10px',
                           backgroundColor: isAtiva ? '#F59E0B' : 'rgba(255,255,255,0.08)',
                           color: isAtiva ? '#000' : 'var(--text-muted)',

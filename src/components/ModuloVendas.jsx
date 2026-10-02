@@ -29,12 +29,17 @@ import {
   Layers,
   ExternalLink,
   Info,
-  Calendar,
-  Check
+  Check,
+  QrCode,
+  Camera,
+  UploadCloud,
+  Loader,
+  Eye
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { formatarMoeda } from '../lib/masks'
-import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
+import { dbUpsert, dbDelete, isSupabaseConfigured, getUrl, getKey, getSupabaseClient, uploadGTFile } from '../lib/supabase'
+import { compressImage } from '../lib/imageCompressor'
 import { registrarLog } from '../lib/auditLogger'
 
 export default function ModuloVendas({
@@ -164,8 +169,153 @@ export default function ModuloVendas({
     craf_definitivo_validade: '',
     data_entrega_arma: '',
     responsavel_entrega: '',
-    observacoes: ''
+    observacoes: '',
+    fotos_documentos: []
   })
+
+  // Controle de Digitalização por QR Code Mobile (Câmera do Celular) & Anexos do Trâmite
+  const [showQrTramiteModal, setShowQrTramiteModal] = useState(false)
+  const [tramiteSessionId, setTramiteSessionId] = useState('')
+  const [subindoArquivoTramite, setSubindoArquivoTramite] = useState(false)
+  const [modalVisualizarFoto, setModalVisualizarFoto] = useState(null)
+
+  // Escuta Realtime para fotos recebidas do celular via QR Code
+  useEffect(() => {
+    if (!showQrTramiteModal || !tramiteSessionId) return
+    const client = getSupabaseClient()
+    if (!client) return
+
+    const channelName = `upload_tramite_${tramiteSessionId}`
+    const channel = client.channel(channelName)
+      .on('broadcast', { event: 'file_uploaded' }, ({ payload }) => {
+        if (payload?.url) {
+          const novaUrl = payload.url
+
+          // Atualiza formulário local
+          setDadosTramiteForm(prev => {
+            const atuais = Array.isArray(prev.fotos_documentos) ? prev.fotos_documentos : []
+            if (atuais.includes(novaUrl)) return prev
+            return { ...prev, fotos_documentos: [...atuais, novaUrl] }
+          })
+
+          // Atualiza a venda ativa no modal
+          setModalTramiteVenda(prev => {
+            if (!prev) return prev
+            const dt = prev.dados_tramite_arma || {}
+            const atuais = Array.isArray(dt.fotos_documentos) ? dt.fotos_documentos : []
+            if (atuais.includes(novaUrl)) return prev
+            const novaLista = [...atuais, novaUrl]
+            const atualizado = {
+              ...prev,
+              dados_tramite_arma: { ...dt, fotos_documentos: novaLista }
+            }
+            if (setVendas) {
+              setVendas(lista => lista.map(v => v.id === prev.id ? atualizado : v))
+            }
+            try {
+              const salvas = JSON.parse(localStorage.getItem('PROGUNS_VENDAS') || '[]')
+              localStorage.setItem('PROGUNS_VENDAS', JSON.stringify(salvas.map(v => v.id === prev.id ? atualizado : v)))
+            } catch (e) {}
+            dbUpsert('vendas', atualizado)
+            return atualizado
+          })
+        }
+      })
+      .subscribe()
+
+    return () => {
+      client.removeChannel(channel)
+    }
+  }, [showQrTramiteModal, tramiteSessionId])
+
+  // Anexar Foto/Documento do Computador para o Trâmite
+  const handleUploadLocalFotoTramite = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setSubindoArquivoTramite(true)
+    try {
+      const client = getSupabaseClient()
+      for (const file of files) {
+        const compressed = await compressImage(file)
+        const ext = compressed.name ? compressed.name.split('.').pop() : 'jpg'
+        const fileName = `tramite_${modalTramiteVenda?.id || 'doc'}_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`
+        let publicUrl = ''
+        try {
+          if (client && isSupabaseConfigured()) {
+            publicUrl = await uploadGTFile(compressed, fileName)
+          } else {
+            throw new Error('Fallback')
+          }
+        } catch (err) {
+          publicUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(compressed)
+          })
+        }
+
+        if (publicUrl) {
+          setDadosTramiteForm(prev => {
+            const atuais = Array.isArray(prev.fotos_documentos) ? prev.fotos_documentos : []
+            return { ...prev, fotos_documentos: [...atuais, publicUrl] }
+          })
+          setModalTramiteVenda(prev => {
+            if (!prev) return prev
+            const dt = prev.dados_tramite_arma || {}
+            const atuais = Array.isArray(dt.fotos_documentos) ? dt.fotos_documentos : []
+            const novaLista = [...atuais, publicUrl]
+            const atualizado = {
+              ...prev,
+              dados_tramite_arma: { ...dt, fotos_documentos: novaLista }
+            }
+            if (setVendas) {
+              setVendas(lista => lista.map(v => v.id === prev.id ? atualizado : v))
+            }
+            try {
+              const salvas = JSON.parse(localStorage.getItem('PROGUNS_VENDAS') || '[]')
+              localStorage.setItem('PROGUNS_VENDAS', JSON.stringify(salvas.map(v => v.id === prev.id ? atualizado : v)))
+            } catch (err) {}
+            dbUpsert('vendas', atualizado)
+            return atualizado
+          })
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Erro ao anexar arquivo(s): ' + (err.message || err))
+    } finally {
+      setSubindoArquivoTramite(false)
+      e.target.value = ''
+    }
+  }
+
+  // Remover Foto Anexada do Trâmite
+  const handleRemoverFotoTramite = (urlRemover) => {
+    if (!confirm('Deseja realmente remover esta foto anexada do trâmite?')) return
+    setDadosTramiteForm(prev => ({
+      ...prev,
+      fotos_documentos: (prev.fotos_documentos || []).filter(u => u !== urlRemover)
+    }))
+    setModalTramiteVenda(prev => {
+      if (!prev) return prev
+      const dt = prev.dados_tramite_arma || {}
+      const novaLista = (dt.fotos_documentos || []).filter(u => u !== urlRemover)
+      const atualizado = {
+        ...prev,
+        dados_tramite_arma: { ...dt, fotos_documentos: novaLista }
+      }
+      if (setVendas) {
+        setVendas(lista => lista.map(v => v.id === prev.id ? atualizado : v))
+      }
+      try {
+        const salvas = JSON.parse(localStorage.getItem('PROGUNS_VENDAS') || '[]')
+        localStorage.setItem('PROGUNS_VENDAS', JSON.stringify(salvas.map(v => v.id === prev.id ? atualizado : v)))
+      } catch (e) {}
+      dbUpsert('vendas', atualizado)
+      return atualizado
+    })
+  }
 
   // Form State Nova Venda
   const [clienteSelecionado, setClienteSelecionado] = useState('CLIENTE AVULSO / BALCÃO')
@@ -955,7 +1105,7 @@ export default function ModuloVendas({
     window.open(`https://wa.me/${numTel}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
-  // ── BADGES DE STATUS REGULATÓRIO ───────────────────────────────────────────
+  // ── BADGES DE STATUS REGULATÓRIO (COMPACTO E ALINHADO COM SINARM / PF) ────
   const getBadgeStatusVenda = (venda) => {
     const ehArma = venda.tipo_venda === 'VENDA_ARMA' || venda.dados_tramite_arma || (venda.itens || []).some(isItemArmaDeFogo)
     const ehMun = venda.tipo_venda === 'VENDA_MUNICAO' || venda.dados_regulamento_municao || (venda.itens || []).some(isItemMunicao)
@@ -964,29 +1114,89 @@ export default function ModuloVendas({
       const st = venda.status_tramite_arma || venda.dados_tramite_arma?.status || 'AGUARDANDO_AUTORIZACAO'
       if (st === 'AGUARDANDO_AUTORIZACAO') {
         return (
-          <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.18)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-            <Clock size={11} /> Aguardando Autorização PF/Exército
+          <span
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              color: '#FBBF24',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              padding: '0.12rem 0.38rem',
+              borderRadius: '5px',
+              fontSize: '0.67rem',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Arma reservada no cofre - Aguardando Autorização de Aquisição expedida pela Polícia Federal (SINARM / SINARM CAC)"
+          >
+            <Clock size={11} /> Aguardando PF
           </span>
         )
       }
       if (st === 'AUTORIZADO_PF') {
         return (
-          <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.18)', color: '#60A5FA', border: '1px solid rgba(59, 130, 246, 0.4)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-            <FileCheck size={11} /> Autorizado pela PF/Exército
+          <span
+            style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              color: '#60A5FA',
+              border: '1px solid rgba(59, 130, 246, 0.35)',
+              padding: '0.12rem 0.38rem',
+              borderRadius: '5px',
+              fontSize: '0.67rem',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Autorização de Compra Aprovada pela Polícia Federal (SINARM / CAC)"
+          >
+            <FileCheck size={11} /> Autorizado PF
           </span>
         )
       }
       if (st === 'NOTA_FISCAL_EMITIDA') {
         return (
-          <span style={{ backgroundColor: 'rgba(192, 132, 252, 0.18)', color: '#C084FC', border: '1px solid rgba(192, 132, 252, 0.4)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-            <FileText size={11} /> Nota Fiscal Emitida
+          <span
+            style={{
+              backgroundColor: 'rgba(192, 132, 252, 0.15)',
+              color: '#C084FC',
+              border: '1px solid rgba(192, 132, 252, 0.35)',
+              padding: '0.12rem 0.38rem',
+              borderRadius: '5px',
+              fontSize: '0.67rem',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Nota Fiscal Eletrônica Emitida - Aguardando Confecção do CRAF para Entrega"
+          >
+            <FileText size={11} /> NF-e Emitida
           </span>
         )
       }
       if (st === 'ENTREGUE') {
         return (
-          <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.18)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-            <CheckCircle2 size={11} /> Arma Entregue (CRAF Emitido)
+          <span
+            style={{
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              color: '#34D399',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              padding: '0.12rem 0.38rem',
+              borderRadius: '5px',
+              fontSize: '0.67rem',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              whiteSpace: 'nowrap'
+            }}
+            title="Arma Entregue Definitivamente com CRAF ao Comprador"
+          >
+            <CheckCircle2 size={11} /> Entregue
           </span>
         )
       }
@@ -994,15 +1204,44 @@ export default function ModuloVendas({
 
     if (ehMun) {
       return (
-        <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#93C5FD', border: '1px solid rgba(59, 130, 246, 0.35)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-          <Target size={11} /> Munição (CRAF Registrado)
+        <span
+          style={{
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            color: '#93C5FD',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            padding: '0.12rem 0.38rem',
+            borderRadius: '5px',
+            fontSize: '0.67rem',
+            fontWeight: '700',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            whiteSpace: 'nowrap'
+          }}
+          title="Venda de Munições Registrada (SICOVEM)"
+        >
+          <Target size={11} /> Munição
         </span>
       )
     }
 
     return (
-      <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.2rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-        <CheckCircle2 size={11} /> Venda Concluída
+      <span
+        style={{
+          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+          color: '#34D399',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
+          padding: '0.12rem 0.38rem',
+          borderRadius: '5px',
+          fontSize: '0.67rem',
+          fontWeight: '700',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <CheckCircle2 size={11} /> Concluída
       </span>
     )
   }
@@ -1079,7 +1318,7 @@ export default function ModuloVendas({
             <Shield size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>ARMAS EM TRÂMITE (PF/SIGMA)</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>ARMAS EM TRÂMITE (SINARM / CAC)</div>
             <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#FBBF24' }}>
               {vendasArmasEmTramite.filter(v => v.status_tramite_arma !== 'ENTREGUE').length}
             </div>
@@ -1147,7 +1386,7 @@ export default function ModuloVendas({
           }}
         >
           <Shield size={13} />
-          Armas em Trâmite PF/Exército ({vendasArmasEmTramite.length})
+          Armas em Trâmite PF (SINARM / CAC) ({vendasArmasEmTramite.length})
         </button>
         <button
           type="button"
@@ -1205,17 +1444,17 @@ export default function ModuloVendas({
       {/* ── TABELA DE VENDAS ── */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.83rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.74rem' }}>
             <thead>
-              <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '0.85rem 1rem' }}>VENDA #</th>
-                <th style={{ padding: '0.85rem 1rem' }}>DATA / HORA</th>
-                <th style={{ padding: '0.85rem 1rem' }}>CLIENTE</th>
-                <th style={{ padding: '0.85rem 1rem' }}>STATUS / TIPO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>ITENS ADQUIRIDOS</th>
-                <th style={{ padding: '0.85rem 1rem' }}>PAGAMENTO</th>
-                <th style={{ padding: '0.85rem 1rem' }}>VALOR TOTAL</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>AÇÕES</th>
+              <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                <th style={{ padding: '0.45rem 0.5rem', width: '70px', whiteSpace: 'nowrap' }}>VENDA #</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '85px', whiteSpace: 'nowrap' }}>DATA / HORA</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '155px' }}>CLIENTE</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '105px' }}>STATUS</th>
+                <th style={{ padding: '0.45rem 0.5rem' }}>ITENS ADQUIRIDOS</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '65px', whiteSpace: 'nowrap' }}>PAGTO</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '85px', whiteSpace: 'nowrap' }}>VALOR</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '185px', minWidth: '185px', textAlign: 'right', whiteSpace: 'nowrap' }}>AÇÕES</th>
               </tr>
             </thead>
             <tbody>
@@ -1225,7 +1464,7 @@ export default function ModuloVendas({
 
                   return (
                     <tr key={venda.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.15s' }}>
-                      <td style={{ padding: '0.85rem 1rem', fontWeight: '800' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '800', whiteSpace: 'nowrap' }}>
                         <button
                           type="button"
                           onClick={() => setModalDossieVenda(venda)}
@@ -1234,50 +1473,51 @@ export default function ModuloVendas({
                             border: '1px solid rgba(245, 158, 11, 0.3)',
                             color: '#F59E0B',
                             fontWeight: '800',
-                            borderRadius: '6px',
-                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            padding: '0.15rem 0.35rem',
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.3rem',
-                            fontSize: '0.8rem',
-                            transition: 'all 0.15s ease'
+                            gap: '0.2rem',
+                            fontSize: '0.72rem',
+                            fontFamily: 'monospace'
                           }}
                           title="Clique para abrir o Dossiê Completo da Venda Arquivada"
                         >
-                          <FileText size={13} />
+                          <FileText size={11} />
                           #V-{venda.numero_venda || venda.id.slice(-4)}
                         </button>
                       </td>
-                      <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                        {formatarData(venda.data)} {venda.hora ? `às ${venda.hora}` : ''}
+                      <td style={{ padding: '0.45rem 0.5rem', color: 'var(--text-muted)', fontSize: '0.72rem', whiteSpace: 'nowrap', lineHeight: '1.25' }}>
+                        <div>{formatarData(venda.data)}</div>
+                        {venda.hora && <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{venda.hora}</div>}
                       </td>
-                      <td style={{ padding: '0.85rem 1rem', fontWeight: '700', color: 'var(--text-main)' }}>
-                        <div>{venda.cliente_nome?.toUpperCase()}</div>
+                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                        <div style={{ fontSize: '0.74rem', lineHeight: '1.2' }}>{venda.cliente_nome?.toUpperCase()}</div>
                         {venda.cliente_cpf && (
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '400' }}>
+                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', fontWeight: '400', marginTop: '0.1rem' }}>
                             CPF: {venda.cliente_cpf}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '0.85rem 1rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem' }}>
                         {getBadgeStatusVenda(venda)}
                       </td>
-                      <td style={{ padding: '0.85rem 1rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                           {(venda.itens || []).map((it, idx) => (
-                            <div key={idx} style={{ fontSize: '0.78rem', color: 'var(--text-main)', lineHeight: '1.3' }}>
+                            <div key={idx} style={{ fontSize: '0.73rem', color: 'var(--text-main)', lineHeight: '1.25' }}>
                               <strong style={{ color: '#F59E0B' }}>{it.quantidade}x</strong> {it.nome}
-                              {it.calibre && <span style={{ color: 'var(--text-muted)', marginLeft: '0.25rem' }}>({it.calibre})</span>}
+                              {it.calibre && <span style={{ color: 'var(--text-muted)', marginLeft: '0.2rem', fontSize: '0.7rem' }}>({it.calibre})</span>}
                               {it.numero_serie && (
                                 <span style={{
-                                  marginLeft: '0.35rem',
-                                  backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                                  marginLeft: '0.3rem',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
                                   color: '#FBBF24',
-                                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                                  padding: '0.05rem 0.35rem',
-                                  borderRadius: '4px',
-                                  fontSize: '0.67rem',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  padding: '0.02rem 0.3rem',
+                                  borderRadius: '3px',
+                                  fontSize: '0.65rem',
                                   fontWeight: '800',
                                   fontFamily: 'monospace'
                                 }}>
@@ -1286,13 +1526,13 @@ export default function ModuloVendas({
                               )}
                               {it.lote_fabricante && (
                                 <span style={{
-                                  marginLeft: '0.35rem',
-                                  backgroundColor: 'rgba(96, 165, 250, 0.18)',
+                                  marginLeft: '0.3rem',
+                                  backgroundColor: 'rgba(96, 165, 250, 0.15)',
                                   color: '#60A5FA',
-                                  border: '1px solid rgba(96, 165, 250, 0.4)',
-                                  padding: '0.05rem 0.35rem',
-                                  borderRadius: '4px',
-                                  fontSize: '0.67rem',
+                                  border: '1px solid rgba(96, 165, 250, 0.35)',
+                                  padding: '0.02rem 0.3rem',
+                                  borderRadius: '3px',
+                                  fontSize: '0.65rem',
                                   fontWeight: '700'
                                 }}>
                                   Lote: {it.lote_fabricante}
@@ -1302,16 +1542,16 @@ export default function ModuloVendas({
                           ))}
                         </div>
                       </td>
-                      <td style={{ padding: '0.85rem 1rem' }}>
-                        <span className="badge badge-blue">
+                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
+                        <span className="badge badge-blue" style={{ fontSize: '0.67rem', padding: '0.15rem 0.4rem' }}>
                           {venda.forma_pagamento}
                         </span>
                       </td>
-                      <td style={{ padding: '0.85rem 1rem', fontWeight: '800', color: '#10B981', fontSize: '0.9rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '800', color: '#10B981', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
                         {formatarMoeda(venda.valor_final)}
                       </td>
-                      <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.4rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.25rem' }}>
                           {/* Botão de Trâmite de Arma (se for venda de arma) */}
                           {ehArma && (
                             <button
@@ -1330,25 +1570,26 @@ export default function ModuloVendas({
                                   craf_definitivo_validade: venda.dados_tramite_arma?.craf_definitivo_validade || '',
                                   data_entrega_arma: venda.dados_tramite_arma?.data_entrega_arma || '',
                                   responsavel_entrega: venda.dados_tramite_arma?.responsavel_entrega || usuarioLogado?.nome_completo || '',
-                                  observacoes: venda.dados_tramite_arma?.observacoes || ''
+                                  observacoes: venda.dados_tramite_arma?.observacoes || '',
+                                  fotos_documentos: venda.dados_tramite_arma?.fotos_documentos || []
                                 })
                               }}
                               style={{
                                 backgroundColor: 'rgba(245, 158, 11, 0.15)',
                                 border: '1px solid rgba(245, 158, 11, 0.35)',
                                 color: '#FBBF24',
-                                borderRadius: '6px',
-                                padding: '0.25rem 0.55rem',
-                                fontSize: '0.72rem',
+                                borderRadius: '4px',
+                                padding: '0.2rem 0.45rem',
+                                fontSize: '0.68rem',
                                 fontWeight: '700',
                                 cursor: 'pointer',
-                                display: 'flex',
+                                display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '0.3rem'
+                                gap: '0.25rem'
                               }}
                               title="Gerenciar Trâmite da Arma (Autorização PF, NF e Entrega)"
                             >
-                              <Shield size={13} />
+                              <Shield size={12} />
                               Trâmite PF
                             </button>
                           )}
@@ -1360,19 +1601,18 @@ export default function ModuloVendas({
                               backgroundColor: 'rgba(255, 255, 255, 0.05)',
                               border: '1px solid rgba(255, 255, 255, 0.15)',
                               color: '#E2E8F0',
-                              borderRadius: '6px',
-                              padding: '0.25rem 0.55rem',
-                              fontSize: '0.72rem',
+                              borderRadius: '4px',
+                              padding: '0.2rem 0.45rem',
+                              fontSize: '0.68rem',
                               fontWeight: '700',
                               cursor: 'pointer',
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s ease'
+                              gap: '0.25rem'
                             }}
                             title="Abrir Dossiê Técnico & Regulatório da Venda Arquivada"
                           >
-                            <FileText size={13} color="#C5A059" />
+                            <FileText size={12} color="#C5A059" />
                             Dossiê
                           </button>
 
@@ -1385,7 +1625,7 @@ export default function ModuloVendas({
                             style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.2rem' }}
                             title="Visualizar / Imprimir Documento Oficial"
                           >
-                            <Printer size={16} />
+                            <Printer size={15} />
                           </button>
                           <button
                             type="button"
@@ -1393,7 +1633,7 @@ export default function ModuloVendas({
                             style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', padding: '0.2rem' }}
                             title="Enviar Comprovante / Proposta no WhatsApp"
                           >
-                            <MessageCircle size={16} />
+                            <MessageCircle size={15} />
                           </button>
                           <button
                             type="button"
@@ -1405,7 +1645,7 @@ export default function ModuloVendas({
                             style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
                             title="Cancelar Venda (Restaura Estoque / Libera Armas)"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -1904,10 +2144,10 @@ export default function ModuloVendas({
                       <Shield size={16} color="#C5A059" style={{ flexShrink: 0, marginTop: '2px' }} />
                       <div>
                         <strong style={{ color: '#DFB76C', display: 'block', marginBottom: '0.15rem' }}>
-                          Venda Regulada de Arma de Fogo (PF / SIGMA)
+                          Venda Regulada de Arma de Fogo (Polícia Federal - SINARM / SINARM CAC)
                         </strong>
                         <span style={{ color: '#8A94A6', fontSize: '0.69rem' }}>
-                          A arma será <strong>RESERVADA</strong> no estoque da loja. O sistema emitirá a <strong>Declaração de Proposta de Compra</strong> para o processo na autoridade policial/militar. A Nota Fiscal é emitida após deferimento.
+                          A arma será <strong>RESERVADA</strong> no estoque da loja. O sistema emitirá a <strong>Declaração de Proposta de Compra</strong> para instrução do requerimento na Polícia Federal (Dec. 11.615/2023). A Nota Fiscal é emitida após deferimento.
                         </span>
                       </div>
                     </div>
@@ -1983,8 +2223,9 @@ export default function ModuloVendas({
                             value={dadosMunicaoForm.orgao_emissor}
                             onChange={e => setDadosMunicaoForm({ ...dadosMunicaoForm, orgao_emissor: e.target.value })}
                           >
-                            <option value="SINARM">SINARM (PF)</option>
-                            <option value="SIGMA">SIGMA (Exército)</option>
+                            <option value="SINARM">SINARM (Polícia Federal - Defesa)</option>
+                            <option value="SINARM_CAC">SINARM CAC (Polícia Federal - CAC)</option>
+                            <option value="SIGMA">SIGMA (Legado / Acervo Anterior)</option>
                           </select>
                         </div>
                       </div>
@@ -2375,7 +2616,7 @@ export default function ModuloVendas({
                       }}
                     >
                       {temArmaNoCarrinho ? <Shield size={16} /> : <CheckCircle2 size={16} />}
-                      <span>{temArmaNoCarrinho ? 'Registrar Venda & Gerar Proposta PF/Exército' : 'Finalizar Venda & Recibo'}</span>
+                      <span>{temArmaNoCarrinho ? 'Registrar Venda & Gerar Proposta PF (SINARM / CAC)' : 'Finalizar Venda & Recibo'}</span>
                     </button>
                   </div>
                 </div>
@@ -2499,7 +2740,7 @@ export default function ModuloVendas({
                       <strong style={{ color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '0.2rem' }}>
                         Arma Custodiada no Cofre Forte da Loja
                       </strong>
-                      Conforme a legislação da Polícia Federal (Portaria 166/2023 / Dec. 11.615) e Exército (R-105 / SIGMA), o armamento fica sob custódia da armeria aguardando autorização de compra emitida pelo órgão competente. A Nota Fiscal Eletrônica será emitida após o deferimento.
+                      Conforme a legislação da Polícia Federal (Decreto nº 11.615/2023 - SINARM / SINARM CAC), o armamento fica sob custódia da armeria aguardando autorização de compra deferida pela Polícia Federal. A Nota Fiscal Eletrônica será emitida após o deferimento.
                     </div>
                   </div>
                 )}
@@ -2604,7 +2845,7 @@ export default function ModuloVendas({
                         }}
                       >
                         <Shield size={16} />
-                        Gerar Proposta PF/Exército
+                        Gerar Proposta PF (SINARM / CAC)
                       </button>
                     )}
 
@@ -3059,7 +3300,7 @@ export default function ModuloVendas({
                         gap: '0.4rem'
                       }}>
                         <Shield size={14} />
-                        3. Trâmite Legal & Custódia no Cofre Forte (PF / SINARM / SIGMA)
+                        3. Trâmite Legal & Custódia no Cofre Forte (Polícia Federal - SINARM / CAC)
                       </div>
                       <button
                         type="button"
@@ -3077,7 +3318,8 @@ export default function ModuloVendas({
                             craf_definitivo_validade: modalDossieVenda.dados_tramite_arma?.craf_definitivo_validade || '',
                             data_entrega_arma: modalDossieVenda.dados_tramite_arma?.data_entrega_arma || '',
                             responsavel_entrega: modalDossieVenda.dados_tramite_arma?.responsavel_entrega || usuarioLogado?.nome_completo || '',
-                            observacoes: modalDossieVenda.dados_tramite_arma?.observacoes || ''
+                            observacoes: modalDossieVenda.dados_tramite_arma?.observacoes || '',
+                            fotos_documentos: modalDossieVenda.dados_tramite_arma?.fotos_documentos || []
                           })
                           setModalDossieVenda(null)
                         }}
@@ -3104,7 +3346,7 @@ export default function ModuloVendas({
                       <div>
                         <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>AUTORIZAÇÃO DE COMPRA:</span>
                         <strong style={{ color: '#F1F5F9' }}>
-                          {modalDossieVenda.dados_tramite_arma?.autorizacao_compra_numero ? `Nº ${modalDossieVenda.dados_tramite_arma.autorizacao_compra_numero}` : 'Aguardando Emissão da PF/Exército'}
+                          {modalDossieVenda.dados_tramite_arma?.autorizacao_compra_numero ? `Nº ${modalDossieVenda.dados_tramite_arma.autorizacao_compra_numero}` : 'Aguardando Emissão da Polícia Federal'}
                         </strong>
                         {modalDossieVenda.dados_tramite_arma?.autorizacao_orgao && (
                           <span style={{ color: '#94A3B8', fontSize: '0.7rem', marginLeft: '0.3rem' }}>({modalDossieVenda.dados_tramite_arma.autorizacao_orgao})</span>
@@ -3314,7 +3556,7 @@ export default function ModuloVendas({
                     }}
                   >
                     <Shield size={12} />
-                    📜 Proposta de Compra (PF / SIGMA)
+                    📜 Proposta de Compra (PF - SINARM / CAC)
                   </button>
                 )}
 
@@ -3416,7 +3658,7 @@ export default function ModuloVendas({
                       DECLARAÇÃO DE PROPOSTA DE COMPRA E RESERVA DE ARMA DE FOGO
                     </h2>
                     <div style={{ fontSize: '0.72rem', color: '#4B5563', marginTop: '0.2rem', fontStyle: 'italic' }}>
-                      Documento emitido para instrução de Requerimento de Aquisição junto ao SINARM (Polícia Federal) ou SIGMA (Comando do Exército) — Lei Federal nº 10.826/2003
+                      Documento emitido para instrução de Requerimento de Aquisição junto à Polícia Federal (SINARM / SINARM CAC) — Decreto nº 11.615/2023 e Lei nº 10.826/2003
                     </div>
                     <div style={{ fontSize: '0.76rem', fontWeight: '800', color: '#111827', marginTop: '0.3rem' }}>
                       PROPOSTA Nº: PROP-#{reciboModalVenda.numero_venda}/{new Date(reciboModalVenda.data || Date.now()).getFullYear()} &nbsp;|&nbsp; DATA DE EMISSÃO: {formatarData(reciboModalVenda.data)}
@@ -3488,11 +3730,11 @@ export default function ModuloVendas({
                       3. DECLARAÇÃO DE RESERVA E CONFORMIDADE LEGAL
                     </div>
                     <p style={{ margin: '0 0 0.4rem 0' }}>
-                      A empresa <strong>{config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}</strong>, inscrita no CNPJ sob o nº <strong>{config?.cnpj || '—'}</strong> e registrada no Comando do Exército sob o CR nº <strong>{config?.cr_armeria || '—'}</strong>, DECLARA para os devidos fins de instrução de processo de autorização de aquisição de arma de fogo junto ao SINARM (Polícia Federal) ou SIGMA (Comando do Exército), nos termos da Lei Federal nº 10.826/2003 e Decretos Regulamentadores:
+                      A empresa <strong>{config?.razao_social || config?.nome_fantasia || 'PRÓ GUNS ARMERIA'}</strong>, inscrita no CNPJ sob o nº <strong>{config?.cnpj || '—'}</strong> e registrada sob o CR nº <strong>{config?.cr_armeria || '—'}</strong>, DECLARA para os devidos fins de instrução de processo de autorização de aquisição de arma de fogo junto à <strong>Polícia Federal (SINARM / SINARM CAC)</strong>, nos termos do Decreto Federal nº 11.615/2023 e da Lei Federal nº 10.826/2003:
                     </p>
                     <ol style={{ margin: '0 0 0.4rem 1.2rem', padding: 0 }}>
                       <li>Que a arma de fogo de características técnicas e número de série acima discriminados encontra-se <strong>VENDIDA SOB CONDIÇÃO SUSPENSIVA E EFETIVAMENTE RESERVADA</strong> em nosso estoque físico em favor exclusivo do(a) adquirente supraqualificado(a), não podendo ser alienada a terceiros;</li>
-                      <li>Que a respectiva <strong>Nota Fiscal Eletrônica (NF-e)</strong> só será emitida após a apresentação da competente <strong>Autorização de Aquisição deferida</strong> pela autoridade policial ou militar competente;</li>
+                      <li>Que a respectiva <strong>Nota Fiscal Eletrônica (NF-e)</strong> só será emitida após a apresentação da competente <strong>Autorização de Aquisição deferida</strong> pela Polícia Federal;</li>
                       <li>Que a <strong>Entrega Física</strong> do armamento fica estritamente condicionada à expedição prévia do <strong>Certificado de Registro de Arma de Fogo (CRAF)</strong> e da competente <strong>Guia de Trânsito</strong> emitida pelo órgão regulador em nome do adquirente;</li>
                       <li>O armamento permanece sob custódia e inteira responsabilidade desta empresa em cofre de segurança até o desfecho formal do procedimento.</li>
                     </ol>
@@ -3524,7 +3766,7 @@ export default function ModuloVendas({
                 <div>
                   <div style={{ textAlign: 'center', marginBottom: '1.2rem', padding: '0.4rem', border: '1.5px solid #000', backgroundColor: '#EFF6FF' }}>
                     <h2 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#1E40AF', margin: 0, textTransform: 'uppercase' }}>
-                      REGISTRO DE AQUISIÇÃO DE MUNIÇÕES (SICOVEM / SINARM / SIGMA)
+                      REGISTRO DE AQUISIÇÃO DE MUNIÇÕES (SICOVEM / POLÍCIA FEDERAL)
                     </h2>
                     <div style={{ fontSize: '0.72rem', color: '#4B5563', marginTop: '0.2rem' }}>
                       Controle Obrigatório de Venda de Munições e Cartuchos — Vinculação a CRAF Válido
@@ -3879,7 +4121,7 @@ export default function ModuloVendas({
             {/* STEPPER PROGRESSO DO PROCESSO */}
             <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '1.2rem' }}>
               <div style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                Etapas do Processo de Aquisição (SINARM / SIGMA)
+                Etapas do Processo de Aquisição (Polícia Federal - SINARM / SINARM CAC)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem', textAlign: 'center' }}>
                 
@@ -3902,7 +4144,7 @@ export default function ModuloVendas({
                       border: isDone ? '1px solid #10B981' : isCurrent ? '1px solid #F59E0B' : '1px solid var(--border-color)'
                     }}>
                       <div style={{ fontSize: '0.68rem', fontWeight: '800', color: isDone ? '#34D399' : isCurrent ? '#FBBF24' : 'var(--text-muted)' }}>
-                        2. AUTORIZAÇÃO PF/SIGMA
+                        2. AUTORIZAÇÃO POLÍCIA FEDERAL
                       </div>
                       <div style={{ fontSize: '0.62rem', color: isDone ? '#10B981' : isCurrent ? '#F59E0B' : 'var(--text-muted)', marginTop: '0.2rem' }}>
                         {isDone ? '✓ Aprovado' : isCurrent ? '⏳ Em Andamento' : 'Pendente'}
@@ -3980,11 +4222,11 @@ export default function ModuloVendas({
             {/* FORMULÁRIO DINÂMICO DE ATUALIZAÇÃO DO TRÂMITE */}
             <form onSubmit={handleSalvarDadosTramite} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
-              {/* SEÇÃO 1: AUTORIZAÇÃO DE COMPRA (SINARM / SIGMA) */}
+              {/* SEÇÃO 1: AUTORIZAÇÃO DE COMPRA (POLÍCIA FEDERAL - SINARM / SINARM CAC) */}
               <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#FBBF24', textTransform: 'uppercase' }}>
-                    1. Autorização de Aquisição (Polícia Federal / Exército)
+                    1. Autorização de Aquisição (Polícia Federal - SINARM / SINARM CAC)
                   </div>
                   {modalTramiteVenda.status_tramite_arma === 'AGUARDANDO_AUTORIZACAO' && (
                     <button
@@ -4004,11 +4246,12 @@ export default function ModuloVendas({
                         gap: '0.3rem'
                       }}
                     >
-                      <Check size={14} /> Aprovar Autorização PF/Exército
+                      <Check size={14} /> Aprovar Autorização da Polícia Federal
                     </button>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '0.85rem' }}>
                   <div>
                     <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Nº da Autorização de Compra</label>
                     <input
@@ -4038,10 +4281,174 @@ export default function ModuloVendas({
                       value={dadosTramiteForm.autorizacao_orgao}
                       onChange={e => setDadosTramiteForm({ ...dadosTramiteForm, autorizacao_orgao: e.target.value })}
                     >
-                      <option value="SINARM">SINARM (Polícia Federal)</option>
-                      <option value="SIGMA">SIGMA (Comando do Exército)</option>
+                      <option value="SINARM">SINARM (Polícia Federal - Defesa Pessoal)</option>
+                      <option value="SINARM_CAC">SINARM CAC (Polícia Federal - CAC)</option>
+                      <option value="SIGMA">SIGMA (Legado / Acervo Anterior)</option>
                     </select>
                   </div>
+                </div>
+
+                {/* DIGITALIZAÇÃO DE DOCUMENTOS (QR CODE CELULAR + UPLOAD LOCAL) */}
+                <div style={{
+                  backgroundColor: '#0F131D',
+                  border: '1px solid rgba(197, 160, 89, 0.25)',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Camera size={15} color="#C5A059" />
+                      <span style={{ fontSize: '0.74rem', fontWeight: '800', color: '#F1F5F9', textTransform: 'uppercase' }}>
+                        Documentos & Fotos do Trâmite (Autorização PF, RG, CRAF)
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const sId = 'tramite_' + (modalTramiteVenda.id || modalTramiteVenda.numero_venda) + '_' + Math.random().toString(36).substring(2, 9)
+                          setTramiteSessionId(sId)
+                          setShowQrTramiteModal(true)
+                        }}
+                        style={{
+                          backgroundColor: '#C5A059',
+                          color: '#0F121A',
+                          border: 'none',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '6px',
+                          fontSize: '0.72rem',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          boxShadow: '0 2px 6px rgba(197, 160, 89, 0.25)'
+                        }}
+                      >
+                        <QrCode size={14} /> Digitalizar com Celular (QR Code)
+                      </button>
+
+                      <label
+                        style={{
+                          backgroundColor: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          color: '#CBD5E1',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '6px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: subindoArquivoTramite ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        {subindoArquivoTramite ? <Loader size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+                        <span>{subindoArquivoTramite ? 'Enviando...' : 'Anexar do PC'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          multiple
+                          disabled={subindoArquivoTramite}
+                          onChange={handleUploadLocalFotoTramite}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* MINIATURAS DAS FOTOS ANEXADAS */}
+                  {Array.isArray(dadosTramiteForm.fotos_documentos) && dadosTramiteForm.fotos_documentos.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.6rem', marginTop: '0.35rem' }}>
+                      {dadosTramiteForm.fotos_documentos.map((fotoUrl, idx) => {
+                        const isPdf = typeof fotoUrl === 'string' && (fotoUrl.toLowerCase().includes('.pdf') || fotoUrl.startsWith('data:application/pdf'))
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              position: 'relative',
+                              borderRadius: '6px',
+                              overflow: 'hidden',
+                              border: '1px solid rgba(197, 160, 89, 0.35)',
+                              backgroundColor: '#141824',
+                              aspectRatio: '1',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                            }}
+                          >
+                            {isPdf ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem', padding: '0.5rem', textAlign: 'center' }}>
+                                <FileCheck size={28} color="#60A5FA" />
+                                <span style={{ fontSize: '0.65rem', color: '#93C5FD', fontWeight: 'bold' }}>PDF DOC #{idx + 1}</span>
+                              </div>
+                            ) : (
+                              <img
+                                src={fotoUrl}
+                                alt={`Documento ${idx + 1}`}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                                onClick={() => setModalVisualizarFoto(fotoUrl)}
+                              />
+                            )}
+
+                            {/* Barra de ações sobre a foto */}
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              backgroundColor: 'rgba(15, 18, 26, 0.88)',
+                              backdropFilter: 'blur(4px)',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '0.2rem 0.4rem',
+                              borderTop: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                              <span style={{ fontSize: '0.62rem', fontWeight: '800', color: '#C5A059' }}>
+                                #{idx + 1}
+                              </span>
+                              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                <button
+                                  type="button"
+                                  title="Visualizar em tamanho real"
+                                  onClick={() => setModalVisualizarFoto(fotoUrl)}
+                                  style={{ background: 'none', border: 'none', color: '#93C5FD', cursor: 'pointer', padding: 0 }}
+                                >
+                                  <Eye size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Remover documento"
+                                  onClick={() => handleRemoverFotoTramite(fotoUrl)}
+                                  style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: 0 }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '0.75rem',
+                      border: '1px dashed rgba(255,255,255,0.12)',
+                      borderRadius: '6px',
+                      textAlign: 'center',
+                      fontSize: '0.72rem',
+                      color: 'var(--text-muted)'
+                    }}>
+                      📷 Nenhum documento anexado ainda. Clique em <strong>"Digitalizar com Celular (QR Code)"</strong> para ler com seu celular e fotografar (permite várias fotos consecutivas) ou use <strong>"Anexar do PC"</strong>.
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4294,6 +4701,170 @@ export default function ModuloVendas({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL QR CODE PARA DIGITALIZAR COM CELULAR (TRÂMITE PF) ── */}
+      {showQrTramiteModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          padding: '1rem'
+        }}>
+          <div className="card" style={{
+            width: '100%',
+            maxWidth: '430px',
+            border: '1px solid rgba(197, 160, 89, 0.4)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+            backgroundColor: '#121622',
+            textAlign: 'center'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.65rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ backgroundColor: 'rgba(197, 160, 89, 0.15)', padding: '0.4rem', borderRadius: '6px', color: '#C5A059' }}>
+                  <QrCode size={18} />
+                </div>
+                <h3 style={{ fontSize: '1rem', color: '#F1F5F9', margin: 0, fontWeight: '800' }}>
+                  Digitalizar Documentos pelo Celular
+                </h3>
+              </div>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                onClick={() => setShowQrTramiteModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: '0 0 1rem 0', lineHeight: '1.4' }}>
+              Aponte a câmera do celular para o QR Code abaixo. Você poderá tirar <strong>múltiplas fotos</strong> (Autorização da PF, Identidade, Comprovantes) que serão sincronizadas em tempo real nesta venda:
+            </p>
+
+            {/* QR Code gerado */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              padding: '0.9rem',
+              borderRadius: '12px',
+              display: 'inline-block',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              marginBottom: '1rem'
+            }}>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  `${window.location.origin}${window.location.pathname}?action=upload_tramite&session_id=${tramiteSessionId}&sb_url=${encodeURIComponent(getUrl())}&sb_key=${encodeURIComponent(getKey())}`
+                )}`}
+                alt="QR Code Trâmite PF"
+                style={{ width: '180px', height: '180px', display: 'block' }}
+              />
+            </div>
+
+            {/* Status Realtime */}
+            <div style={{
+              backgroundColor: '#0F121A',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '8px',
+              padding: '0.65rem 0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1rem',
+              fontSize: '0.74rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#10B981' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                <span>Aguardando fotos do celular...</span>
+              </div>
+              <div style={{ fontWeight: '800', color: '#C5A059' }}>
+                {(dadosTramiteForm.fotos_documentos || []).length} foto(s) recebida(s)
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn-gold"
+                style={{ width: '100%', padding: '0.55rem' }}
+                onClick={() => setShowQrTramiteModal(false)}
+              >
+                Concluir & Visualizar Fotos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL VISUALIZAÇÃO AMPLIADA DA FOTO / DOCUMENTO ── */}
+      {modalVisualizarFoto && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.92)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '1.5rem'
+          }}
+          onClick={() => setModalVisualizarFoto(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setModalVisualizarFoto(null)}
+              style={{
+                position: 'absolute',
+                top: '-2.5rem',
+                right: '0',
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#FFF',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={modalVisualizarFoto}
+              alt="Documento Ampliado"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '85vh',
+                borderRadius: '8px',
+                objectFit: 'contain',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
+                border: '1px solid rgba(197, 160, 89, 0.4)'
+              }}
+            />
           </div>
         </div>
       )}

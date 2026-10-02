@@ -164,7 +164,7 @@ export default function App() {
   const action = params.get('action')
   const uploadSessionId = params.get('session_id')
 
-  if ((action === 'upload_gt' || action === 'upload_craf') && uploadSessionId) {
+  if ((action === 'upload_gt' || action === 'upload_craf' || action === 'upload_tramite') && uploadSessionId) {
     return <TelaUploadGTMobile sessionId={uploadSessionId} action={action} />
   }
 

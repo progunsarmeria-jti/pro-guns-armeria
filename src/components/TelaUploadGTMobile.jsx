@@ -9,6 +9,10 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
   const [errorMsg, setErrorMsg] = useState('')
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [totalFotosEnviadas, setTotalFotosEnviadas] = useState(0)
+
+  const isTramite = action === 'upload_tramite'
+  const isCraf = action === 'upload_craf'
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
@@ -40,38 +44,60 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
 
     try {
       const client = getSupabaseClient()
-      if (!client) {
-        throw new Error('Supabase não está configurado no sistema.')
-      }
 
       // 1. Comprimir o arquivo (se for imagem) para reduzir peso e evitar timeouts
       const fileToUpload = await compressImage(selectedFile)
 
-      // 2. Fazer upload do arquivo no Storage
-      const ext = fileToUpload.name.split('.').pop() || 'png'
-      const fileName = `${action === 'upload_craf' ? 'craf' : 'gt'}_${sessionId}_${Date.now()}.${ext}`
-      const publicUrl = await uploadGTFile(fileToUpload, fileName)
+      // 2. Fazer upload do arquivo no Storage (com fallback resiliente para Base64)
+      const ext = fileToUpload.name ? fileToUpload.name.split('.').pop() : 'jpg'
+      const prefix = isTramite ? 'tramite' : isCraf ? 'craf' : 'gt'
+      const fileName = `${prefix}_${sessionId}_${Date.now()}.${ext}`
 
-      // 2. Transmitir o link para o computador via Realtime Broadcast
-      const channelName = action === 'upload_craf' ? `upload_craf_${sessionId}` : `upload_gt_${sessionId}`
-      const channel = client.channel(channelName)
-      await channel.subscribe()
-      await channel.send({
-        type: 'broadcast',
-        event: 'file_uploaded',
-        payload: { url: publicUrl }
-      })
+      let publicUrl = ''
+      try {
+        if (client && isSupabaseConfigured()) {
+          publicUrl = await uploadGTFile(fileToUpload, fileName)
+        } else {
+          throw new Error('Supabase client não disponível para storage')
+        }
+      } catch (uploadErr) {
+        // Fallback resiliente: converte imagem comprimida em data URL
+        publicUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(fileToUpload)
+        })
+      }
 
+      // 3. Transmitir o link para o computador via Realtime Broadcast
+      if (client) {
+        const channelName = isTramite ? `upload_tramite_${sessionId}` : isCraf ? `upload_craf_${sessionId}` : `upload_gt_${sessionId}`
+        const channel = client.channel(channelName)
+        await channel.subscribe()
+        await channel.send({
+          type: 'broadcast',
+          event: 'file_uploaded',
+          payload: { url: publicUrl, name: selectedFile.name, total: totalFotosEnviadas + 1 }
+        })
+        client.removeChannel(channel)
+      }
+
+      setTotalFotosEnviadas(prev => prev + 1)
       setSuccess(true)
-      
-      // Desconecta do canal após o envio
-      client.removeChannel(channel)
     } catch (err) {
       console.error(err)
       setErrorMsg(err.message || 'Ocorreu um erro ao enviar o arquivo.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTirarOutraFoto = () => {
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    setSuccess(false)
+    setErrorMsg('')
   }
 
   return (
@@ -101,11 +127,15 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#EF4444', fontWeight: '800', letterSpacing: '0.5px' }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', color: isTramite ? '#C5A059' : '#EF4444', fontWeight: '800', letterSpacing: '0.5px' }}>
             PRÓ GUNS ARMERIA
           </h2>
           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
-            {action === 'upload_craf' ? 'Digitalização de CRAF da Arma' : 'Digitalização de Guia de Tráfego (GT)'}
+            {isTramite
+              ? 'Digitalização do Trâmite (SINARM / PF)'
+              : isCraf
+              ? 'Digitalização de CRAF da Arma'
+              : 'Digitalização de Guia de Tráfego (GT)'}
           </p>
         </div>
 
@@ -113,16 +143,50 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '1rem 0', textAlign: 'center' }}>
             <CheckCircle2 size={64} color="#10B981" />
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#FFFFFF' }}>Documento Enviado!</h3>
-              <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.8rem', color: '#94A3B8' }}>
-                {action === 'upload_craf'
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#FFFFFF' }}>
+                {isTramite ? `Foto #${totalFotosEnviadas} Enviada!` : 'Documento Enviado!'}
+              </h3>
+              <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.82rem', color: '#94A3B8', lineHeight: '1.4' }}>
+                {isTramite
+                  ? 'A foto foi transmitida e já está anexada no trâmite da venda no computador da recepção.'
+                  : isCraf
                   ? 'O computador da recepção já recebeu o CRAF e ele foi anexado ao cadastro da arma.'
                   : 'O computador da recepção já recebeu a Guia de Tráfego e ela foi anexada à O.S.'}
               </p>
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>
-              Você pode fechar esta aba no seu celular.
-            </p>
+
+            {isTramite ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={handleTirarOutraFoto}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    backgroundColor: '#C5A059',
+                    color: '#0F121A',
+                    fontWeight: '800',
+                    fontSize: '0.88rem',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Camera size={18} />
+                  <span>📷 Tirar Outra Foto (Anexar Mais)</span>
+                </button>
+                <div style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold' }}>
+                  ✓ {totalFotosEnviadas} foto(s) enviada(s). Se terminou, pode fechar esta aba.
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>
+                Você pode fechar esta aba no seu celular.
+              </p>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -166,11 +230,15 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
                   style={{ display: 'none' }}
                   disabled={loading}
                 />
-                <Camera size={32} color="#EF4444" />
+                <Camera size={32} color={isTramite ? '#C5A059' : '#EF4444'} />
                 <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-                  {action === 'upload_craf' ? 'Tirar Foto do CRAF' : 'Tirar Foto da Guia'}
+                  {isTramite
+                    ? 'Tirar Foto do Documento'
+                    : isCraf
+                    ? 'Tirar Foto do CRAF'
+                    : 'Tirar Foto da Guia'}
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>ou selecionar PDF/Foto</span>
+                <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>ou selecionar arquivo/foto da galeria</span>
               </label>
             </div>
 
@@ -191,7 +259,7 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
                 {previewUrl === 'pdf' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px', fontSize: '0.8rem', color: '#F87171' }}>
                     <FileText size={18} />
-                    <span>Arquivo PDF Ready</span>
+                    <span>Arquivo PDF Pronto</span>
                   </div>
                 ) : previewUrl === 'unknown' ? (
                   <div style={{ fontSize: '0.8rem', color: '#E2E8F0', padding: '0.5rem' }}>
@@ -200,7 +268,7 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
                 ) : previewUrl ? (
                   <img
                     src={previewUrl}
-                    alt={action === 'upload_craf' ? 'Preview do CRAF' : 'Preview da Guia'}
+                    alt="Preview"
                     style={{ width: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}
                   />
                 ) : null}
@@ -219,14 +287,14 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
                 padding: '0.75rem',
                 borderRadius: '8px',
                 border: 'none',
-                backgroundColor: loading || !selectedFile ? '#475569' : '#EF4444',
-                color: '#FFFFFF',
-                fontWeight: '700',
+                backgroundColor: loading || !selectedFile ? '#475569' : isTramite ? '#C5A059' : '#EF4444',
+                color: isTramite && !loading && selectedFile ? '#0F121A' : '#FFFFFF',
+                fontWeight: '800',
                 fontSize: '0.88rem',
                 cursor: loading || !selectedFile ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
                 gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)'
               }}
             >
               {loading ? (
@@ -237,7 +305,7 @@ export default function TelaUploadGTMobile({ sessionId, action = 'upload_gt' }) 
               ) : (
                 <>
                   <UploadCloud size={18} />
-                  <span>Enviar para a O.S.</span>
+                  <span>{isTramite ? 'Enviar Foto para o Trâmite' : 'Enviar para o Sistema'}</span>
                 </>
               )}
             </button>

@@ -664,7 +664,7 @@ export default function ModuloVendas({
             {/* Corpo em 2 Colunas */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.45fr) minmax(350px, 420px)',
+              gridTemplateColumns: 'minmax(0, 1.35fr) minmax(380px, 450px)',
               gap: '1rem',
               flex: 1,
               minHeight: 0,
@@ -753,12 +753,12 @@ export default function ModuloVendas({
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#13161C', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
                       <tr>
                         <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800' }}>PRODUTO / ITEM</th>
-                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800' }}>SKU / CÓDIGO</th>
-                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800' }}>CATEGORIA</th>
-                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>DISPONÍVEL</th>
-                        <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800', textAlign: 'right' }}>VALOR UNIT.</th>
-                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>NO CARRINHO</th>
-                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center' }}>AÇÃO</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', whiteSpace: 'nowrap' }}>SKU / CÓDIGO</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', whiteSpace: 'nowrap' }}>CATEGORIA</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center', whiteSpace: 'nowrap' }}>DISPONÍVEL</th>
+                        <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800', textAlign: 'right', whiteSpace: 'nowrap', minWidth: '95px' }}>VALOR UNIT.</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center', whiteSpace: 'nowrap' }}>NO CARRINHO</th>
+                        <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', textAlign: 'center', whiteSpace: 'nowrap' }}>AÇÃO</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -815,21 +815,22 @@ export default function ModuloVendas({
                               </td>
 
                               {/* SKU / CÓDIGO */}
-                              <td style={{ padding: '0.5rem 0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.74rem' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.74rem', whiteSpace: 'nowrap' }}>
                                 {item.codigo_sku || 'S/N'}
                               </td>
 
                               {/* CATEGORIA */}
-                              <td style={{ padding: '0.5rem 0.6rem' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', whiteSpace: 'nowrap' }}>
                                 <span style={{
                                   fontSize: '0.68rem',
-                                  padding: '0.15rem 0.4rem',
+                                  padding: '0.15rem 0.45rem',
                                   borderRadius: '4px',
                                   backgroundColor: 'rgba(255, 255, 255, 0.06)',
                                   color: 'var(--text-muted)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '0.3rem'
+                                  gap: '0.3rem',
+                                  whiteSpace: 'nowrap'
                                 }}>
                                   {getCategoryIcon(catNorm)}
                                   {catNorm}
@@ -837,26 +838,27 @@ export default function ModuloVendas({
                               </td>
 
                               {/* DISPONÍVEL */}
-                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                                 <span style={{
                                   fontSize: '0.72rem',
                                   fontWeight: '800',
                                   color: qtdEstoque <= 2 ? '#F87171' : '#34D399',
                                   backgroundColor: qtdEstoque <= 2 ? 'rgba(248, 113, 113, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                                   padding: '0.15rem 0.45rem',
-                                  borderRadius: '4px'
+                                  borderRadius: '4px',
+                                  whiteSpace: 'nowrap'
                                 }}>
                                   {qtdEstoque} {item.unidade || 'UN'}
                                 </span>
                               </td>
 
                               {/* VALOR UNIT. */}
-                              <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#10B981', fontSize: '0.86rem' }}>
+                              <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#10B981', fontSize: '0.86rem', whiteSpace: 'nowrap', minWidth: '95px' }}>
                                 R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
                               </td>
 
                               {/* NO CARRINHO */}
-                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                                 {qtdNoCart > 0 ? (
                                   <span style={{
                                     fontSize: '0.68rem',
@@ -865,7 +867,8 @@ export default function ModuloVendas({
                                     backgroundColor: 'rgba(245, 158, 11, 0.18)',
                                     border: '1px solid rgba(245, 158, 11, 0.35)',
                                     padding: '0.15rem 0.45rem',
-                                    borderRadius: '10px'
+                                    borderRadius: '10px',
+                                    whiteSpace: 'nowrap'
                                   }}>
                                     {qtdNoCart} no carrinho
                                   </span>
@@ -875,7 +878,7 @@ export default function ModuloVendas({
                               </td>
 
                               {/* AÇÃO */}
-                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                                 <button
                                   type="button"
                                   disabled={semEstoque}
@@ -894,7 +897,8 @@ export default function ModuloVendas({
                                     cursor: semEstoque ? 'not-allowed' : 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '0.2rem'
+                                    gap: '0.2rem',
+                                    whiteSpace: 'nowrap'
                                   }}
                                   title={semEstoque ? 'Estoque esgotado' : 'Adicionar ao carrinho'}
                                 >
@@ -953,7 +957,7 @@ export default function ModuloVendas({
                   />
                 </div>
 
-                {/* Lista de Itens no Carrinho (Área Rolável) */}
+                {/* Lista de Itens no Carrinho (Área Rolável com Cartões Espaçosos) */}
                 <div style={{
                   flex: 1,
                   overflowY: 'auto',
@@ -961,10 +965,10 @@ export default function ModuloVendas({
                   border: '1px solid var(--border-color)',
                   borderRadius: '8px',
                   backgroundColor: 'rgba(0,0,0,0.2)',
-                  padding: '0.4rem',
+                  padding: '0.45rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.4rem'
+                  gap: '0.45rem'
                 }}>
                   {carrinho.length > 0 ? (
                     carrinho.map(item => (
@@ -973,106 +977,125 @@ export default function ModuloVendas({
                         style={{
                           backgroundColor: 'var(--bg-card)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          padding: '0.5rem 0.6rem',
+                          borderRadius: '8px',
+                          padding: '0.6rem 0.75rem',
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '0.5rem'
+                          flexDirection: 'column',
+                          gap: '0.4rem'
                         }}
                       >
-                        {/* Descrição */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {/* Linha 1: Nome Completo do Item + Botão de Excluir */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                          <div style={{
+                            fontSize: '0.82rem',
+                            fontWeight: '700',
+                            color: 'var(--text-main)',
+                            lineHeight: '1.3',
+                            wordBreak: 'break-word'
+                          }}>
                             {item.nome}
                           </div>
-                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                            R$ {(item.preco_unitario || 0).toFixed(2)} un. {item.sku ? `• ${item.sku}` : ''}
-                          </div>
-                        </div>
-
-                        {/* Controles de Quantidade */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                           <button
                             type="button"
-                            onClick={() => handleDecrementarQtd(item.item_id)}
+                            onClick={() => handleRemoverDoCarrinho(item.item_id)}
                             style={{
-                              width: '24px',
-                              height: '24px',
+                              background: 'rgba(248, 113, 113, 0.1)',
+                              border: '1px solid rgba(248, 113, 113, 0.25)',
                               borderRadius: '4px',
-                              border: '1px solid var(--border-color)',
-                              backgroundColor: 'var(--bg-input)',
-                              color: 'var(--text-main)',
+                              color: '#F87171',
                               cursor: 'pointer',
+                              padding: '0.2rem 0.35rem',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.8rem',
-                              fontWeight: '800'
+                              flexShrink: 0
                             }}
-                            title="Diminuir quantidade"
+                            title="Remover do carrinho"
                           >
-                            <Minus size={12} />
-                          </button>
-
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantidade}
-                            onChange={e => handleAlterarQtdCarrinho(item.item_id, e.target.value)}
-                            style={{
-                              width: '42px',
-                              height: '24px',
-                              textAlign: 'center',
-                              backgroundColor: 'var(--bg-input)',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: '4px',
-                              color: '#F59E0B',
-                              fontWeight: '800',
-                              fontSize: '0.78rem',
-                              padding: 0
-                            }}
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() => handleIncrementarQtd(item.item_id)}
-                            style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '4px',
-                              border: '1px solid var(--border-color)',
-                              backgroundColor: 'var(--bg-input)',
-                              color: 'var(--text-main)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.8rem',
-                              fontWeight: '800'
-                            }}
-                            title="Aumentar quantidade"
-                          >
-                            <Plus size={12} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
 
-                        {/* Subtotal */}
-                        <div style={{ textAlign: 'right', minWidth: '65px' }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#10B981' }}>
-                            R$ {(item.subtotal || 0).toFixed(2)}
+                        {/* Linha 2: Detalhes à esquerda (SKU e Unitário), Stepper e Subtotal à direita */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.35rem' }}>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            <span style={{ color: '#F59E0B', fontWeight: '700' }}>R$ {(item.preco_unitario || 0).toFixed(2)}</span> un.
+                            {item.sku && <span style={{ marginLeft: '0.3rem', opacity: 0.8 }}>({item.sku})</span>}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            {/* Controles de Quantidade */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleDecrementarQtd(item.item_id)}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: 'var(--bg-input)',
+                                  color: 'var(--text-main)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '800'
+                                }}
+                                title="Diminuir quantidade"
+                              >
+                                <Minus size={12} />
+                              </button>
+
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantidade}
+                                onChange={e => handleAlterarQtdCarrinho(item.item_id, e.target.value)}
+                                style={{
+                                  width: '42px',
+                                  height: '24px',
+                                  textAlign: 'center',
+                                  backgroundColor: 'var(--bg-input)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '4px',
+                                  color: '#F59E0B',
+                                  fontWeight: '800',
+                                  fontSize: '0.78rem',
+                                  padding: 0
+                                }}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => handleIncrementarQtd(item.item_id)}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: 'var(--bg-input)',
+                                  color: 'var(--text-main)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '800'
+                                }}
+                                title="Aumentar quantidade"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+
+                            {/* Subtotal */}
+                            <div style={{ textAlign: 'right', minWidth: '75px', fontSize: '0.86rem', fontWeight: '800', color: '#10B981', whiteSpace: 'nowrap' }}>
+                              R$ {(item.subtotal || 0).toFixed(2)}
+                            </div>
                           </div>
                         </div>
-
-                        {/* Lixeira */}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoverDoCarrinho(item.item_id)}
-                          style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
-                          title="Remover do carrinho"
-                        >
-                          <Trash2 size={14} />
-                        </button>
                       </div>
                     ))
                   ) : (

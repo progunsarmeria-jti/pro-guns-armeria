@@ -325,6 +325,11 @@ export default function ModuloVendas({
   const [descontoVenda, setDescontoVenda] = useState(0)
   const [formaPagamento, setFormaPagamento] = useState('Dinheiro')
   const [valorPagoCliente, setValorPagoCliente] = useState('')
+  const [tipoQuitacao, setTipoQuitacao] = useState('TOTAL') // 'TOTAL' ou 'PARCIAL'
+  const [valorEntradaParcial, setValorEntradaParcial] = useState('')
+  const [modalReceberSaldoVenda, setModalReceberSaldoVenda] = useState(null)
+  const [valorReceberSaldoInput, setValorReceberSaldoInput] = useState('')
+  const [formaPagtoReceberSaldo, setFormaPagtoReceberSaldo] = useState('PIX')
 
   // ── CLASSIFICADORES INTELIGENTES DE PRODUTOS REGULADOS & SERIALIZADOS ──────
   const isItemArmaDeFogo = (item) => {
@@ -402,6 +407,7 @@ export default function ModuloVendas({
   const faturamentoHoje = vendasHoje.reduce((acc, v) => acc + (parseFloat(v.valor_final || v.valor_total) || 0), 0)
   const vendasArmasEmTramite = (vendas || []).filter(v => v.tipo_venda === 'VENDA_ARMA' || v.dados_tramite_arma || (v.itens || []).some(isItemArmaDeFogo))
   const vendasMunicao = (vendas || []).filter(v => v.tipo_venda === 'VENDA_MUNICAO' || v.dados_regulamento_municao || (v.itens || []).some(isItemMunicao))
+  const vendasParciais = (vendas || []).filter(v => v.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(v.saldo_devedor) > 0.05))
 
   // ── NORMALIZADOR DE CATEGORIA DO PRODUTO ────────────────────────────────────
   const normalizarCategoria = (item) => {
@@ -629,7 +635,13 @@ export default function ModuloVendas({
   const valorSubtotalCarrinho = carrinho.reduce((acc, c) => acc + (c.subtotal || 0), 0)
   const valorDescontoNum = parseFloat(descontoVenda) || 0
   const valorFinalCarrinho = Math.max(0, valorSubtotalCarrinho - valorDescontoNum)
-  const valorTrocoDevolver = Math.max(0, (parseFloat(valorPagoCliente) || 0) - valorFinalCarrinho)
+
+  // Pagamento Parcial (Entrada / Sinal) ou Quitação Integral
+  const isVendaParcial = tipoQuitacao === 'PARCIAL'
+  const valorEntradaParcialNum = isVendaParcial ? Math.min(valorFinalCarrinho, Math.max(0, parseFloat(valorEntradaParcial) || 0)) : valorFinalCarrinho
+  const saldoPendenteCarrinho = Math.max(0, valorFinalCarrinho - valorEntradaParcialNum)
+  const valorEfetivamenteRecebido = isVendaParcial ? valorEntradaParcialNum : valorFinalCarrinho
+  const valorTrocoDevolver = (!isVendaParcial && formaPagamento === 'Dinheiro') ? Math.max(0, (parseFloat(valorPagoCliente) || 0) - valorFinalCarrinho) : 0
 
   // Itens regulados no carrinho
   const temArmaNoCarrinho = carrinho.some(isItemArmaDeFogo)
@@ -641,6 +653,11 @@ export default function ModuloVendas({
     e.preventDefault()
     if (carrinho.length === 0) {
       alert('Selecione ao menos 1 item do estoque para realizar a venda!')
+      return
+    }
+
+    if (isVendaParcial && valorEntradaParcialNum <= 0) {
+      alert('⚠️ Por favor, informe o valor da entrada / sinal pago pelo cliente no ato da venda.')
       return
     }
 
@@ -669,7 +686,8 @@ export default function ModuloVendas({
       id: `v_${Date.now()}`,
       numero_venda: proximoNumeroVenda,
       tipo_venda: tipoVenda,
-      status_venda: temArma ? 'EM_TRAMITE' : 'CONCLUIDA',
+      status_venda: temArma ? 'EM_TRAMITE' : (isVendaParcial ? 'PAGO_PARCIAL' : 'CONCLUIDA'),
+      status_pagamento: (isVendaParcial && saldoPendenteCarrinho > 0) ? 'PAGO_PARCIAL' : 'QUITADO',
       status_tramite_arma: temArma ? 'AGUARDANDO_AUTORIZACAO' : 'FINALIZADA',
       cliente_id: clienteSelecionadoObj?.id || '',
       cliente_nome: clienteSelecionado,
@@ -687,11 +705,24 @@ export default function ModuloVendas({
       valor_subtotal: valorSubtotalCarrinho,
       desconto: valorDescontoNum,
       valor_final: valorFinalCarrinho,
+      valor_total: valorFinalCarrinho,
       forma_pagamento: formaPagamento,
-      valor_pago: parseFloat(valorPagoCliente) || valorFinalCarrinho,
+      valor_pago: valorEfetivamenteRecebido,
+      saldo_devedor: saldoPendenteCarrinho,
       troco: valorTrocoDevolver,
       operador: usuarioLogado?.nome_completo || 'Operador',
       created_at: new Date().toISOString(),
+      historico_pagamentos: [
+        {
+          id: `pag_${Date.now()}`,
+          data: hojeStr,
+          hora: horaAgoraStr,
+          valor: valorEfetivamenteRecebido,
+          forma_pagamento: formaPagamento,
+          tipo: (isVendaParcial && saldoPendenteCarrinho > 0) ? 'ENTRADA / SINAL' : 'QUITACAO_INTEGRAL',
+          operador: usuarioLogado?.nome_completo || 'Operador'
+        }
+      ],
       dados_tramite_arma: temArma ? {
         status: 'AGUARDANDO_AUTORIZACAO',
         data_reserva: hojeStr,
@@ -769,7 +800,7 @@ export default function ModuloVendas({
       setArmas(novoArmas)
     }
 
-    // 2. Lançar no Caixa ABERTO da Recepção
+    // 2. Lançar no Caixa ABERTO da Recepção (Apenas o valor efetivamente pago)
     if (setCaixas && caixas) {
       const caixaAberto = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas.find(c => c.status === 'ABERTO')
       if (caixaAberto) {
@@ -777,10 +808,10 @@ export default function ModuloVendas({
           id: `mov_v_${Date.now()}`,
           tipo: 'RECEBIMENTO_VENDA',
           descricao: temArma
-            ? `Venda de Arma #${proximoNumeroVenda} (${clienteSelecionado}) — Aguardando PF/Exército`
-            : `Venda de Balcão #${proximoNumeroVenda} (${clienteSelecionado})`,
+            ? `Venda de Arma #${proximoNumeroVenda} (${clienteSelecionado}) — ${saldoPendenteCarrinho > 0 ? `Entrada via ${formaPagamento}: ${formatarMoeda(valorEfetivamenteRecebido)} (Resta: ${formatarMoeda(saldoPendenteCarrinho)})` : `Integral via ${formaPagamento}`}`
+            : `Venda de Balcão #${proximoNumeroVenda} (${clienteSelecionado}) — ${saldoPendenteCarrinho > 0 ? `Entrada via ${formaPagamento}: ${formatarMoeda(valorEfetivamenteRecebido)} (Resta: ${formatarMoeda(saldoPendenteCarrinho)})` : `Integral via ${formaPagamento}`}`,
           forma_pagamento: formaPagamento,
-          valor: valorFinalCarrinho,
+          valor: valorEfetivamenteRecebido,
           hora: horaAgoraStr,
           usuario: usuarioLogado?.nome_completo || 'Operador Responsável',
           usuario_nome: usuarioLogado?.nome_completo || 'Operador Responsável',
@@ -791,7 +822,7 @@ export default function ModuloVendas({
         const saldoAnterior = parseFloat(caixaAberto.saldo_final || caixaAberto.saldo_inicial) || 0
         const caixaAtualizado = {
           ...caixaAberto,
-          saldo_final: saldoAnterior + valorFinalCarrinho,
+          saldo_final: saldoAnterior + valorEfetivamenteRecebido,
           movimentacoes: [...movsAnteriores, novaMovCaixa]
         }
         setCaixas(prev => prev.map(c => c.id === caixaAberto.id ? caixaAtualizado : c))
@@ -799,23 +830,44 @@ export default function ModuloVendas({
       }
     }
 
-    // 3. Lançar no Financeiro (Receita)
+    // 3. Lançar no Financeiro (Receita recebida e saldo a receber se houver)
     if (setFinanceiro && financeiro) {
       const resumoItensText = carrinho.map(c => `${c.quantidade}x ${c.nome}${c.numero_serie ? ` (S/N: ${c.numero_serie})` : ''}`).join(', ')
+      const lancamentosAdicionar = []
+
+      // 3.1. Receita Efetivamente Paga no Ato
       const novoLancamentoFinanceiro = {
         id: `fin_v_${Date.now()}`,
         data: hojeStr,
         descricao: temArma
-          ? `Venda de Arma #${proximoNumeroVenda} (${clienteSelecionado}) — Aguardando PF/Exército`
-          : `Venda de Balcão #${proximoNumeroVenda} (${clienteSelecionado}) — ${resumoItensText}`,
+          ? `Venda de Arma #${proximoNumeroVenda} (${clienteSelecionado}) — ${saldoPendenteCarrinho > 0 ? `Entrada via ${formaPagamento} (Resta ${formatarMoeda(saldoPendenteCarrinho)})` : 'Quitação Total'}`
+          : `Venda de Balcão #${proximoNumeroVenda} (${clienteSelecionado}) — ${saldoPendenteCarrinho > 0 ? `Entrada via ${formaPagamento}` : 'Quitação Total'} — ${resumoItensText}`,
         categoria: temArma ? 'VENDA DE ARMAS' : (temMun ? 'VENDA DE MUNIÇÕES' : 'VENDA DE BALCÃO'),
-        tipo: 'RECEITA',
-        valor: valorFinalCarrinho,
+        tipo: 'Receita',
+        valor: valorEfetivamenteRecebido,
         forma_pagamento: formaPagamento,
-        status: 'PAGO'
+        status: 'Pago'
       }
-      setFinanceiro(prev => [novoLancamentoFinanceiro, ...prev])
-      dbUpsert('financeiro', novoLancamentoFinanceiro)
+      lancamentosAdicionar.push(novoLancamentoFinanceiro)
+
+      // 3.2. Se houver Saldo Pendente, registra como Pendente a Receber no Contas a Receber
+      if (saldoPendenteCarrinho > 0) {
+        lancamentosAdicionar.push({
+          id: `fin_v_pendente_${Date.now()}`,
+          venda_id: `v_${Date.now()}`,
+          data: hojeStr,
+          data_vencimento: hojeStr,
+          descricao: `Saldo Pendente Venda #${proximoNumeroVenda} (${clienteSelecionado})`,
+          categoria: 'SALDO DE VENDA A RECEBER',
+          tipo: 'Receita',
+          valor: saldoPendenteCarrinho,
+          forma_pagamento: 'A DEFINIR',
+          status: 'Pendente'
+        })
+      }
+
+      setFinanceiro(prev => [...lancamentosAdicionar, ...prev])
+      lancamentosAdicionar.forEach(l => dbUpsert('financeiro', l))
     }
 
     // 4. Salvar Venda no Estado, LocalStorage e Supabase
@@ -845,6 +897,8 @@ export default function ModuloVendas({
     setClienteSelecionado('CLIENTE AVULSO / BALCÃO')
     setDescontoVenda(0)
     setValorPagoCliente('')
+    setTipoQuitacao('TOTAL')
+    setValorEntradaParcial('')
     setDadosMunicaoForm({
       numero_craf: '',
       orgao_emissor: 'SINARM',
@@ -960,6 +1014,130 @@ export default function ModuloVendas({
     dbUpsert('vendas', vendaAtualizada)
     setModalTramiteVenda(vendaAtualizada)
     alert('Informações do trâmite da arma atualizadas com sucesso!')
+  }
+
+  // ── RECEBER SALDO RESTANTE DE VENDA PARCIAL (QUITAR SALDO DEVEDOR) ────────
+  const handleRegistrarRecebimentoSaldo = (e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (!modalReceberSaldoVenda) return
+
+    const valorRecebido = parseFloat(valorReceberSaldoInput) || 0
+    if (valorRecebido <= 0) {
+      alert('Informe um valor válido a ser recebido!')
+      return
+    }
+
+    const valorTotal = parseFloat(modalReceberSaldoVenda.valor_final || modalReceberSaldoVenda.valor_total) || 0
+    const valorJaPago = parseFloat(modalReceberSaldoVenda.valor_pago) || 0
+    const saldoAtual = Math.max(0, valorTotal - valorJaPago)
+
+    if (valorRecebido > (saldoAtual + 0.01)) {
+      alert(`⚠️ O valor informado (${formatarMoeda(valorRecebido)}) excede o saldo devedor atual (${formatarMoeda(saldoAtual)})!`)
+      return
+    }
+
+    const novoTotalPago = valorJaPago + valorRecebido
+    const novoSaldoRestante = Math.max(0, valorTotal - novoTotalPago)
+    const novoStatusPagto = novoSaldoRestante <= 0.05 ? 'QUITADO' : 'PAGO_PARCIAL'
+    const hojeStr = hojeISO()
+    const agora = new Date()
+    const horaAgoraStr = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+    const novoHistorico = [
+      ...(Array.isArray(modalReceberSaldoVenda.historico_pagamentos) ? modalReceberSaldoVenda.historico_pagamentos : []),
+      {
+        id: `pag_${Date.now()}`,
+        data: hojeStr,
+        hora: horaAgoraStr,
+        valor: valorRecebido,
+        forma_pagamento: formaPagtoReceberSaldo,
+        tipo: novoSaldoRestante <= 0.05 ? 'QUITACAO_FINAL' : 'PAGAMENTO_PARCIAL',
+        operador: usuarioLogado?.nome_completo || 'Operador'
+      }
+    ]
+
+    const vendaAtualizada = {
+      ...modalReceberSaldoVenda,
+      valor_pago: novoTotalPago,
+      saldo_devedor: novoSaldoRestante,
+      status_pagamento: novoStatusPagto,
+      historico_pagamentos: novoHistorico
+    }
+
+    // 1. Atualiza Lista de Vendas
+    if (setVendas) {
+      setVendas(prev => prev.map(v => v.id === modalReceberSaldoVenda.id ? vendaAtualizada : v))
+    }
+    try {
+      const salvas = JSON.parse(localStorage.getItem('PROGUNS_VENDAS') || '[]')
+      localStorage.setItem('PROGUNS_VENDAS', JSON.stringify(salvas.map(v => v.id === modalReceberSaldoVenda.id ? vendaAtualizada : v)))
+    } catch (err) {}
+    dbUpsert('vendas', vendaAtualizada)
+
+    // 2. Atualiza Caixa ABERTO (Entrada do valor recebido)
+    if (setCaixas && caixas) {
+      const caixaAberto = caixas.find(c => c.data === hojeStr && c.status === 'ABERTO') || caixas.find(c => c.status === 'ABERTO')
+      if (caixaAberto) {
+        const novaMovCaixa = {
+          id: `mov_v_quitar_${Date.now()}`,
+          tipo: 'RECEBIMENTO_VENDA',
+          descricao: `Recebimento Saldo Venda #${modalReceberSaldoVenda.numero_venda} (${modalReceberSaldoVenda.cliente_nome}) via ${formaPagtoReceberSaldo}${novoSaldoRestante <= 0.05 ? ' (Venda 100% Quitada)' : ` (Resta: ${formatarMoeda(novoSaldoRestante)})`}`,
+          forma_pagamento: formaPagtoReceberSaldo,
+          valor: valorRecebido,
+          hora: horaAgoraStr,
+          usuario: usuarioLogado?.nome_completo || 'Operador Responsável',
+          usuario_nome: usuarioLogado?.nome_completo || 'Operador Responsável',
+          usuario_id: usuarioLogado?.id || null,
+          usuario_cargo: usuarioLogado?.cargo || usuarioLogado?.perfil || 'Recepção'
+        }
+        const movsAnteriores = Array.isArray(caixaAberto.movimentacoes) ? caixaAberto.movimentacoes : []
+        const saldoAnterior = parseFloat(caixaAberto.saldo_final || caixaAberto.saldo_inicial) || 0
+        const caixaAtualizado = {
+          ...caixaAberto,
+          saldo_final: saldoAnterior + valorRecebido,
+          movimentacoes: [...movsAnteriores, novaMovCaixa]
+        }
+        setCaixas(prev => prev.map(c => c.id === caixaAberto.id ? caixaAtualizado : c))
+        dbUpsert('caixas', caixaAtualizado)
+      }
+    }
+
+    // 3. Atualiza Financeiro (Lança receita quitada)
+    if (setFinanceiro && financeiro) {
+      const novoLancamento = {
+        id: `fin_v_receb_${Date.now()}`,
+        data: hojeStr,
+        descricao: `Recebimento Saldo Venda #${modalReceberSaldoVenda.numero_venda} (${modalReceberSaldoVenda.cliente_nome}) via ${formaPagtoReceberSaldo}${novoSaldoRestante <= 0.05 ? ' (Quitação Total)' : ''}`,
+        categoria: 'RECEBIMENTO DE SALDO DE VENDA',
+        tipo: 'Receita',
+        valor: valorRecebido,
+        forma_pagamento: formaPagtoReceberSaldo,
+        status: 'Pago'
+      }
+      // Se a venda foi 100% quitada, baixa o saldo pendente correspondente do Contas a Receber
+      setFinanceiro(prev => {
+        const atualizados = prev.map(f => {
+          if (novoSaldoRestante <= 0.05 && f.status === 'Pendente' && f.descricao && f.descricao.includes(`Venda #${modalReceberSaldoVenda.numero_venda}`)) {
+            return { ...f, status: 'Pago', data_pagamento: hojeStr }
+          }
+          return f
+        })
+        return [novoLancamento, ...atualizados]
+      })
+      dbUpsert('financeiro', novoLancamento)
+    }
+
+    // 4. Log de Auditoria
+    registrarLog({
+      usuario: usuarioLogado,
+      acao: 'RECEBIMENTO DE SALDO',
+      descricao: `Recebimento de ${formatarMoeda(valorRecebido)} (${formaPagtoReceberSaldo}) da Venda #${modalReceberSaldoVenda.numero_venda} do cliente ${modalReceberSaldoVenda.cliente_nome}. ${novoSaldoRestante <= 0.05 ? 'Venda totalmente quitada!' : `Saldo restante: ${formatarMoeda(novoSaldoRestante)}.`}`,
+      setLogs
+    })
+
+    setModalReceberSaldoVenda(null)
+    setValorReceberSaldoInput('')
+    alert(`✓ Recebimento de ${formatarMoeda(valorRecebido)} registrado com sucesso no Caixa e Financeiro!\n\n${novoSaldoRestante <= 0.05 ? 'A venda foi 100% quitada!' : `Saldo devedor restante: ${formatarMoeda(novoSaldoRestante)}.`}`)
   }
 
   // Data por extenso para documentos oficiais
@@ -1225,6 +1403,29 @@ export default function ModuloVendas({
       )
     }
 
+    if (venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) {
+      return (
+        <span
+          style={{
+            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+            color: '#FBBF24',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            padding: '0.12rem 0.38rem',
+            borderRadius: '5px',
+            fontSize: '0.67rem',
+            fontWeight: '800',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            whiteSpace: 'nowrap'
+          }}
+          title="Venda com pagamento parcial (resta saldo devedor a liquidar)"
+        >
+          <Clock size={11} /> Pago Parcial
+        </span>
+      )
+    }
+
     return (
       <span
         style={{
@@ -1254,8 +1455,11 @@ export default function ModuloVendas({
     } else if (abaFiltroVendas === 'MUNICAO') {
       const ehMun = v.tipo_venda === 'VENDA_MUNICAO' || v.dados_regulamento_municao || (v.itens || []).some(isItemMunicao)
       if (!ehMun) return false
+    } else if (abaFiltroVendas === 'PARCIAL') {
+      const isParcial = v.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(v.saldo_devedor) > 0.05)
+      if (!isParcial) return false
     } else if (abaFiltroVendas === 'CONCLUIDAS') {
-      const isConcluida = v.status_venda === 'CONCLUIDA' || v.status_tramite_arma === 'ENTREGUE' || (!v.dados_tramite_arma && v.tipo_venda !== 'VENDA_ARMA')
+      const isConcluida = (v.status_venda === 'CONCLUIDA' || v.status_tramite_arma === 'ENTREGUE' || (!v.dados_tramite_arma && v.tipo_venda !== 'VENDA_ARMA')) && v.status_pagamento !== 'PAGO_PARCIAL' && !(parseFloat(v.saldo_devedor) > 0.05)
       if (!isConcluida) return false
     }
 
@@ -1410,6 +1614,26 @@ export default function ModuloVendas({
         </button>
         <button
           type="button"
+          onClick={() => setAbaFiltroVendas('PARCIAL')}
+          style={{
+            padding: '0.35rem 0.75rem',
+            borderRadius: '20px',
+            fontSize: '0.75rem',
+            fontWeight: abaFiltroVendas === 'PARCIAL' ? '800' : '600',
+            border: abaFiltroVendas === 'PARCIAL' ? '1px solid #F59E0B' : '1px solid var(--border-color)',
+            backgroundColor: abaFiltroVendas === 'PARCIAL' ? 'rgba(245, 158, 11, 0.2)' : 'var(--bg-input)',
+            color: abaFiltroVendas === 'PARCIAL' ? '#FBBF24' : 'var(--text-muted)',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem'
+          }}
+        >
+          <Clock size={13} />
+          Pagamento Parcial ({vendasParciais.length})
+        </button>
+        <button
+          type="button"
           onClick={() => setAbaFiltroVendas('CONCLUIDAS')}
           style={{
             padding: '0.35rem 0.75rem',
@@ -1447,14 +1671,14 @@ export default function ModuloVendas({
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.74rem' }}>
             <thead>
               <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                <th style={{ padding: '0.45rem 0.5rem', width: '70px', whiteSpace: 'nowrap' }}>VENDA #</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '85px', whiteSpace: 'nowrap' }}>DATA / HORA</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '155px' }}>CLIENTE</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '105px' }}>STATUS</th>
-                <th style={{ padding: '0.45rem 0.5rem' }}>ITENS ADQUIRIDOS</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '65px', whiteSpace: 'nowrap' }}>PAGTO</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '85px', whiteSpace: 'nowrap' }}>VALOR</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '185px', minWidth: '185px', textAlign: 'right', whiteSpace: 'nowrap' }}>AÇÕES</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '70px', minWidth: '70px', whiteSpace: 'nowrap' }}>VENDA #</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '85px', minWidth: '85px', whiteSpace: 'nowrap' }}>DATA / HORA</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '150px', minWidth: '150px', whiteSpace: 'nowrap' }}>CLIENTE</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '105px', minWidth: '105px', whiteSpace: 'nowrap' }}>STATUS</th>
+                <th style={{ padding: '0.45rem 0.5rem', minWidth: '260px', whiteSpace: 'nowrap' }}>ITENS ADQUIRIDOS</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '75px', minWidth: '75px', whiteSpace: 'nowrap' }}>PAGTO</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '105px', minWidth: '105px', whiteSpace: 'nowrap' }}>VALOR</th>
+                <th style={{ padding: '0.45rem 0.5rem', width: '220px', minWidth: '220px', textAlign: 'right', whiteSpace: 'nowrap' }}>AÇÕES</th>
               </tr>
             </thead>
             <tbody>
@@ -1492,7 +1716,7 @@ export default function ModuloVendas({
                         <div>{formatarData(venda.data)}</div>
                         {venda.hora && <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{venda.hora}</div>}
                       </td>
-                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
                         <div style={{ fontSize: '0.74rem', lineHeight: '1.2' }}>{venda.cliente_nome?.toUpperCase()}</div>
                         {venda.cliente_cpf && (
                           <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', fontWeight: '400', marginTop: '0.1rem' }}>
@@ -1500,58 +1724,137 @@ export default function ModuloVendas({
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '0.45rem 0.5rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
                         {getBadgeStatusVenda(venda)}
                       </td>
-                      <td style={{ padding: '0.45rem 0.5rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          {(venda.itens || []).map((it, idx) => (
-                            <div key={idx} style={{ fontSize: '0.73rem', color: 'var(--text-main)', lineHeight: '1.25' }}>
-                              <strong style={{ color: '#F59E0B' }}>{it.quantidade}x</strong> {it.nome}
-                              {it.calibre && <span style={{ color: 'var(--text-muted)', marginLeft: '0.2rem', fontSize: '0.7rem' }}>({it.calibre})</span>}
-                              {it.numero_serie && (
-                                <span style={{
-                                  marginLeft: '0.3rem',
-                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                                  color: '#FBBF24',
-                                  border: '1px solid rgba(245, 158, 11, 0.35)',
-                                  padding: '0.02rem 0.3rem',
-                                  borderRadius: '3px',
-                                  fontSize: '0.65rem',
-                                  fontWeight: '800',
-                                  fontFamily: 'monospace'
-                                }}>
-                                  S/N: {it.numero_serie}
-                                </span>
-                              )}
-                              {it.lote_fabricante && (
-                                <span style={{
-                                  marginLeft: '0.3rem',
-                                  backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                                  color: '#60A5FA',
-                                  border: '1px solid rgba(96, 165, 250, 0.35)',
-                                  padding: '0.02rem 0.3rem',
-                                  borderRadius: '3px',
-                                  fontSize: '0.65rem',
-                                  fontWeight: '700'
-                                }}>
-                                  Lote: {it.lote_fabricante}
-                                </span>
-                              )}
-                            </div>
-                          ))}
+                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', whiteSpace: 'nowrap' }}>
+                          {(venda.itens || []).map((it, idx) => {
+                            const nomeLimpo = (it.nome || '').trim()
+                            const calLimpo = (it.calibre || '').trim()
+                            const normNome = nomeLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '')
+                            const normCal = calLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '').replace('luger', '').replace('auto', '').replace('special', '').replace('magnum', '')
+                            const contemCalibre = normCal && normNome.includes(normCal)
+
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  fontSize: '0.73rem',
+                                  color: 'var(--text-main)',
+                                  lineHeight: '1.25',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                <strong style={{ color: '#F59E0B' }}>{it.quantidade}x</strong>
+                                <span style={{ fontWeight: '600' }}>{nomeLimpo}</span>
+                                {calLimpo && !contemCalibre && (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.69rem' }}>({calLimpo})</span>
+                                )}
+                                {it.numero_serie && (
+                                  <span style={{
+                                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                    color: '#FBBF24',
+                                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                                    padding: '0.02rem 0.3rem',
+                                    borderRadius: '3px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: '800',
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    S/N: {it.numero_serie}
+                                  </span>
+                                )}
+                                {it.lote_fabricante && (
+                                  <span style={{
+                                    backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                                    color: '#60A5FA',
+                                    border: '1px solid rgba(96, 165, 250, 0.35)',
+                                    padding: '0.02rem 0.3rem',
+                                    borderRadius: '3px',
+                                    fontSize: '0.65rem',
+                                    fontWeight: '700'
+                                  }}>
+                                    Lote: {it.lote_fabricante}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </td>
                       <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
-                        <span className="badge badge-blue" style={{ fontSize: '0.67rem', padding: '0.15rem 0.4rem' }}>
-                          {venda.forma_pagamento}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', alignItems: 'flex-start' }}>
+                          <span className="badge badge-blue" style={{ fontSize: '0.67rem', padding: '0.12rem 0.38rem' }}>
+                            {venda.forma_pagamento}
+                          </span>
+                          {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
+                            <span style={{
+                              fontSize: '0.61rem',
+                              fontWeight: '800',
+                              color: '#F59E0B',
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              borderRadius: '3px',
+                              padding: '0.02rem 0.25rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.15rem'
+                            }}>
+                              <Clock size={9} /> Parcial
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '800', color: '#10B981', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                        {formatarMoeda(venda.valor_final)}
+                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap', lineHeight: '1.25' }}>
+                        <div style={{ fontWeight: '800', color: '#10B981', fontSize: '0.8rem' }}>
+                          {formatarMoeda(venda.valor_final || venda.valor_total)}
+                        </div>
+                        {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', marginTop: '0.15rem' }}>
+                            <span style={{ fontSize: '0.64rem', color: '#34D399', fontWeight: '700' }}>
+                              Pago: {formatarMoeda(venda.valor_pago || 0)}
+                            </span>
+                            <span style={{ fontSize: '0.64rem', color: '#F87171', fontWeight: '700' }}>
+                              Resta: {formatarMoeda(venda.saldo_devedor !== undefined ? venda.saldo_devedor : ((venda.valor_final || venda.valor_total) - (venda.valor_pago || 0)))}
+                            </span>
+                          </div>
+                        ) : null}
                       </td>
                       <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
+                          {/* Botão de Quitar Saldo Devedor se houver saldo restante */}
+                          {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModalReceberSaldoVenda(venda)
+                                const saldo = venda.saldo_devedor !== undefined ? parseFloat(venda.saldo_devedor) : Math.max(0, (parseFloat(venda.valor_final || venda.valor_total) || 0) - (parseFloat(venda.valor_pago) || 0))
+                                setValorReceberSaldoInput(saldo.toFixed(2))
+                                setFormaPagtoReceberSaldo('PIX')
+                              }}
+                              style={{
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                color: '#34D399',
+                                borderRadius: '4px',
+                                padding: '0.2rem 0.45rem',
+                                fontSize: '0.68rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}
+                              title="Receber / Quitar Saldo Devedor Pendente"
+                            >
+                              <DollarSign size={12} />
+                              Quitar
+                            </button>
+                          )}
                           {/* Botão de Trâmite de Arma (se for venda de arma) */}
                           {ehArma && (
                             <button
@@ -2515,6 +2818,171 @@ export default function ModuloVendas({
                     </div>
                   )}
 
+                  {/* CONDIÇÃO DE LIQUIDAÇÃO: QUITAÇÃO INTEGRAL (100%) VS PAGAMENTO PARCIAL (ENTRADA / SINAL) */}
+                  <div style={{
+                    backgroundColor: '#12151E',
+                    padding: '0.55rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid #232B3C'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                      <label style={{ fontSize: '0.69rem', color: '#8A94A6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                        Condição de Pagamento *
+                      </label>
+                      <span style={{ fontSize: '0.65rem', color: isVendaParcial ? '#F59E0B' : '#10B981', fontWeight: '800' }}>
+                        {isVendaParcial ? '⏳ PAGAMENTO PARCIAL (SINAL)' : '✓ QUITAÇÃO TOTAL'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTipoQuitacao('TOTAL')
+                          setValorEntradaParcial('')
+                        }}
+                        style={{
+                          padding: '0.35rem 0.5rem',
+                          borderRadius: '5px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          border: tipoQuitacao === 'TOTAL' ? '1px solid #10B981' : '1px solid #2D364A',
+                          backgroundColor: tipoQuitacao === 'TOTAL' ? 'rgba(16, 185, 129, 0.18)' : '#171B26',
+                          color: tipoQuitacao === 'TOTAL' ? '#34D399' : '#8A94A6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <CheckCircle2 size={13} />
+                        Quitação Total (100%)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTipoQuitacao('PARCIAL')
+                          if (!valorEntradaParcial && valorFinalCarrinho > 0) {
+                            setValorEntradaParcial((valorFinalCarrinho * 0.3).toFixed(2))
+                          }
+                        }}
+                        style={{
+                          padding: '0.35rem 0.5rem',
+                          borderRadius: '5px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          border: tipoQuitacao === 'PARCIAL' ? '1px solid #F59E0B' : '1px solid #2D364A',
+                          backgroundColor: tipoQuitacao === 'PARCIAL' ? 'rgba(245, 158, 11, 0.18)' : '#171B26',
+                          color: tipoQuitacao === 'PARCIAL' ? '#FBBF24' : '#8A94A6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <Clock size={13} />
+                        Pagamento Parcial (Sinal)
+                      </button>
+                    </div>
+
+                    {/* Campo de Entrada / Sinal se for Parcial */}
+                    {isVendaParcial && (
+                      <div style={{
+                        marginTop: '0.55rem',
+                        padding: '0.55rem 0.7rem',
+                        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                        border: '1px dashed rgba(245, 158, 11, 0.3)',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.45rem'
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                          <div>
+                            <label style={{ fontSize: '0.68rem', color: '#FBBF24', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>
+                              VALOR PAGO AGORA ({formaPagamento.toUpperCase()}) *
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                              <span style={{ position: 'absolute', left: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#8A94A6', fontSize: '0.75rem', fontWeight: '700' }}>
+                                R$
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                max={valorFinalCarrinho}
+                                className="input-field"
+                                style={{
+                                  height: '32px',
+                                  paddingLeft: '1.8rem',
+                                  fontSize: '0.85rem',
+                                  fontWeight: '800',
+                                  backgroundColor: '#10131B',
+                                  border: '1px solid rgba(245, 158, 11, 0.5)',
+                                  color: '#F8FAFC'
+                                }}
+                                value={valorEntradaParcial}
+                                onChange={e => setValorEntradaParcial(e.target.value)}
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Atalhos Rápidos de Sinal */}
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: '#8A94A6', display: 'block', marginBottom: '0.2rem' }}>
+                              Sugestão de Entrada:
+                            </label>
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                              {[
+                                { label: '20%', pct: 0.20 },
+                                { label: '30%', pct: 0.30 },
+                                { label: '50%', pct: 0.50 }
+                              ].map(s => (
+                                <button
+                                  key={s.label}
+                                  type="button"
+                                  onClick={() => setValorEntradaParcial((valorFinalCarrinho * s.pct).toFixed(2))}
+                                  style={{
+                                    flex: 1,
+                                    fontSize: '0.66rem',
+                                    padding: '0.25rem 0.2rem',
+                                    borderRadius: '4px',
+                                    border: '1px solid #2F394F',
+                                    backgroundColor: '#191F2B',
+                                    color: '#CBD5E1',
+                                    cursor: 'pointer',
+                                    fontWeight: '700'
+                                  }}
+                                >
+                                  {s.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Demonstrativo Parcial */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '0.72rem',
+                          paddingTop: '0.25rem',
+                          borderTop: '1px solid rgba(245, 158, 11, 0.15)'
+                        }}>
+                          <span style={{ color: '#94A3B8' }}>
+                            Recebido no Ato: <strong style={{ color: '#10B981' }}>{formatarMoeda(valorEntradaParcialNum)}</strong>
+                          </span>
+                          <span style={{ color: '#F87171', fontWeight: '800' }}>
+                            Saldo a Receber: {formatarMoeda(saldoPendenteCarrinho)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Troco se Dinheiro */}
                   {formaPagamento === 'Dinheiro' && (
                     <div style={{
@@ -2527,7 +2995,7 @@ export default function ModuloVendas({
                       gap: '0.5rem'
                     }}>
                       <div>
-                        <label style={{ fontSize: '0.68rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Valor Recebido (R$)</label>
+                        <label style={{ fontSize: '0.68rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Valor em Espécie Entregue (R$)</label>
                         <input
                           type="number"
                           step="0.01"
@@ -2569,8 +3037,15 @@ export default function ModuloVendas({
                         TOTAL DA VENDA
                       </div>
                     </div>
-                    <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#F8FAFC', letterSpacing: '-0.02em' }}>
-                      {formatarMoeda(valorFinalCarrinho)}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+                        {formatarMoeda(valorFinalCarrinho)}
+                      </div>
+                      {isVendaParcial && (
+                        <div style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: '700' }}>
+                          Entrada: {formatarMoeda(valorEntradaParcialNum)} | Resta: {formatarMoeda(saldoPendenteCarrinho)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3374,7 +3849,7 @@ export default function ModuloVendas({
                   </div>
                 )}
 
-                {/* 4. DADOS FINANCEIROS & AUDITORIA */}
+                {/* 4. DADOS FINANCEIROS & LIQUIDAÇÃO */}
                 <div style={{
                   backgroundColor: '#0F121A',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -3382,19 +3857,56 @@ export default function ModuloVendas({
                   padding: '1rem'
                 }}>
                   <div style={{
-                    fontSize: '0.74rem',
-                    fontWeight: '800',
-                    color: '#10B981',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    marginBottom: '0.65rem',
                     display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: '0.4rem'
+                    marginBottom: '0.65rem'
                   }}>
-                    <DollarSign size={14} />
-                    4. Dados Financeiros & Liquidação
+                    <div style={{
+                      fontSize: '0.74rem',
+                      fontWeight: '800',
+                      color: '#10B981',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}>
+                      <DollarSign size={14} />
+                      4. Dados Financeiros & Liquidação
+                    </div>
+
+                    {/* Botão de Quitar no Dossiê se houver saldo restante */}
+                    {(modalDossieVenda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(modalDossieVenda.saldo_devedor) > 0.05)) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const v = modalDossieVenda
+                          setModalReceberSaldoVenda(v)
+                          const saldo = v.saldo_devedor !== undefined ? parseFloat(v.saldo_devedor) : Math.max(0, (parseFloat(v.valor_final || v.valor_total) || 0) - (parseFloat(v.valor_pago) || 0))
+                          setValorReceberSaldoInput(saldo.toFixed(2))
+                          setFormaPagtoReceberSaldo('PIX')
+                        }}
+                        style={{
+                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          color: '#34D399',
+                          borderRadius: '6px',
+                          padding: '0.25rem 0.65rem',
+                          fontSize: '0.72rem',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <DollarSign size={13} />
+                        Quitar Saldo Devedor
+                      </button>
+                    )}
                   </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.6rem 1rem', fontSize: '0.8rem' }}>
                     <div>
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>SUBTOTAL:</span>
@@ -3412,7 +3924,62 @@ export default function ModuloVendas({
                       <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>FORMA DE PAGAMENTO:</span>
                       <strong style={{ color: '#F1F5F9' }}>{modalDossieVenda.forma_pagamento}</strong>
                     </div>
+
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>STATUS PAGAMENTO:</span>
+                      <span style={{
+                        color: (modalDossieVenda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(modalDossieVenda.saldo_devedor) > 0.05)) ? '#F59E0B' : '#10B981',
+                        fontWeight: '800',
+                        fontSize: '0.75rem'
+                      }}>
+                        {(modalDossieVenda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(modalDossieVenda.saldo_devedor) > 0.05)) ? '⏳ PAGO PARCIAL' : '✓ 100% QUITADO'}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>VALOR JÁ PAGO:</span>
+                      <strong style={{ color: '#34D399' }}>
+                        {formatarMoeda(modalDossieVenda.valor_pago !== undefined ? modalDossieVenda.valor_pago : modalDossieVenda.valor_final)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>SALDO DEVEDOR:</span>
+                      <strong style={{ color: (parseFloat(modalDossieVenda.saldo_devedor) > 0.05) ? '#EF4444' : '#64748B' }}>
+                        {formatarMoeda(modalDossieVenda.saldo_devedor || 0)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>HISTÓRICO LANÇAMENTOS:</span>
+                      <span style={{ color: '#CBD5E1', fontSize: '0.74rem' }}>
+                        {Array.isArray(modalDossieVenda.historico_pagamentos) ? `${modalDossieVenda.historico_pagamentos.length} recebimento(s)` : '1 no ato da venda'}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Detalhe do Histórico de Pagamentos se houver mais de 1 ou parcial */}
+                  {Array.isArray(modalDossieVenda.historico_pagamentos) && modalDossieVenda.historico_pagamentos.length > 0 && (
+                    <div style={{
+                      marginTop: '0.75rem',
+                      padding: '0.65rem 0.8rem',
+                      backgroundColor: 'rgba(0,0,0,0.25)',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <div style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: '800', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+                        Histórico Cronológico de Liquidação:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        {modalDossieVenda.historico_pagamentos.map((pag, pidx) => (
+                          <div key={pidx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.2rem' }}>
+                            <span style={{ color: '#CBD5E1' }}>
+                              #{pidx + 1} — {formatarData(pag.data)} {pag.hora ? `às ${pag.hora}` : ''} • <strong style={{ color: '#FBBF24' }}>{pag.forma_pagamento}</strong>
+                              {pag.operador ? ` (${pag.operador})` : ''}
+                            </span>
+                            <strong style={{ color: '#10B981' }}>+ {formatarMoeda(pag.valor)}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4048,6 +4615,32 @@ export default function ModuloVendas({
                       Forma de Pagamento: <strong>{reciboModalVenda.forma_pagamento}</strong>
                       {reciboModalVenda.troco > 0 ? ` (Troco: ${formatarMoeda(reciboModalVenda.troco)})` : ''}
                     </div>
+                    {(reciboModalVenda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(reciboModalVenda.saldo_devedor) > 0.05)) && (
+                      <div style={{
+                        marginTop: '0.4rem',
+                        padding: '0.4rem 0.6rem',
+                        backgroundColor: '#FEF3C7',
+                        border: '1px solid #F59E0B',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        textAlign: 'left',
+                        color: '#78350F'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Valor Pago no Ato (Entrada / Sinal):</span>
+                          <strong style={{ color: '#047857' }}>{formatarMoeda(reciboModalVenda.valor_pago || 0)}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                          <span style={{ fontWeight: '800' }}>Saldo Devedor Pendente a Quitar:</span>
+                          <strong style={{ color: '#B91C1C' }}>
+                            {formatarMoeda(reciboModalVenda.saldo_devedor !== undefined ? reciboModalVenda.saldo_devedor : ((reciboModalVenda.valor_final || reciboModalVenda.valor_total) - (reciboModalVenda.valor_pago || 0)))}
+                          </strong>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#92400E', marginTop: '0.2rem' }}>
+                          * Condição: Pagamento Parcial. O saldo restante deverá ser liquidado no momento da liberação/retirada.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* ASSINATURA */}
@@ -4865,6 +5458,264 @@ export default function ModuloVendas({
                 border: '1px solid rgba(197, 160, 89, 0.4)'
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: RECEBER / QUITAR SALDO DEVEDOR DE VENDA PARCIAL ── */}
+      {modalReceberSaldoVenda && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.82)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: '#141824',
+            border: '1px solid #2D3748',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '520px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+            overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '1rem 1.25rem',
+              borderBottom: '1px solid #232B3C',
+              backgroundColor: '#10131B',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#10B981'
+                }}>
+                  <DollarSign size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: '800', color: '#F8FAFC' }}>
+                    Recebimento / Quitação de Saldo
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#8A94A6' }}>
+                    Venda #{modalReceberSaldoVenda.numero_venda || modalReceberSaldoVenda.id.slice(-4)} • Cliente: {modalReceberSaldoVenda.cliente_nome}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalReceberSaldoVenda(null)}
+                style={{ background: 'none', border: 'none', color: '#8A94A6', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleRegistrarRecebimentoSaldo} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Card Resumo do Saldo */}
+              <div style={{
+                backgroundColor: '#0E1119',
+                border: '1px solid #222938',
+                borderRadius: '8px',
+                padding: '0.85rem 1rem',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '0.75rem',
+                textAlign: 'center'
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.65rem', color: '#8A94A6', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>
+                    Valor Total
+                  </span>
+                  <strong style={{ fontSize: '0.95rem', color: '#CBD5E1' }}>
+                    {formatarMoeda(modalReceberSaldoVenda.valor_final || modalReceberSaldoVenda.valor_total)}
+                  </strong>
+                </div>
+                <div style={{ borderLeft: '1px solid #222938', borderRight: '1px solid #222938' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#8A94A6', display: 'block', textTransform: 'uppercase', fontWeight: '700' }}>
+                    Já Pago
+                  </span>
+                  <strong style={{ fontSize: '0.95rem', color: '#10B981' }}>
+                    {formatarMoeda(modalReceberSaldoVenda.valor_pago || 0)}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.65rem', color: '#F87171', display: 'block', textTransform: 'uppercase', fontWeight: '800' }}>
+                    Saldo Devedor
+                  </span>
+                  <strong style={{ fontSize: '1rem', color: '#EF4444' }}>
+                    {formatarMoeda(modalReceberSaldoVenda.saldo_devedor !== undefined ? modalReceberSaldoVenda.saldo_devedor : ((modalReceberSaldoVenda.valor_final || modalReceberSaldoVenda.valor_total) - (modalReceberSaldoVenda.valor_pago || 0)))}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Forma de Pagamento */}
+              <div>
+                <label style={{ fontSize: '0.72rem', color: '#CBD5E1', fontWeight: '700', display: 'block', marginBottom: '0.35rem' }}>
+                  Forma de Pagamento Deste Recebimento *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+                  {['PIX', 'Dinheiro', 'Cartão de Débito', 'Cartão de Crédito'].map(fp => {
+                    const isSel = formaPagtoReceberSaldo === fp
+                    return (
+                      <button
+                        key={fp}
+                        type="button"
+                        onClick={() => setFormaPagtoReceberSaldo(fp)}
+                        style={{
+                          padding: '0.45rem 0.2rem',
+                          borderRadius: '6px',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          border: isSel ? '1px solid #C5A059' : '1px solid #273042',
+                          backgroundColor: isSel ? 'rgba(197, 160, 89, 0.15)' : '#10131B',
+                          color: isSel ? '#F1D28B' : '#8A94A6',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {fp}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Valor a Receber */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label style={{ fontSize: '0.72rem', color: '#CBD5E1', fontWeight: '700' }}>
+                    Valor a Receber Agora (R$) *
+                  </label>
+                  {/* Botão Quitar Tudo */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const saldo = modalReceberSaldoVenda.saldo_devedor !== undefined ? parseFloat(modalReceberSaldoVenda.saldo_devedor) : Math.max(0, (modalReceberSaldoVenda.valor_final || modalReceberSaldoVenda.valor_total) - (modalReceberSaldoVenda.valor_pago || 0))
+                      setValorReceberSaldoInput(saldo.toFixed(2))
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#10B981',
+                      fontSize: '0.68rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Quitar Saldo Integral
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#8A94A6', fontSize: '0.85rem', fontWeight: '800' }}>
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    className="input-field"
+                    style={{
+                      height: '38px',
+                      paddingLeft: '2.4rem',
+                      fontSize: '0.95rem',
+                      fontWeight: '800',
+                      backgroundColor: '#10131B',
+                      border: '1px solid #2F384C',
+                      color: '#F8FAFC'
+                    }}
+                    value={valorReceberSaldoInput}
+                    onChange={e => setValorReceberSaldoInput(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Histórico Anterior se houver */}
+              {Array.isArray(modalReceberSaldoVenda.historico_pagamentos) && modalReceberSaldoVenda.historico_pagamentos.length > 0 && (
+                <div style={{
+                  backgroundColor: '#0E1119',
+                  border: '1px solid #1F2633',
+                  borderRadius: '6px',
+                  padding: '0.6rem 0.75rem',
+                  fontSize: '0.7rem'
+                }}>
+                  <span style={{ color: '#8A94A6', fontWeight: '700', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                    Histórico de Pagamentos Desta Venda:
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {modalReceberSaldoVenda.historico_pagamentos.map((h, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', color: '#CBD5E1', borderBottom: '1px solid #191E2A', paddingBottom: '0.2rem' }}>
+                        <span>{formatarData(h.data)} {h.hora || ''} • <strong style={{ color: '#C5A059' }}>{h.forma_pagamento}</strong></span>
+                        <strong style={{ color: '#10B981' }}>+ {formatarMoeda(h.valor)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Botões do Modal */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalReceberSaldoVenda(null)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#191E2A',
+                    border: '1px solid #2D364A',
+                    color: '#8A94A6',
+                    borderRadius: '6px',
+                    padding: '0.6rem',
+                    fontSize: '0.8rem',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1.5,
+                    backgroundColor: '#10B981',
+                    border: 'none',
+                    color: '#064E3B',
+                    borderRadius: '6px',
+                    padding: '0.6rem',
+                    fontSize: '0.82rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  Confirmar Recebimento
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

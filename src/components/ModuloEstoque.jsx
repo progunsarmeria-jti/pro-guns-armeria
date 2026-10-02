@@ -339,12 +339,15 @@ export default function ModuloEstoque({
         else if (ncmLimpo.startsWith('9306')) tipoItemNovo = 'MUNICAO'
         else if (ncmLimpo.startsWith('3403')) tipoItemNovo = 'SUPRIMENTO'
 
+        const isArma = tipoItemNovo === 'ARMA' || !!itemMap.xml.is_arma
+        const specs = itemMap.xml.specs_arma || {}
+
         const novoItemObj = {
           id: `p_${Date.now()}_${idx}`,
           tipo_estoque: tipoItemNovo,
-          codigo_sku: itemMap.novo_sku || `SKU-${Date.now()}-${idx}`,
+          codigo_sku: itemMap.novo_sku || (itemMap.xml.numero_serie ? itemMap.xml.numero_serie.toUpperCase() : `SKU-${Date.now()}-${idx}`),
           nome: itemMap.novo_nome,
-          categoria: itemMap.novo_categoria,
+          categoria: isArma ? 'Armas de Fogo' : (tipoItemNovo === 'MUNICAO' ? 'Munições' : itemMap.novo_categoria),
           codigo_barras: itemMap.novo_codigo_barras || null,
           ncm: itemMap.novo_ncm || null,
           cest: itemMap.novo_cest || null,
@@ -353,11 +356,30 @@ export default function ModuloEstoque({
           preco_custo: parseFloat(itemMap.novo_preco_custo) || 0,
           preco_venda: parseFloat(itemMap.novo_preco_venda) || 0,
           quantidade: parseInt(itemMap.xml.quantidade) || 0,
-          estoque_minimo: parseInt(itemMap.novo_estoque_minimo) || 2,
-          localizacao: itemMap.novo_localizacao || 'Armeria - Prateleira A',
+          estoque_minimo: isArma ? 1 : (parseInt(itemMap.novo_estoque_minimo) || 2),
+          localizacao: isArma ? 'Cofre Forte - Gaveta 1' : (itemMap.novo_localizacao || 'Armeria - Prateleira A'),
           fornecedor_nome: nfeData.fornecedor.razao_social,
           fornecedor_cnpj: nfeData.fornecedor.cnpj,
           ultima_nf_entrada: nfeData.numero_nf,
+          
+          // Dados Balísticos & Técnicos da NF
+          numero_serie: itemMap.xml.numero_serie || (isArma ? itemMap.novo_sku : null),
+          lote_fabricante: itemMap.xml.lote_fabricante || null,
+          tipo_arma: specs.tipo_arma || (isArma ? 'Arma de Fogo' : null),
+          fabricante: specs.fabricante || (isArma ? nfeData.fornecedor.razao_social : null),
+          modelo: specs.modelo || (isArma ? itemMap.novo_nome : null),
+          calibre: specs.calibre || null,
+          classificacao_calibre: specs.classificacao_calibre || 'PERMITIDO',
+          comprimento_cano: specs.comprimento_cano || null,
+          acabamento: specs.acabamento || null,
+          quantidade_raias: specs.quantidade_raias || (isArma ? '6 raias' : null),
+          sentido_raias: specs.sentido_raias || (isArma ? 'À Direita (Dextrorsum)' : null),
+          tipo_funcionamento: specs.tipo_funcionamento || (isArma ? 'Semiautomática' : null),
+          capacidade_tiros: specs.capacidade_tiros || null,
+          possui_carregadores: specs.possui_carregadores !== undefined ? specs.possui_carregadores : isArma,
+          quantidade_carregadores: specs.quantidade_carregadores || (isArma ? '2' : '0'),
+          status_arma: isArma ? 'DISPONIVEL' : undefined,
+
           created_at: new Date().toISOString()
         }
 
@@ -852,8 +874,13 @@ export default function ModuloEstoque({
                         <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>
                           {item.tipo_arma || ''} {item.fabricante || ''} {item.modelo || item.nome}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          {item.acabamento ? `Acabamento: ${item.acabamento}` : ''} {item.capacidade_tiros ? `• Cap: ${item.capacidade_tiros}` : ''}
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                          {item.comprimento_cano && <span>Cano: <strong style={{ color: '#D1D5DB' }}>{item.comprimento_cano}</strong></span>}
+                          {item.acabamento && <span>• Acab: <strong style={{ color: '#D1D5DB' }}>{item.acabamento}</strong></span>}
+                          {item.quantidade_raias && <span>• Raias: <strong style={{ color: '#D1D5DB' }}>{item.quantidade_raias}</strong></span>}
+                          {item.tipo_funcionamento && <span>• Func: <strong style={{ color: '#D1D5DB' }}>{item.tipo_funcionamento}</strong></span>}
+                          {item.capacidade_tiros && <span>• Cap: <strong style={{ color: '#D1D5DB' }}>{item.capacidade_tiros}</strong></span>}
+                          {item.possui_carregadores && <span>• Carr: <strong style={{ color: '#D1D5DB' }}>{item.quantidade_carregadores || '2'}</strong></span>}
                         </div>
                       </td>
 

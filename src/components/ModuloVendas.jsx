@@ -309,9 +309,14 @@ export default function ModuloVendas({
         sistema_registro: itemEstoque.sistema_registro || 'SIGMA',
         numero_sigma_sinarm: itemEstoque.numero_sigma_sinarm || '',
         classificacao_calibre: itemEstoque.classificacao_calibre || 'PERMITIDO',
-        acabamento: itemEstoque.acabamento || 'Oxidado / Carbono Fosco',
+        acabamento: itemEstoque.acabamento || 'Oxidado Fosco',
         comprimento_cano: itemEstoque.comprimento_cano || '',
         capacidade_tiros: itemEstoque.capacidade_tiros || '',
+        quantidade_raias: itemEstoque.quantidade_raias || '',
+        sentido_raias: itemEstoque.sentido_raias || '',
+        tipo_funcionamento: itemEstoque.tipo_funcionamento || '',
+        possui_carregadores: itemEstoque.possui_carregadores !== undefined ? itemEstoque.possui_carregadores : true,
+        quantidade_carregadores: itemEstoque.quantidade_carregadores || '',
         ncm: itemEstoque.ncm || (isArma ? '9302.00.00' : isMun ? '9306.30.00' : ''),
         preco_unitario: precoVenda,
         quantidade: qtdDesejada,
@@ -752,10 +757,15 @@ export default function ModuloVendas({
       modelo: it.modelo || itemEst.modelo || itemArm.modelo || it.nome,
       calibre: it.calibre || itemEst.calibre || itemArm.calibre || '—',
       numero_serie: it.numero_serie || itemEst.numero_serie || itemArm.numero_serie || '—',
-      acabamento: it.acabamento || itemEst.acabamento || itemArm.acabamento || 'Oxidado / Carbono Fosco',
+      acabamento: it.acabamento || itemEst.acabamento || itemArm.acabamento || 'Oxidado Fosco',
       tipo_arma: it.tipo_arma || itemEst.tipo_arma || itemArm.tipo || 'Arma de Fogo',
       comprimento_cano: it.comprimento_cano || itemEst.comprimento_cano || itemArm.comprimento_cano || '—',
+      quantidade_raias: it.quantidade_raias || itemEst.quantidade_raias || itemArm.quantidade_raias || '6 raias',
+      sentido_raias: it.sentido_raias || itemEst.sentido_raias || itemArm.sentido_raias || 'À Direita (Dextrorsum)',
+      tipo_funcionamento: it.tipo_funcionamento || itemEst.tipo_funcionamento || itemArm.tipo_funcionamento || (it.tipo_arma === 'Revólver' ? 'Ação Dupla / Simples (SA/DA)' : 'Semiautomática'),
       capacidade_tiros: it.capacidade_tiros || itemEst.capacidade_tiros || itemArm.capacidade_tiros || '—',
+      possui_carregadores: it.possui_carregadores !== undefined ? it.possui_carregadores : (itemEst.possui_carregadores !== undefined ? itemEst.possui_carregadores : (it.tipo_arma !== 'Revólver')),
+      quantidade_carregadores: it.quantidade_carregadores || itemEst.quantidade_carregadores || itemArm.quantidade_carregadores || (it.tipo_arma === 'Revólver' ? '0' : '2'),
       sistema_registro: it.sistema_registro || itemEst.sistema_registro || itemArm.orgao_registro || 'SINARM / SIGMA',
       numero_sigma_sinarm: it.numero_sigma_sinarm || itemEst.numero_sigma_sinarm || itemArm.numero_sigma_sinarm || '—'
     }
@@ -2330,13 +2340,18 @@ export default function ModuloVendas({
                                 {sp.numero_serie || 'NÃO INFORMADO'}
                               </span>
                             </div>
+                            <div><strong>Tamanho / Comprimento do Cano:</strong> {sp.comprimento_cano}</div>
                             <div><strong>Acabamento:</strong> {sp.acabamento}</div>
-                            <div><strong>Comprimento do Cano:</strong> {sp.comprimento_cano}</div>
-                            <div><strong>Capacidade do Carregador:</strong> {sp.capacidade_tiros}</div>
-                            <div><strong>Sistema de Funcionamento:</strong> {sp.sistema_registro || 'Semiautomática'}</div>
+                            <div><strong>Raiamento (Qtd de Raias):</strong> {sp.quantidade_raias}</div>
+                            <div><strong>Sentido das Raias:</strong> {sp.sentido_raias}</div>
+                            <div><strong>Tipo de Funcionamento:</strong> {sp.tipo_funcionamento}</div>
+                            <div><strong>Capacidade de Disparos:</strong> {sp.capacidade_tiros}</div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <strong>Carregadores Inclusos:</strong> {sp.possui_carregadores ? `Sim, acompanha ${sp.quantidade_carregadores || '2'} carregador(es)` : 'Não possui carregador destacável (Tambor / Depósito tubular)'}
+                            </div>
                             <div><strong>Valor Comercial da Arma:</strong> {formatarMoeda(it.subtotal || it.preco_unitario)}</div>
-                            <div style={{ gridColumn: 'span 2', fontWeight: '700', color: '#047857' }}>
-                              Situação Física no Estoque: RESERVADA NO COFRE FORTE DA ARMERIA (Disponibilidade Garantida)
+                            <div style={{ fontWeight: '700', color: '#047857' }}>
+                              Situação Física: RESERVADA NO COFRE FORTE DA ARMERIA (Disponibilidade Garantida)
                             </div>
                           </div>
                         </div>
@@ -2545,6 +2560,13 @@ export default function ModuloVendas({
                               <span style={{ fontSize: '0.95rem', fontWeight: '900', fontFamily: 'monospace', marginLeft: '0.5rem', color: '#065F46' }}>
                                 {sp.numero_serie || 'NÃO INFORMADO'}
                               </span>
+                            </div>
+                            <div><strong>Tamanho do Cano:</strong> {sp.comprimento_cano}</div>
+                            <div><strong>Raiamento / Sentido:</strong> {sp.quantidade_raias} {sp.sentido_raias ? `(${sp.sentido_raias})` : ''}</div>
+                            <div><strong>Funcionamento:</strong> {sp.tipo_funcionamento}</div>
+                            <div><strong>Capacidade:</strong> {sp.capacidade_tiros}</div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <strong>Carregadores Conferidos:</strong> {sp.possui_carregadores ? `${sp.quantidade_carregadores || '2'} carregador(es) entregue(s)` : 'Sem carregador destacável'}
                             </div>
                           </div>
                         </div>

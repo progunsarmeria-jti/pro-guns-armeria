@@ -66,6 +66,13 @@ export default function ModuloClientes({
     numero_craf: '',
     validade_craf: '',
     craf_anexo_url: '',
+    comprimento_cano: '',
+    acabamento: '',
+    quantidade_raias: '',
+    sentido_raias: '',
+    tipo_funcionamento: '',
+    capacidade_tiros: '',
+    quantidade_carregadores: '',
     status: 'Regular'
   })
 
@@ -794,6 +801,19 @@ export default function ModuloClientes({
                                   </div>
                               </div>
 
+                              {(arma.comprimento_cano || arma.acabamento || arma.quantidade_raias || arma.tipo_funcionamento || arma.capacidade_tiros) && (
+                                <div style={{ fontSize: '0.7rem', color: '#9CA3AF', backgroundColor: 'rgba(255,255,255,0.02)', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                  {[
+                                    arma.comprimento_cano ? `Cano: ${arma.comprimento_cano}` : null,
+                                    arma.acabamento ? `Acab: ${arma.acabamento}` : null,
+                                    arma.quantidade_raias ? `${arma.quantidade_raias}` : null,
+                                    arma.tipo_funcionamento ? `${arma.tipo_funcionamento}` : null,
+                                    arma.capacidade_tiros ? `Cap: ${arma.capacidade_tiros}` : null,
+                                    arma.quantidade_carregadores ? `${arma.quantidade_carregadores} carr.` : null
+                                  ].filter(Boolean).join(' • ')}
+                                </div>
+                              )}
+
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.3rem', gap: '0.3rem', flexWrap: 'wrap' }}>
                                 <button
                                   type="button"
@@ -836,6 +856,13 @@ export default function ModuloClientes({
                                         numero_craf: arma.numero_craf || '',
                                         validade_craf: arma.validade_craf || '',
                                         craf_anexo_url: arma.craf_anexo_url || '',
+                                        comprimento_cano: arma.comprimento_cano || '',
+                                        acabamento: arma.acabamento || '',
+                                        quantidade_raias: arma.quantidade_raias || '',
+                                        sentido_raias: arma.sentido_raias || '',
+                                        tipo_funcionamento: arma.tipo_funcionamento || '',
+                                        capacidade_tiros: arma.capacidade_tiros || '',
+                                        quantidade_carregadores: arma.quantidade_carregadores || '',
                                         status: arma.status || 'Regular'
                                       })
                                       setCrafSessionId(`craf_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
@@ -1340,6 +1367,75 @@ export default function ModuloClientes({
                       value={armaForm.validade_craf}
                       onChange={e => setArmaForm({...armaForm, validade_craf: e.target.value})}
                     />
+                  </div>
+                </div>
+
+                {/* Especificações Técnicas Adicionais da NF */}
+                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.6rem', marginTop: '0.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--gold-primary)', fontWeight: '800', textTransform: 'uppercase' }}>
+                    Especificações Técnicas da Arma (Nota Fiscal / Registro)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>TAMANHO DO CANO</label>
+                      <input
+                        className="input-field"
+                        placeholder="Ex: 83mm (3.26 pol) / 102mm"
+                        value={armaForm.comprimento_cano}
+                        onChange={e => setArmaForm({...armaForm, comprimento_cano: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>ACABAMENTO</label>
+                      <input
+                        className="input-field"
+                        placeholder="Oxidado Fosco, Inox, Cerakote..."
+                        value={armaForm.acabamento}
+                        onChange={e => setArmaForm({...armaForm, acabamento: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>RAIAMENTO (QTD DE RAIAS)</label>
+                      <input
+                        className="input-field"
+                        placeholder="Ex: 6 raias / Alma lisa"
+                        value={armaForm.quantidade_raias}
+                        onChange={e => setArmaForm({...armaForm, quantidade_raias: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>SENTIDO DAS RAIAS</label>
+                      <input
+                        className="input-field"
+                        placeholder="Ex: À Direita (Dextrorsum)"
+                        value={armaForm.sentido_raias}
+                        onChange={e => setArmaForm({...armaForm, sentido_raias: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>FUNCIONAMENTO</label>
+                      <input
+                        className="input-field"
+                        placeholder="Ex: Semiautomática / Repetição"
+                        value={armaForm.tipo_funcionamento}
+                        onChange={e => setArmaForm({...armaForm, tipo_funcionamento: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>CAPACIDADE DE DISPAROS</label>
+                      <input
+                        className="input-field"
+                        placeholder="Ex: 12+1 tiros / 6 tiros"
+                        value={armaForm.capacidade_tiros}
+                        onChange={e => setArmaForm({...armaForm, capacidade_tiros: e.target.value})}
+                      />
+                    </div>
                   </div>
                 </div>
 

@@ -7,6 +7,8 @@
  * e com total privacidade dos dados da armaria.
  */
 
+import { parsearDescricaoArmaNF } from './armaParser'
+
 // Helper para extrair texto de uma tag ignorando namespaces
 function getTagText(parent, tagName) {
   if (!parent) return ''
@@ -149,6 +151,31 @@ export function parseNFeXML(xmlString) {
     const custoTotalReal = vProdItem + freteRateado + outrasRateadas + vIPIItem + vSTItem - vDescItem
     const custoUnitarioReal = qCom > 0 ? (custoTotalReal / qCom) : vUnCom
 
+    // Dados Específicos de Armamento (Tag SEFAZ <arma>)
+    const armaTag = prod.getElementsByTagName('arma')[0]
+    let numeroSerieArma = ''
+    let numeroCanoArma = ''
+    let descrArma = ''
+    if (armaTag) {
+      numeroSerieArma = getTagText(armaTag, 'nSerie')
+      numeroCanoArma = getTagText(armaTag, 'nCano')
+      descrArma = getTagText(armaTag, 'descr')
+    }
+
+    // Dados de Rastreabilidade / Lote de Munições (Tag SEFAZ <rastro> / <med>)
+    const rastroTag = prod.getElementsByTagName('rastro')[0] || prod.getElementsByTagName('med')[0]
+    let loteFabricante = ''
+    if (rastroTag) {
+      loteFabricante = getTagText(rastroTag, 'nLote')
+    }
+
+    // Interpretação Balística Automática da Descrição
+    const isArmaNcm = ncm.startsWith('9302') || ncm.startsWith('9303')
+    const textoParaAnalisar = `${xProd} ${descrArma}`
+    const specsArma = (isArmaNcm || armaTag || /PISTOLA|REVOLVER|ESPINGARDA|CARABINA|FUZIL|RIFLE/i.test(xProd))
+      ? parsearDescricaoArmaNF(textoParaAnalisar)
+      : null
+
     itens.push({
       item_numero: nItem,
       codigo_fornecedor: cProd,
@@ -164,7 +191,12 @@ export function parseNFeXML(xmlString) {
       valor_frete_rateado: Number(freteRateado.toFixed(2)),
       valor_ipi: Number(vIPIItem.toFixed(2)),
       valor_st: Number(vSTItem.toFixed(2)),
-      preco_custo_real: Number(custoUnitarioReal.toFixed(2))
+      preco_custo_real: Number(custoUnitarioReal.toFixed(2)),
+      numero_serie: numeroSerieArma,
+      numero_cano: numeroCanoArma,
+      lote_fabricante: loteFabricante,
+      specs_arma: specsArma,
+      is_arma: !!specsArma
     })
   }
 

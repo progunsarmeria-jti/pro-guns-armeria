@@ -121,7 +121,7 @@ export default function Sidebar({
     <aside 
       className="no-scrollbar"
       style={{
-        width: '265px',
+        width: '200px',
         backgroundColor: 'var(--bg-card)',
         borderRight: '1px solid var(--border-color)',
         display: 'flex',
@@ -130,15 +130,15 @@ export default function Sidebar({
         overflowY: 'auto'
       }}
     >
-      <div style={{ padding: '0.85rem 0.65rem 0.65rem 0.65rem' }}>
+      <div style={{ padding: '0.65rem 0.45rem 0.5rem 0.45rem' }}>
         {/* Mobile Header com Botão Fechar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', paddingLeft: '0.2rem' }}>
           <div style={{
-            fontSize: '0.72rem',
+            fontSize: '0.68rem',
             textTransform: 'uppercase',
-            letterSpacing: '1px',
+            letterSpacing: '0.8px',
             color: 'var(--text-muted)',
-            fontWeight: '600'
+            fontWeight: '700'
           }}>
             Pró Guns Gestão
           </div>
@@ -148,12 +148,12 @@ export default function Sidebar({
               onClick={() => setMobileOpen(false)}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           )}
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.18rem' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
           {itemsFiltrados.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.id
@@ -166,33 +166,33 @@ export default function Sidebar({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   width: '100%',
-                  padding: '0.45rem 0.65rem',
-                  borderRadius: '8px',
+                  padding: '0.38rem 0.5rem',
+                  borderRadius: '6px',
                   border: 'none',
                   backgroundColor: isActive ? 'rgba(139, 38, 42, 0.18)' : 'transparent',
                   color: isActive ? '#FFFFFF' : 'var(--text-muted)',
                   borderLeft: isActive ? '3px solid var(--red-light)' : '3px solid transparent',
-                  fontWeight: isActive ? '600' : '400',
+                  fontWeight: isActive ? '700' : '500',
                   cursor: 'pointer',
-                  fontSize: '0.8rem',
+                  fontSize: '0.76rem',
                   transition: 'all 0.15s ease',
-                  gap: '0.4rem'
+                  gap: '0.35rem'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-                  <Icon size={16} color={isActive ? '#F87171' : '#8E96A0'} style={{ flexShrink: 0 }} />
-                  <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  <Icon size={15} color={isActive ? '#F87171' : '#8E96A0'} style={{ flexShrink: 0 }} />
+                  <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{item.label}</span>
                 </div>
                 {item.badgeCount && (
                   <span style={{
                     flexShrink: 0,
-                    fontSize: '0.65rem',
-                    padding: '0.1rem 0.35rem',
-                    borderRadius: '10px',
+                    fontSize: '0.62rem',
+                    padding: '0.08rem 0.3rem',
+                    borderRadius: '8px',
                     backgroundColor: item.badgeCount === 'ABERTO' ? '#10B981' : isActive ? 'var(--red-tactical)' : 'var(--border-color)',
                     color: '#FFFFFF',
                     fontWeight: '700',
-                    lineHeight: '1.4'
+                    lineHeight: '1.3'
                   }}>
                     {item.badgeCount}
                   </span>
@@ -204,7 +204,7 @@ export default function Sidebar({
       </div>
 
       {/* Botão de Instalação do App */}
-      <div style={{ padding: '0.4rem 0.85rem' }}>
+      <div style={{ padding: '0.3rem 0.55rem' }}>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('proguns:prompt-install'))}
           style={{
@@ -212,42 +212,42 @@ export default function Sidebar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem',
-            padding: '0.55rem',
-            borderRadius: '8px',
+            gap: '0.4rem',
+            padding: '0.45rem 0.4rem',
+            borderRadius: '6px',
             backgroundColor: 'rgba(197, 160, 89, 0.12)',
             border: '1px solid rgba(197, 160, 89, 0.35)',
             color: 'var(--gold-primary)',
-            fontSize: '0.78rem',
+            fontSize: '0.72rem',
             fontWeight: '700',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
           title="Instalar no Computador ou Celular"
         >
-          <Download size={14} color="var(--gold-accent)" />
+          <Download size={13} color="var(--gold-accent)" />
           <span>Instalar Aplicativo</span>
         </button>
       </div>
 
       {/* Footer do Sidebar com a Logo Pequena e Dados da Armeria Dinâmicos */}
       <div style={{
-        marginTop: '0.5rem',
-        padding: '0.75rem 0.85rem',
+        marginTop: 'auto',
+        padding: '0.6rem 0.65rem',
         borderTop: '1px solid var(--border-color)',
         backgroundColor: 'rgba(0,0,0,0.25)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
           <img
             src="/logo.png"
             alt="Logo Pró Guns"
-            style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+            style={{ width: '24px', height: '24px', objectFit: 'contain' }}
           />
-          <div>
-            <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)' }}>
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {config?.nome_fantasia || 'Pró Guns Armeria'}
             </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
               {config?.cr_armeria || ''}
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function Sidebar({
   return (
     <>
       {/* Sidebar Desktop padrão */}
-      <div className="desktop-only" style={{ height: 'calc(100vh - 70px)', sticky: 'top' }}>
+      <div className="desktop-only" style={{ height: 'calc(100vh - 70px)', sticky: 'top', width: '200px', flexShrink: 0 }}>
         {sidebarContent}
       </div>
 
@@ -278,7 +278,7 @@ export default function Sidebar({
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ height: '100%', width: '275px', backgroundColor: 'var(--bg-card)' }}
+            style={{ height: '100%', width: '220px', backgroundColor: 'var(--bg-card)' }}
           >
             {sidebarContent}
           </div>

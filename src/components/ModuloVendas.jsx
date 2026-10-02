@@ -1667,306 +1667,310 @@ export default function ModuloVendas({
 
       {/* ── TABELA DE VENDAS ── */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.74rem' }}>
-            <thead>
-              <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                <th style={{ padding: '0.45rem 0.5rem', width: '70px', minWidth: '70px', whiteSpace: 'nowrap' }}>VENDA #</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '85px', minWidth: '85px', whiteSpace: 'nowrap' }}>DATA / HORA</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '150px', minWidth: '150px', whiteSpace: 'nowrap' }}>CLIENTE</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '105px', minWidth: '105px', whiteSpace: 'nowrap' }}>STATUS</th>
-                <th style={{ padding: '0.45rem 0.5rem', minWidth: '260px', whiteSpace: 'nowrap' }}>ITENS ADQUIRIDOS</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '75px', minWidth: '75px', whiteSpace: 'nowrap' }}>PAGTO</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '105px', minWidth: '105px', whiteSpace: 'nowrap' }}>VALOR</th>
-                <th style={{ padding: '0.45rem 0.5rem', width: '220px', minWidth: '220px', textAlign: 'right', whiteSpace: 'nowrap' }}>AÇÕES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vendasFiltradas.length > 0 ? (
-                vendasFiltradas.map((venda) => {
-                  const ehArma = venda.tipo_venda === 'VENDA_ARMA' || venda.dados_tramite_arma || (venda.itens || []).some(isItemArmaDeFogo)
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.73rem' }}>
+          <thead>
+            <tr style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.69rem' }}>
+              <th style={{ padding: '0.45rem 0.4rem', width: '68px', whiteSpace: 'nowrap' }}>VENDA #</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '75px', whiteSpace: 'nowrap' }}>DATA / HORA</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '125px' }}>CLIENTE</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '95px', whiteSpace: 'nowrap' }}>STATUS</th>
+              <th style={{ padding: '0.45rem 0.5rem' }}>ITENS ADQUIRIDOS</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '65px', whiteSpace: 'nowrap' }}>PAGTO</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '85px', whiteSpace: 'nowrap' }}>VALOR</th>
+              <th style={{ padding: '0.45rem 0.4rem', width: '155px', textAlign: 'right', whiteSpace: 'nowrap' }}>AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vendasFiltradas.length > 0 ? (
+              vendasFiltradas.map((venda) => {
+                const ehArma = venda.tipo_venda === 'VENDA_ARMA' || venda.dados_tramite_arma || (venda.itens || []).some(isItemArmaDeFogo)
 
-                  return (
-                    <tr key={venda.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.15s' }}>
-                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '800', whiteSpace: 'nowrap' }}>
-                        <button
-                          type="button"
-                          onClick={() => setModalDossieVenda(venda)}
-                          style={{
-                            background: 'rgba(245, 158, 11, 0.1)',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            color: '#F59E0B',
-                            fontWeight: '800',
-                            borderRadius: '4px',
-                            padding: '0.15rem 0.35rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.2rem',
-                            fontSize: '0.72rem',
-                            fontFamily: 'monospace'
-                          }}
-                          title="Clique para abrir o Dossiê Completo da Venda Arquivada"
-                        >
-                          <FileText size={11} />
-                          #V-{venda.numero_venda || venda.id.slice(-4)}
-                        </button>
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', color: 'var(--text-muted)', fontSize: '0.72rem', whiteSpace: 'nowrap', lineHeight: '1.25' }}>
-                        <div>{formatarData(venda.data)}</div>
-                        {venda.hora && <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{venda.hora}</div>}
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontSize: '0.74rem', lineHeight: '1.2' }}>{venda.cliente_nome?.toUpperCase()}</div>
-                        {venda.cliente_cpf && (
-                          <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', fontWeight: '400', marginTop: '0.1rem' }}>
-                            CPF: {venda.cliente_cpf}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
-                        {getBadgeStatusVenda(venda)}
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', whiteSpace: 'nowrap' }}>
-                          {(venda.itens || []).map((it, idx) => {
-                            const nomeLimpo = (it.nome || '').trim()
-                            const calLimpo = (it.calibre || '').trim()
-                            const normNome = nomeLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '')
-                            const normCal = calLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '').replace('luger', '').replace('auto', '').replace('special', '').replace('magnum', '')
-                            const contemCalibre = normCal && normNome.includes(normCal)
+                return (
+                  <tr key={venda.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.15s' }}>
+                    <td style={{ padding: '0.45rem 0.4rem', fontWeight: '800', whiteSpace: 'nowrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setModalDossieVenda(venda)}
+                        style={{
+                          background: 'rgba(245, 158, 11, 0.1)',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                          color: '#F59E0B',
+                          fontWeight: '800',
+                          borderRadius: '4px',
+                          padding: '0.15rem 0.3rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.15rem',
+                          fontSize: '0.7rem',
+                          fontFamily: 'monospace'
+                        }}
+                        title="Clique para abrir o Dossiê Completo da Venda Arquivada"
+                      >
+                        <FileText size={10} />
+                        #V-{venda.numero_venda || venda.id.slice(-4)}
+                      </button>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', color: 'var(--text-muted)', fontSize: '0.71rem', whiteSpace: 'nowrap', lineHeight: '1.2' }}>
+                      <div>{formatarData(venda.data)}</div>
+                      {venda.hora && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{venda.hora}</div>}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.2' }}>
+                      <div style={{ fontSize: '0.73rem', wordBreak: 'break-word' }}>{venda.cliente_nome?.toUpperCase()}</div>
+                      {venda.cliente_cpf && (
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '400', marginTop: '0.05rem', whiteSpace: 'nowrap' }}>
+                          CPF: {venda.cliente_cpf}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', whiteSpace: 'nowrap' }}>
+                      {getBadgeStatusVenda(venda)}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {(venda.itens || []).map((it, idx) => {
+                          const nomeLimpo = (it.nome || '').trim()
+                          const calLimpo = (it.calibre || '').trim()
+                          const normNome = nomeLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '')
+                          const normCal = calLimpo.toLowerCase().replace(/[\s\.\-_×x]/g, '').replace('luger', '').replace('auto', '').replace('special', '').replace('magnum', '')
+                          const contemCalibre = normCal && normNome.includes(normCal)
 
-                            return (
-                              <div
-                                key={idx}
-                                style={{
-                                  fontSize: '0.73rem',
-                                  color: 'var(--text-main)',
-                                  lineHeight: '1.25',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                <strong style={{ color: '#F59E0B' }}>{it.quantidade}x</strong>
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.12rem'
+                              }}
+                            >
+                              {/* Linha 1: Quantidade + Nome do Produto (permite quebra suave e organizada) */}
+                              <div style={{ fontSize: '0.73rem', color: 'var(--text-main)', lineHeight: '1.25', wordBreak: 'break-word' }}>
+                                <strong style={{ color: '#F59E0B', marginRight: '0.25rem' }}>{it.quantidade}x</strong>
                                 <span style={{ fontWeight: '600' }}>{nomeLimpo}</span>
                                 {calLimpo && !contemCalibre && (
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.69rem' }}>({calLimpo})</span>
-                                )}
-                                {it.numero_serie && (
-                                  <span style={{
-                                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                                    color: '#FBBF24',
-                                    border: '1px solid rgba(245, 158, 11, 0.35)',
-                                    padding: '0.02rem 0.3rem',
-                                    borderRadius: '3px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: '800',
-                                    fontFamily: 'monospace'
-                                  }}>
-                                    S/N: {it.numero_serie}
-                                  </span>
-                                )}
-                                {it.lote_fabricante && (
-                                  <span style={{
-                                    backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                                    color: '#60A5FA',
-                                    border: '1px solid rgba(96, 165, 250, 0.35)',
-                                    padding: '0.02rem 0.3rem',
-                                    borderRadius: '3px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: '700'
-                                  }}>
-                                    Lote: {it.lote_fabricante}
-                                  </span>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem', marginLeft: '0.2rem' }}>({calLimpo})</span>
                                 )}
                               </div>
-                            )
-                          })}
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', alignItems: 'flex-start' }}>
-                          <span className="badge badge-blue" style={{ fontSize: '0.67rem', padding: '0.12rem 0.38rem' }}>
-                            {venda.forma_pagamento}
-                          </span>
-                          {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
-                            <span style={{
-                              fontSize: '0.61rem',
-                              fontWeight: '800',
-                              color: '#F59E0B',
-                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                              border: '1px solid rgba(245, 158, 11, 0.3)',
-                              borderRadius: '3px',
-                              padding: '0.02rem 0.25rem',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.15rem'
-                            }}>
-                              <Clock size={9} /> Parcial
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap', lineHeight: '1.25' }}>
-                        <div style={{ fontWeight: '800', color: '#10B981', fontSize: '0.8rem' }}>
-                          {formatarMoeda(venda.valor_final || venda.valor_total)}
-                        </div>
-                        {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', marginTop: '0.15rem' }}>
-                            <span style={{ fontSize: '0.64rem', color: '#34D399', fontWeight: '700' }}>
-                              Pago: {formatarMoeda(venda.valor_pago || 0)}
-                            </span>
-                            <span style={{ fontSize: '0.64rem', color: '#F87171', fontWeight: '700' }}>
-                              Resta: {formatarMoeda(venda.saldo_devedor !== undefined ? venda.saldo_devedor : ((venda.valor_final || venda.valor_total) - (venda.valor_pago || 0)))}
-                            </span>
-                          </div>
-                        ) : null}
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
-                          {/* Botão de Quitar Saldo Devedor se houver saldo restante */}
-                          {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setModalReceberSaldoVenda(venda)
-                                const saldo = venda.saldo_devedor !== undefined ? parseFloat(venda.saldo_devedor) : Math.max(0, (parseFloat(venda.valor_final || venda.valor_total) || 0) - (parseFloat(venda.valor_pago) || 0))
-                                setValorReceberSaldoInput(saldo.toFixed(2))
-                                setFormaPagtoReceberSaldo('PIX')
-                              }}
-                              style={{
-                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                                border: '1px solid rgba(16, 185, 129, 0.35)',
-                                color: '#34D399',
-                                borderRadius: '4px',
-                                padding: '0.2rem 0.45rem',
-                                fontSize: '0.68rem',
-                                fontWeight: '700',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                              }}
-                              title="Receber / Quitar Saldo Devedor Pendente"
-                            >
-                              <DollarSign size={12} />
-                              Quitar
-                            </button>
-                          )}
-                          {/* Botão de Trâmite de Arma (se for venda de arma) */}
-                          {ehArma && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setModalTramiteVenda(venda)
-                                setDadosTramiteForm({
-                                  autorizacao_compra_numero: venda.dados_tramite_arma?.autorizacao_compra_numero || '',
-                                  autorizacao_compra_data: venda.dados_tramite_arma?.autorizacao_compra_data || '',
-                                  autorizacao_orgao: venda.dados_tramite_arma?.autorizacao_orgao || 'SINARM',
-                                  nfe_numero: venda.dados_tramite_arma?.nfe_numero || '',
-                                  nfe_serie: venda.dados_tramite_arma?.nfe_serie || '1',
-                                  nfe_chave: venda.dados_tramite_arma?.nfe_chave || '',
-                                  nfe_data_emissao: venda.dados_tramite_arma?.nfe_data_emissao || '',
-                                  craf_definitivo_numero: venda.dados_tramite_arma?.craf_definitivo_numero || '',
-                                  craf_definitivo_validade: venda.dados_tramite_arma?.craf_definitivo_validade || '',
-                                  data_entrega_arma: venda.dados_tramite_arma?.data_entrega_arma || '',
-                                  responsavel_entrega: venda.dados_tramite_arma?.responsavel_entrega || usuarioLogado?.nome_completo || '',
-                                  observacoes: venda.dados_tramite_arma?.observacoes || '',
-                                  fotos_documentos: venda.dados_tramite_arma?.fotos_documentos || []
-                                })
-                              }}
-                              style={{
-                                backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                                border: '1px solid rgba(245, 158, 11, 0.35)',
-                                color: '#FBBF24',
-                                borderRadius: '4px',
-                                padding: '0.2rem 0.45rem',
-                                fontSize: '0.68rem',
-                                fontWeight: '700',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
-                              }}
-                              title="Gerenciar Trâmite da Arma (Autorização PF, NF e Entrega)"
-                            >
-                              <Shield size={12} />
-                              Trâmite PF
-                            </button>
-                          )}
 
+                              {/* Linha 2: Badges organizadas de Número de Série e Lote */}
+                              {(it.numero_serie || it.lote_fabricante) && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap', marginTop: '0.05rem' }}>
+                                  {it.numero_serie && (
+                                    <span style={{
+                                      backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                      color: '#FBBF24',
+                                      border: '1px solid rgba(245, 158, 11, 0.35)',
+                                      padding: '0.02rem 0.25rem',
+                                      borderRadius: '3px',
+                                      fontSize: '0.63rem',
+                                      fontWeight: '800',
+                                      fontFamily: 'monospace',
+                                      lineHeight: '1.2'
+                                    }}>
+                                      S/N: {it.numero_serie}
+                                    </span>
+                                  )}
+                                  {it.lote_fabricante && (
+                                    <span style={{
+                                      backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                                      color: '#60A5FA',
+                                      border: '1px solid rgba(96, 165, 250, 0.35)',
+                                      padding: '0.02rem 0.25rem',
+                                      borderRadius: '3px',
+                                      fontSize: '0.63rem',
+                                      fontWeight: '700',
+                                      lineHeight: '1.2'
+                                    }}>
+                                      Lote: {it.lote_fabricante}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.12rem', alignItems: 'flex-start' }}>
+                        <span className="badge badge-blue" style={{ fontSize: '0.66rem', padding: '0.1rem 0.32rem' }}>
+                          {venda.forma_pagamento}
+                        </span>
+                        {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
+                          <span style={{
+                            fontSize: '0.6rem',
+                            fontWeight: '800',
+                            color: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            borderRadius: '3px',
+                            padding: '0.02rem 0.22rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.15rem'
+                          }}>
+                            <Clock size={8} /> Parcial
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', whiteSpace: 'nowrap', lineHeight: '1.2' }}>
+                      <div style={{ fontWeight: '800', color: '#10B981', fontSize: '0.78rem' }}>
+                        {formatarMoeda(venda.valor_final || venda.valor_total)}
+                      </div>
+                      {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.05rem', marginTop: '0.1rem' }}>
+                          <span style={{ fontSize: '0.63rem', color: '#34D399', fontWeight: '700' }}>
+                            Pago: {formatarMoeda(venda.valor_pago || 0)}
+                          </span>
+                          <span style={{ fontSize: '0.63rem', color: '#F87171', fontWeight: '700' }}>
+                            Resta: {formatarMoeda(venda.saldo_devedor !== undefined ? venda.saldo_devedor : ((venda.valor_final || venda.valor_total) - (venda.valor_pago || 0)))}
+                          </span>
+                        </div>
+                      ) : null}
+                    </td>
+                    <td style={{ padding: '0.45rem 0.4rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}>
+                        {/* Botão de Quitar Saldo Devedor se houver saldo restante */}
+                        {(venda.status_pagamento === 'PAGO_PARCIAL' || (parseFloat(venda.saldo_devedor) > 0.05)) && (
                           <button
                             type="button"
-                            onClick={() => setModalDossieVenda(venda)}
+                            onClick={() => {
+                              setModalReceberSaldoVenda(venda)
+                              const saldo = venda.saldo_devedor !== undefined ? parseFloat(venda.saldo_devedor) : Math.max(0, (parseFloat(venda.valor_final || venda.valor_total) || 0) - (parseFloat(venda.valor_pago) || 0))
+                              setValorReceberSaldoInput(saldo.toFixed(2))
+                              setFormaPagtoReceberSaldo('PIX')
+                            }}
                             style={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              color: '#E2E8F0',
+                              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              color: '#34D399',
                               borderRadius: '4px',
-                              padding: '0.2rem 0.45rem',
-                              fontSize: '0.68rem',
+                              padding: '0.18rem 0.35rem',
+                              fontSize: '0.66rem',
                               fontWeight: '700',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.25rem'
+                              gap: '0.2rem'
                             }}
-                            title="Abrir Dossiê Técnico & Regulatório da Venda Arquivada"
+                            title="Receber / Quitar Saldo Devedor Pendente"
                           >
-                            <FileText size={12} color="#C5A059" />
-                            Dossiê
+                            <DollarSign size={11} />
+                            Quitar
                           </button>
+                        )}
+                        {/* Botão de Trâmite de Arma (se for venda de arma) */}
+                        {ehArma && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setModalTramiteVenda(venda)
+                              setDadosTramiteForm({
+                                autorizacao_compra_numero: venda.dados_tramite_arma?.autorizacao_compra_numero || '',
+                                autorizacao_compra_data: venda.dados_tramite_arma?.autorizacao_compra_data || '',
+                                autorizacao_orgao: venda.dados_tramite_arma?.autorizacao_orgao || 'SINARM',
+                                nfe_numero: venda.dados_tramite_arma?.nfe_numero || '',
+                                nfe_serie: venda.dados_tramite_arma?.nfe_serie || '1',
+                                nfe_chave: venda.dados_tramite_arma?.nfe_chave || '',
+                                nfe_data_emissao: venda.dados_tramite_arma?.nfe_data_emissao || '',
+                                craf_definitivo_numero: venda.dados_tramite_arma?.craf_definitivo_numero || '',
+                                craf_definitivo_validade: venda.dados_tramite_arma?.craf_definitivo_validade || '',
+                                data_entrega_arma: venda.dados_tramite_arma?.data_entrega_arma || '',
+                                responsavel_entrega: venda.dados_tramite_arma?.responsavel_entrega || usuarioLogado?.nome_completo || '',
+                                observacoes: venda.dados_tramite_arma?.observacoes || '',
+                                fotos_documentos: venda.dados_tramite_arma?.fotos_documentos || []
+                              })
+                            }}
+                            style={{
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              border: '1px solid rgba(245, 158, 11, 0.35)',
+                              color: '#FBBF24',
+                              borderRadius: '4px',
+                              padding: '0.18rem 0.35rem',
+                              fontSize: '0.66rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                            title="Gerenciar Trâmite da Arma (Autorização PF, NF e Entrega)"
+                          >
+                            <Shield size={11} />
+                            Trâmite
+                          </button>
+                        )}
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReciboModalVenda(venda)
-                              setTipoDocumentoRecibo('AUTO')
-                            }}
-                            style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.2rem' }}
-                            title="Visualizar / Imprimir Documento Oficial"
-                          >
-                            <Printer size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEnviarWhatsAppRecibo(venda)}
-                            style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', padding: '0.2rem' }}
-                            title="Enviar Comprovante / Proposta no WhatsApp"
-                          >
-                            <MessageCircle size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setModalExcluirVenda(venda)
-                              setSenhaMasterInput('')
-                              setErroSenhaMaster('')
-                            }}
-                            style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
-                            title="Cancelar Venda (Restaura Estoque / Libera Armas)"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              ) : (
-                <tr>
-                  <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                    Nenhuma venda encontrada com os critérios informados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <button
+                          type="button"
+                          onClick={() => setModalDossieVenda(venda)}
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            color: '#E2E8F0',
+                            borderRadius: '4px',
+                            padding: '0.18rem 0.35rem',
+                            fontSize: '0.66rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem'
+                          }}
+                          title="Abrir Dossiê Técnico & Regulatório da Venda Arquivada"
+                        >
+                          <FileText size={11} color="#C5A059" />
+                          Dossiê
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReciboModalVenda(venda)
+                            setTipoDocumentoRecibo('AUTO')
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: '0.15rem' }}
+                          title="Visualizar / Imprimir Documento Oficial"
+                        >
+                          <Printer size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEnviarWhatsAppRecibo(venda)}
+                          style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', padding: '0.15rem' }}
+                          title="Enviar Comprovante / Proposta no WhatsApp"
+                        >
+                          <MessageCircle size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalExcluirVenda(venda)
+                            setSenhaMasterInput('')
+                            setErroSenhaMaster('')
+                          }}
+                          style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.15rem' }}
+                          title="Cancelar Venda (Restaura Estoque / Libera Armas)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
+            ) : (
+              <tr>
+                <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  Nenhuma venda encontrada com os critérios informados.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-
       {/* ── MODAL NOVA VENDA DE BALCÃO (LAYOUT PDV 2 COLUNAS) ── */}
       {modalNovaVenda && (
         <div style={{

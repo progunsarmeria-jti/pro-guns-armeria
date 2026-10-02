@@ -910,6 +910,7 @@ export default function App() {
               <ModuloVendas
                 vendas={vendas} setVendas={setVendas}
                 estoque={estoque} setEstoque={setEstoque}
+                armas={armas} setArmas={setArmas}
                 caixas={caixas} setCaixas={setCaixas}
                 financeiro={financeiro} setFinanceiro={setFinanceiro}
                 clientes={clientes}

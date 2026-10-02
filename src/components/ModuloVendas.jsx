@@ -193,16 +193,17 @@ export default function ModuloVendas({
     return 'Outros'
   }
 
-  // Ícone representativo por categoria
-  const getCategoryIcon = (categoria) => {
+  // Ícone representativo por categoria com paleta neutra e premium
+  const getCategoryIcon = (categoria, isAtiva = false) => {
+    const iconColor = isAtiva ? '#C5A059' : '#94A3B8'
     const cat = (categoria || '').toUpperCase()
-    if (cat.includes('ARMA')) return <Target size={14} color="#F59E0B" />
-    if (cat.includes('MUNI')) return <Sparkles size={14} color="#60A5FA" />
-    if (cat.includes('PEÇA') || cat.includes('PECA') || cat.includes('COMPONENTE')) return <Wrench size={14} color="#34D399" />
-    if (cat.includes('LIMP') || cat.includes('CONSERV')) return <Droplets size={14} color="#A78BFA" />
-    if (cat.includes('MIRA') || cat.includes('ÓPTIC') || cat.includes('OPTIC')) return <Search size={14} color="#F472B6" />
-    if (cat.includes('ACESS') || cat.includes('CARREG')) return <Package size={14} color="#FBBF24" />
-    return <Tag size={14} color="var(--text-muted)" />
+    if (cat.includes('ARMA')) return <Target size={14} color={iconColor} />
+    if (cat.includes('MUNI')) return <Sparkles size={14} color={iconColor} />
+    if (cat.includes('PEÇA') || cat.includes('PECA') || cat.includes('COMPONENTE')) return <Wrench size={14} color={iconColor} />
+    if (cat.includes('LIMP') || cat.includes('CONSERV')) return <Droplets size={14} color={iconColor} />
+    if (cat.includes('MIRA') || cat.includes('ÓPTIC') || cat.includes('OPTIC')) return <Search size={14} color={iconColor} />
+    if (cat.includes('ACESS') || cat.includes('CARREG')) return <Package size={14} color={iconColor} />
+    return <Tag size={14} color={iconColor} />
   }
 
   // Categorias únicas presentes com contagem de itens em estoque
@@ -1318,44 +1319,49 @@ export default function ModuloVendas({
         }}>
           <div className="card" style={{
             width: '100%',
-            maxWidth: '1360px',
-            height: '94vh',
+            maxWidth: '1380px',
+            height: '95vh',
             display: 'flex',
             flexDirection: 'column',
-            padding: '1.25rem',
+            padding: '1rem 1.25rem',
             overflow: 'hidden',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+            backgroundColor: '#0F121A',
+            border: '1px solid #283042',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.85)'
           }}>
-            {/* Header do PDV */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', flexShrink: 0 }}>
+            {/* Header do PDV - Neutro e Premium */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #232938', paddingBottom: '0.75rem', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.5rem', borderRadius: '8px', color: '#F59E0B' }}>
-                  <ShoppingCart size={22} />
+                <div style={{ backgroundColor: 'rgba(197,160,89,0.12)', padding: '0.5rem', borderRadius: '8px', color: '#C5A059', border: '1px solid rgba(197,160,89,0.25)' }}>
+                  <ShoppingCart size={20} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.25rem', color: '#F59E0B', margin: 0, fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.2rem', color: '#F1F5F9', margin: 0, fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     Ponto de Venda de Balcão (PDV)
+                    <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#C5A059', backgroundColor: 'rgba(197,160,89,0.12)', border: '1px solid rgba(197,160,89,0.25)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                      PRÓ GUNS
+                    </span>
                   </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Selecione a categoria ou pesquise o produto para adicionar com 1 clique ao carrinho.
+                  <span style={{ fontSize: '0.75rem', color: '#8A94A6' }}>
+                    Selecione os produtos no catálogo para compor a venda ou proposta regulada.
                   </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 {carrinho.length > 0 && (
                   <button
                     type="button"
                     onClick={handleLimparCarrinho}
-                    style={{ background: 'transparent', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', padding: '0.35rem 0.65rem', borderRadius: '5px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                    style={{ background: '#1D181A', border: '1px solid rgba(239,68,68,0.25)', color: '#F87171', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontWeight: '600' }}
                     title="Esvaziar carrinho"
                   >
                     <RotateCcw size={13} /> Limpar Carrinho
                   </button>
                 )}
                 <button
-                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.35rem' }}
+                  style={{ background: '#191D28', border: '1px solid #2B3346', borderRadius: '6px', color: '#8A94A6', cursor: 'pointer', padding: '0.35rem' }}
                   onClick={() => setModalNovaVenda(false)}
+                  title="Fechar (Esc)"
                 >
                   <X size={18} />
                 </button>
@@ -1365,22 +1371,22 @@ export default function ModuloVendas({
             {/* Corpo em 2 Colunas */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.35fr) minmax(380px, 450px)',
+              gridTemplateColumns: 'minmax(0, 1.38fr) minmax(390px, 460px)',
               gap: '1rem',
               flex: 1,
               minHeight: 0,
               overflow: 'hidden'
             }}>
               {/* ── COLUNA ESQUERDA: CATÁLOGO DE PRODUTOS ── */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 
                 {/* Barra de Busca Instantânea com leitor / filtro */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.45rem 0.75rem', flexShrink: 0 }}>
-                  <Search size={16} color="#F59E0B" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#141722', border: '1px solid #262D3E', borderRadius: '8px', padding: '0.45rem 0.75rem', flexShrink: 0 }}>
+                  <Search size={16} color="#C5A059" />
                   <input
                     type="text"
                     className="input-field"
-                    style={{ border: 'none', background: 'transparent', padding: 0, fontSize: '0.82rem', width: '100%' }}
+                    style={{ border: 'none', background: 'transparent', padding: 0, fontSize: '0.82rem', width: '100%', color: '#F1F5F9' }}
                     placeholder="Buscar por nome, calibre, código SKU, fabricante ou leitor de código de barras..."
                     value={buscaCatalogo}
                     onChange={e => setBuscaCatalogo(e.target.value)}
@@ -1390,7 +1396,7 @@ export default function ModuloVendas({
                     <button
                       type="button"
                       onClick={() => setBuscaCatalogo('')}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                      style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: 0 }}
                       title="Limpar busca"
                     >
                       <X size={15} />
@@ -1398,7 +1404,7 @@ export default function ModuloVendas({
                   )}
                 </div>
 
-                {/* Abas de Categorias Rápidas com Contagem - Todas visíveis em linhas sem rolagem horizontal */}
+                {/* Abas de Categorias - Neutro e Premium, todas visíveis sem rolagem horizontal */}
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -1426,19 +1432,19 @@ export default function ModuloVendas({
                           whiteSpace: 'nowrap',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
-                          border: isAtiva ? '1px solid #F59E0B' : '1px solid var(--border-color)',
-                          backgroundColor: isAtiva ? 'rgba(245, 158, 11, 0.18)' : 'var(--bg-input)',
-                          color: isAtiva ? '#FBBF24' : 'var(--text-muted)'
+                          border: isAtiva ? '1px solid #C5A059' : '1px solid #262D3D',
+                          backgroundColor: isAtiva ? '#1E2536' : '#141822',
+                          color: isAtiva ? '#F3E8D0' : '#8A94A6'
                         }}
                       >
-                        {getCategoryIcon(cat)}
+                        {getCategoryIcon(cat, isAtiva)}
                         <span>{cat}</span>
                         <span style={{
                           fontSize: '0.65rem',
                           padding: '0.08rem 0.35rem',
                           borderRadius: '10px',
-                          backgroundColor: isAtiva ? '#F59E0B' : 'rgba(255,255,255,0.08)',
-                          color: isAtiva ? '#000' : 'var(--text-muted)',
+                          backgroundColor: isAtiva ? '#C5A059' : '#1F2637',
+                          color: isAtiva ? '#0F1117' : '#8A94A6',
                           fontWeight: '800'
                         }}>
                           {count}
@@ -1453,12 +1459,12 @@ export default function ModuloVendas({
                   flex: 1,
                   overflowY: 'auto',
                   minHeight: 0,
-                  border: '1px solid var(--border-color)',
+                  border: '1px solid #232938',
                   borderRadius: '8px',
-                  backgroundColor: 'var(--bg-input)'
+                  backgroundColor: '#12151E'
                 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#13161C', borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#141824', borderBottom: '2px solid #232938', color: '#8A94A6' }}>
                       <tr>
                         <th style={{ padding: '0.55rem 0.75rem', fontWeight: '800' }}>PRODUTO / ITEM</th>
                         <th style={{ padding: '0.55rem 0.6rem', fontWeight: '800', whiteSpace: 'nowrap' }}>SKU / CÓDIGO</th>
@@ -1483,37 +1489,37 @@ export default function ModuloVendas({
                               key={item.id}
                               onClick={() => !semEstoque && handleAdicionarAoCarrinho(item, 1)}
                               style={{
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                                borderBottom: '1px solid #1E2330',
                                 backgroundColor: itemNoCart
-                                  ? 'rgba(245, 158, 11, 0.08)'
+                                  ? 'rgba(197, 160, 89, 0.08)'
                                   : idx % 2 === 0
-                                  ? 'rgba(255, 255, 255, 0.015)'
+                                  ? 'rgba(255, 255, 255, 0.012)'
                                   : 'transparent',
                                 cursor: semEstoque ? 'not-allowed' : 'pointer',
                                 transition: 'background-color 0.12s ease',
                                 opacity: semEstoque ? 0.55 : 1
                               }}
                               onMouseEnter={e => {
-                                if (!semEstoque) e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.14)'
+                                if (!semEstoque) e.currentTarget.style.backgroundColor = 'rgba(197, 160, 89, 0.06)'
                               }}
                               onMouseLeave={e => {
                                 if (!semEstoque) {
                                   e.currentTarget.style.backgroundColor = itemNoCart
-                                    ? 'rgba(245, 158, 11, 0.08)'
+                                    ? 'rgba(197, 160, 89, 0.08)'
                                     : idx % 2 === 0
-                                    ? 'rgba(255, 255, 255, 0.015)'
+                                    ? 'rgba(255, 255, 255, 0.012)'
                                     : 'transparent'
                                 }
                               }}
                             >
                               {/* PRODUTO / ITEM */}
                               <td style={{ padding: '0.5rem 0.75rem' }}>
-                                <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.82rem' }}>
+                                <div style={{ fontWeight: '700', color: '#F1F5F9', fontSize: '0.82rem' }}>
                                   {item.nome}
                                 </div>
-                                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem', flexWrap: 'wrap' }}>
+                                <div style={{ fontSize: '0.68rem', color: '#8A94A6', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem', flexWrap: 'wrap' }}>
                                   {item.calibre && (
-                                    <span style={{ color: '#F59E0B', fontWeight: '700' }}>
+                                    <span style={{ color: '#C5A059', fontWeight: '700' }}>
                                       {item.calibre}
                                     </span>
                                   )}
@@ -1521,9 +1527,9 @@ export default function ModuloVendas({
                                   {item.fabricante && <span>{item.fabricante}</span>}
                                   {item.numero_serie && (
                                     <span style={{
-                                      backgroundColor: 'rgba(245, 158, 11, 0.18)',
-                                      color: '#FBBF24',
-                                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                                      backgroundColor: '#1C2230',
+                                      color: '#E2E8F0',
+                                      border: '1px solid #2F384C',
                                       padding: '0.05rem 0.35rem',
                                       borderRadius: '4px',
                                       fontSize: '0.67rem',
@@ -1535,9 +1541,9 @@ export default function ModuloVendas({
                                   )}
                                   {item.lote_fabricante && (
                                     <span style={{
-                                      backgroundColor: 'rgba(96, 165, 250, 0.18)',
-                                      color: '#60A5FA',
-                                      border: '1px solid rgba(96, 165, 250, 0.4)',
+                                      backgroundColor: '#182233',
+                                      color: '#93C5FD',
+                                      border: '1px solid #253752',
                                       padding: '0.05rem 0.35rem',
                                       borderRadius: '4px',
                                       fontSize: '0.67rem',
@@ -1550,7 +1556,7 @@ export default function ModuloVendas({
                               </td>
 
                               {/* SKU / CÓDIGO */}
-                              <td style={{ padding: '0.5rem 0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.74rem', whiteSpace: 'nowrap' }}>
+                              <td style={{ padding: '0.5rem 0.6rem', color: '#8A94A6', fontFamily: 'monospace', fontSize: '0.74rem', whiteSpace: 'nowrap' }}>
                                 {item.codigo_sku || 'S/N'}
                               </td>
 
@@ -1560,14 +1566,15 @@ export default function ModuloVendas({
                                   fontSize: '0.68rem',
                                   padding: '0.15rem 0.45rem',
                                   borderRadius: '4px',
-                                  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                                  color: 'var(--text-muted)',
+                                  backgroundColor: '#191E2B',
+                                  border: '1px solid #2A3347',
+                                  color: '#8A94A6',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '0.3rem',
                                   whiteSpace: 'nowrap'
                                 }}>
-                                  {getCategoryIcon(catNorm)}
+                                  {getCategoryIcon(catNorm, false)}
                                   {catNorm}
                                 </span>
                               </td>
@@ -1578,7 +1585,8 @@ export default function ModuloVendas({
                                   fontSize: '0.72rem',
                                   fontWeight: '800',
                                   color: qtdEstoque <= 2 ? '#F87171' : '#34D399',
-                                  backgroundColor: qtdEstoque <= 2 ? 'rgba(248, 113, 113, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                  backgroundColor: qtdEstoque <= 2 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                                  border: qtdEstoque <= 2 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
                                   padding: '0.15rem 0.45rem',
                                   borderRadius: '4px',
                                   whiteSpace: 'nowrap'
@@ -1588,7 +1596,7 @@ export default function ModuloVendas({
                               </td>
 
                               {/* VALOR UNIT. */}
-                              <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#10B981', fontSize: '0.86rem', whiteSpace: 'nowrap', minWidth: '95px' }}>
+                              <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', fontWeight: '800', color: '#F8FAFC', fontSize: '0.86rem', whiteSpace: 'nowrap', minWidth: '95px' }}>
                                 {formatarMoeda(item.preco_venda)}
                               </td>
 
@@ -1598,9 +1606,9 @@ export default function ModuloVendas({
                                   <span style={{
                                     fontSize: '0.68rem',
                                     fontWeight: '800',
-                                    color: '#F59E0B',
-                                    backgroundColor: 'rgba(245, 158, 11, 0.18)',
-                                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                                    color: '#DFB76C',
+                                    backgroundColor: 'rgba(197, 160, 89, 0.12)',
+                                    border: '1px solid rgba(197, 160, 89, 0.3)',
                                     padding: '0.15rem 0.45rem',
                                     borderRadius: '10px',
                                     whiteSpace: 'nowrap'
@@ -1622,10 +1630,10 @@ export default function ModuloVendas({
                                     handleAdicionarAoCarrinho(item, 1)
                                   }}
                                   style={{
-                                    backgroundColor: semEstoque ? '#374151' : '#10B981',
-                                    border: 'none',
-                                    color: '#FFF',
-                                    borderRadius: '4px',
+                                    backgroundColor: semEstoque ? '#1A1E27' : '#1C2230',
+                                    border: semEstoque ? '1px solid #262D3D' : '1px solid #333D52',
+                                    color: semEstoque ? '#555F73' : '#E2E8F0',
+                                    borderRadius: '5px',
                                     padding: '0.25rem 0.55rem',
                                     fontSize: '0.72rem',
                                     fontWeight: '700',
@@ -1633,7 +1641,22 @@ export default function ModuloVendas({
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '0.2rem',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
+                                    transition: 'all 0.12s ease'
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (!semEstoque) {
+                                      e.currentTarget.style.borderColor = '#C5A059'
+                                      e.currentTarget.style.color = '#DFB76C'
+                                      e.currentTarget.style.backgroundColor = 'rgba(197, 160, 89, 0.12)'
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (!semEstoque) {
+                                      e.currentTarget.style.borderColor = '#333D52'
+                                      e.currentTarget.style.color = '#E2E8F0'
+                                      e.currentTarget.style.backgroundColor = '#1C2230'
+                                    }
                                   }}
                                   title={semEstoque ? 'Estoque esgotado' : 'Adicionar ao carrinho'}
                                 >
@@ -1646,10 +1669,10 @@ export default function ModuloVendas({
                         })
                       ) : (
                         <tr>
-                          <td colSpan="7" style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            <Package size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.5rem auto', opacity: 0.5 }} />
-                            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>Nenhum produto encontrado</div>
-                            <div style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                          <td colSpan="7" style={{ padding: '3rem 1rem', textAlign: 'center', color: '#8A94A6' }}>
+                            <Package size={36} color="#8A94A6" style={{ margin: '0 auto 0.5rem auto', opacity: 0.5 }} />
+                            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#F1F5F9' }}>Nenhum produto encontrado</div>
+                            <div style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: '#64748B' }}>
                               Tente selecionar outra categoria ou limpar o termo de pesquisa.
                             </div>
                           </td>
@@ -1660,27 +1683,31 @@ export default function ModuloVendas({
                 </div>
               </div>
 
-              {/* ── COLUNA DIREITA: PEDIDO, CARRINHO & CHECKOUT ── */}
+              {/* ── COLUNA DIREITA: PEDIDO, CARRINHO & CHECKOUT (PREMIUM & ULTRA-LEGÍVEL) ── */}
               <form onSubmit={handleFinalizarVenda} style={{
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
                 minHeight: 0,
-                backgroundColor: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
+                backgroundColor: '#141722',
+                border: '1px solid #262D3E',
                 borderRadius: '10px',
-                padding: '0.85rem',
-                gap: '0.65rem',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
               }}>
-                {/* Topo do Carrinho: Cliente e Status */}
-                <div style={{ flexShrink: 0 }}>
+                {/* 1. SEÇÃO FIXA SUPERIOR: CLIENTE REQUERENTE */}
+                <div style={{
+                  padding: '0.8rem 1rem 0.75rem 1rem',
+                  borderBottom: '1px solid #232938',
+                  backgroundColor: '#171B26',
+                  flexShrink: 0
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <label style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>
+                    <label style={{ fontSize: '0.72rem', color: '#8A94A6', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                       CLIENTE REQUERENTE *
                     </label>
-                    <span style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: '800' }}>
-                      {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'} no carrinho
+                    <span style={{ fontSize: '0.72rem', color: '#C5A059', fontWeight: '800', backgroundColor: 'rgba(197,160,89,0.12)', padding: '0.12rem 0.5rem', borderRadius: '12px', border: '1px solid rgba(197,160,89,0.25)' }}>
+                      {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}
                     </span>
                   </div>
                   <CustomSelect
@@ -1707,59 +1734,84 @@ export default function ModuloVendas({
 
                   {/* Alerta de obrigatoriedade de cliente para Armas / Munições */}
                   {(temArmaNoCarrinho || temMunicaoNoCarrinho) && clienteSelecionado === 'CLIENTE AVULSO / BALCÃO' && (
-                    <div style={{ color: '#F87171', fontSize: '0.69rem', fontWeight: '700', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <AlertTriangle size={13} />
-                      Exigência Legal: Selecione um cliente cadastrado para {temArmaNoCarrinho ? 'armas de fogo' : 'munições'}.
+                    <div style={{
+                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      borderRadius: '6px',
+                      padding: '0.35rem 0.6rem',
+                      color: '#FCA5A5',
+                      fontSize: '0.7rem',
+                      fontWeight: '700',
+                      marginTop: '0.45rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}>
+                      <AlertTriangle size={13} color="#F87171" style={{ flexShrink: 0 }} />
+                      <span>Exigência Legal: Selecione um cliente cadastrado para {temArmaNoCarrinho ? 'armas de fogo' : 'munições'}.</span>
                     </div>
                   )}
+                </div>
 
-                  {/* Informativo de Venda de Arma (PF / SIGMA) */}
+                {/* 2. ÁREA CENTRAL SCROLLÁVEL: AVISOS LEGAIS + FORMULÁRIOS REGULATÓRIOS + ITENS DO CARRINHO */}
+                <div style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem',
+                  backgroundColor: '#12151E'
+                }}>
+                  {/* Informativo Regulatório de Venda de Arma (PF / SIGMA) */}
                   {temArmaNoCarrinho && (
                     <div style={{
-                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                      border: '1px solid rgba(245, 158, 11, 0.35)',
-                      borderRadius: '6px',
-                      padding: '0.45rem 0.6rem',
-                      fontSize: '0.71rem',
-                      color: '#FBBF24',
+                      backgroundColor: 'rgba(197, 160, 89, 0.06)',
+                      border: '1px solid rgba(197, 160, 89, 0.22)',
+                      borderRadius: '8px',
+                      padding: '0.55rem 0.75rem',
+                      fontSize: '0.72rem',
+                      color: '#E6C687',
                       display: 'flex',
-                      gap: '0.4rem',
+                      gap: '0.55rem',
                       alignItems: 'flex-start',
-                      marginTop: '0.35rem'
+                      lineHeight: '1.35'
                     }}>
-                      <Shield size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+                      <Shield size={16} color="#C5A059" style={{ flexShrink: 0, marginTop: '2px' }} />
                       <div>
-                        <strong>Venda de Arma de Fogo (PF / SIGMA):</strong>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.67rem', marginTop: '0.1rem', lineHeight: '1.3' }}>
-                          A arma será <strong>RESERVADA</strong> no estoque e emitida a <strong>Declaração de Proposta de Venda</strong> para o processo na PF/Exército. A Nota Fiscal é emitida após deferimento.
-                        </div>
+                        <strong style={{ color: '#DFB76C', display: 'block', marginBottom: '0.15rem' }}>
+                          Venda Regulada de Arma de Fogo (PF / SIGMA)
+                        </strong>
+                        <span style={{ color: '#8A94A6', fontSize: '0.69rem' }}>
+                          A arma será <strong>RESERVADA</strong> no estoque da loja. O sistema emitirá a <strong>Declaração de Proposta de Compra</strong> para o processo na autoridade policial/militar. A Nota Fiscal é emitida após deferimento.
+                        </span>
                       </div>
                     </div>
                   )}
 
-                  {/* Painel de Controle de Munições (SICOVEM / PF) */}
+                  {/* Painel Regulatório de Munições (SICOVEM / PF) */}
                   {temMunicaoNoCarrinho && (
                     <div style={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.09)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      borderRadius: '6px',
-                      padding: '0.5rem 0.65rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid #262E40',
+                      borderRadius: '8px',
+                      padding: '0.65rem 0.75rem',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.35rem',
-                      marginTop: '0.35rem'
+                      gap: '0.45rem'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#60A5FA', fontWeight: '800', fontSize: '0.72rem' }}>
-                        <Target size={13} />
-                        CONTROLE DE MUNIÇÕES (SICOVEM / PF / SIGMA)
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#CBD5E1', fontWeight: '800', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <Target size={14} color="#8A94A6" />
+                        Registro Regulatório de Munições (SICOVEM / PF)
                       </div>
 
                       {clienteSelecionadoObj?.armas && clienteSelecionadoObj.armas.length > 0 && (
                         <div>
-                          <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Arma do Acervo do Cliente:</label>
+                          <label style={{ fontSize: '0.66rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Arma do Acervo do Cliente:</label>
                           <select
                             className="input-field"
-                            style={{ height: '26px', fontSize: '0.72rem', padding: '0.15rem 0.35rem' }}
+                            style={{ height: '28px', fontSize: '0.72rem', padding: '0.15rem 0.35rem', backgroundColor: '#10131B', border: '1px solid #2B3548', color: '#F8FAFC' }}
                             value={dadosMunicaoForm.arma_acervo_id}
                             onChange={e => {
                               const aId = e.target.value
@@ -1788,23 +1840,23 @@ export default function ModuloVendas({
                         </div>
                       )}
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.35rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.45rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Nº do CRAF *</label>
+                          <label style={{ fontSize: '0.66rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Nº do CRAF *</label>
                           <input
                             type="text"
                             className="input-field"
-                            style={{ height: '26px', fontSize: '0.74rem' }}
+                            style={{ height: '28px', fontSize: '0.74rem', backgroundColor: '#10131B', border: '1px solid #2B3548', color: '#F8FAFC' }}
                             placeholder="Ex: CRAF-998877"
                             value={dadosMunicaoForm.numero_craf}
                             onChange={e => setDadosMunicaoForm({ ...dadosMunicaoForm, numero_craf: e.target.value })}
                           />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Órgão Registro *</label>
+                          <label style={{ fontSize: '0.66rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Órgão Registro *</label>
                           <select
                             className="input-field"
-                            style={{ height: '26px', fontSize: '0.72rem', padding: '0.15rem 0.35rem' }}
+                            style={{ height: '28px', fontSize: '0.72rem', padding: '0.15rem 0.35rem', backgroundColor: '#10131B', border: '1px solid #2B3548', color: '#F8FAFC' }}
                             value={dadosMunicaoForm.orgao_emissor}
                             onChange={e => setDadosMunicaoForm({ ...dadosMunicaoForm, orgao_emissor: e.target.value })}
                           >
@@ -1814,24 +1866,24 @@ export default function ModuloVendas({
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.35rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.45rem' }}>
                         <div>
-                          <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Calibre do CRAF *</label>
+                          <label style={{ fontSize: '0.66rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Calibre do CRAF *</label>
                           <input
                             type="text"
                             className="input-field"
-                            style={{ height: '26px', fontSize: '0.74rem' }}
+                            style={{ height: '28px', fontSize: '0.74rem', backgroundColor: '#10131B', border: '1px solid #2B3548', color: '#F8FAFC' }}
                             placeholder="Ex: 9x19mm Luger"
                             value={dadosMunicaoForm.calibre_craf}
                             onChange={e => setDadosMunicaoForm({ ...dadosMunicaoForm, calibre_craf: e.target.value })}
                           />
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.15rem' }}>Validade CRAF</label>
+                          <label style={{ fontSize: '0.66rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Validade CRAF</label>
                           <input
                             type="date"
                             className="input-field"
-                            style={{ height: '26px', fontSize: '0.72rem' }}
+                            style={{ height: '28px', fontSize: '0.72rem', backgroundColor: '#10131B', border: '1px solid #2B3548', color: '#F8FAFC' }}
                             value={dadosMunicaoForm.validade_craf}
                             onChange={e => setDadosMunicaoForm({ ...dadosMunicaoForm, validade_craf: e.target.value })}
                           />
@@ -1839,124 +1891,130 @@ export default function ModuloVendas({
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Lista de Itens no Carrinho (Área Rolável com Cartões Espaçosos) */}
-                <div style={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  minHeight: 0,
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(0,0,0,0.2)',
-                  padding: '0.45rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.45rem'
-                }}>
+                  {/* Header da Lista de Itens no Carrinho */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.1rem' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#8A94A6', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Itens no Carrinho ({carrinho.length})
+                    </span>
+                    {carrinho.length > 0 && (
+                      <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                        Role para visualizar todos os itens
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Lista de Itens do Carrinho - Altura Espaçosa e Legível */}
                   {carrinho.length > 0 ? (
                     carrinho.map(item => (
                       <div
                         key={item.item_id}
                         style={{
-                          backgroundColor: 'var(--bg-card)',
-                          border: '1px solid var(--border-color)',
+                          backgroundColor: '#181C27',
+                          border: '1px solid #283042',
                           borderRadius: '8px',
-                          padding: '0.6rem 0.75rem',
+                          padding: '0.65rem 0.8rem',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '0.4rem'
+                          gap: '0.45rem',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                         }}
                       >
-                        {/* Linha 1: Nome Completo do Item + Botão de Excluir */}
+                        {/* Linha 1: Nome Completo do Item + Badges + Botão de Excluir */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                          <div style={{
-                            fontSize: '0.82rem',
-                            fontWeight: '700',
-                            color: 'var(--text-main)',
-                            lineHeight: '1.3',
-                            wordBreak: 'break-word'
-                          }}>
-                            {item.nome}
-                            {item.numero_serie && (
-                              <div style={{
-                                display: 'inline-block',
-                                marginLeft: '0.35rem',
-                                backgroundColor: 'rgba(245, 158, 11, 0.18)',
-                                color: '#FBBF24',
-                                border: '1px solid rgba(245, 158, 11, 0.4)',
-                                padding: '0.05rem 0.35rem',
-                                borderRadius: '4px',
-                                fontSize: '0.67rem',
-                                fontWeight: '800',
-                                fontFamily: 'monospace'
-                              }}>
-                                S/N: {item.numero_serie}
-                              </div>
-                            )}
-                            {item.lote_fabricante && (
-                              <div style={{
-                                display: 'inline-block',
-                                marginLeft: '0.35rem',
-                                backgroundColor: 'rgba(96, 165, 250, 0.18)',
-                                color: '#60A5FA',
-                                border: '1px solid rgba(96, 165, 250, 0.4)',
-                                padding: '0.05rem 0.35rem',
-                                borderRadius: '4px',
-                                fontSize: '0.67rem',
-                                fontWeight: '700'
-                              }}>
-                                Lote: {item.lote_fabricante}
-                              </div>
-                            )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '0.84rem',
+                              fontWeight: '700',
+                              color: '#F8FAFC',
+                              lineHeight: '1.35',
+                              wordBreak: 'break-word'
+                            }}>
+                              {item.nome}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                              {item.calibre && (
+                                <span style={{ color: '#C5A059', fontWeight: '700', fontSize: '0.68rem' }}>
+                                  {item.calibre}
+                                </span>
+                              )}
+                              {item.numero_serie && (
+                                <span style={{
+                                  backgroundColor: '#202636',
+                                  color: '#E2E8F0',
+                                  border: '1px solid #323D54',
+                                  padding: '0.06rem 0.35rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.66rem',
+                                  fontWeight: '800',
+                                  fontFamily: 'monospace'
+                                }}>
+                                  S/N: {item.numero_serie}
+                                </span>
+                              )}
+                              {item.lote_fabricante && (
+                                <span style={{
+                                  backgroundColor: '#1B2433',
+                                  color: '#93C5FD',
+                                  border: '1px solid #2C3C56',
+                                  padding: '0.06rem 0.35rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.66rem',
+                                  fontWeight: '700'
+                                }}>
+                                  Lote: {item.lote_fabricante}
+                                </span>
+                              )}
+                            </div>
                           </div>
+
                           <button
                             type="button"
                             onClick={() => handleRemoverDoCarrinho(item.item_id)}
                             style={{
-                              background: 'rgba(248, 113, 113, 0.1)',
-                              border: '1px solid rgba(248, 113, 113, 0.25)',
-                              borderRadius: '4px',
+                              background: '#22191C',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              borderRadius: '5px',
                               color: '#F87171',
                               cursor: 'pointer',
-                              padding: '0.2rem 0.35rem',
+                              padding: '0.25rem 0.4rem',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               flexShrink: 0
                             }}
-                            title="Remover do carrinho"
+                            title="Remover item do carrinho"
                           >
                             <Trash2 size={13} />
                           </button>
                         </div>
 
-                        {/* Linha 2: Detalhes à esquerda (SKU e Unitário), Stepper e Subtotal à direita */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.35rem' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            <span style={{ color: '#F59E0B', fontWeight: '700' }}>{formatarMoeda(item.preco_unitario)}</span> un.
-                            {item.sku && <span style={{ marginLeft: '0.3rem', opacity: 0.8 }}>({item.sku})</span>}
+                        {/* Linha 2: Detalhes à esquerda (Unitário e SKU), Stepper e Subtotal à direita */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid #232A3B', paddingTop: '0.4rem' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#8A94A6' }}>
+                            <span style={{ color: '#E2E8F0', fontWeight: '700' }}>{formatarMoeda(item.preco_unitario)}</span>
+                            <span style={{ fontSize: '0.67rem', color: '#64748B', marginLeft: '0.2rem' }}>/ un.</span>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                             {/* Controles de Quantidade */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                               <button
                                 type="button"
                                 onClick={() => handleDecrementarQtd(item.item_id)}
                                 style={{
-                                  width: '24px',
-                                  height: '24px',
+                                  width: '26px',
+                                  height: '26px',
                                   borderRadius: '4px',
-                                  border: '1px solid var(--border-color)',
-                                  backgroundColor: 'var(--bg-input)',
-                                  color: 'var(--text-main)',
+                                  border: '1px solid #333D52',
+                                  backgroundColor: '#1E2433',
+                                  color: '#E2E8F0',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '0.8rem',
-                                  fontWeight: '800'
+                                  fontSize: '0.85rem'
                                 }}
                                 title="Diminuir quantidade"
                               >
@@ -1970,14 +2028,14 @@ export default function ModuloVendas({
                                 onChange={e => handleAlterarQtdCarrinho(item.item_id, e.target.value)}
                                 style={{
                                   width: '42px',
-                                  height: '24px',
+                                  height: '26px',
                                   textAlign: 'center',
-                                  backgroundColor: 'var(--bg-input)',
-                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: '#12151E',
+                                  border: '1px solid #333D52',
                                   borderRadius: '4px',
-                                  color: '#F59E0B',
+                                  color: '#F8FAFC',
                                   fontWeight: '800',
-                                  fontSize: '0.78rem',
+                                  fontSize: '0.8rem',
                                   padding: 0
                                 }}
                               />
@@ -1986,18 +2044,17 @@ export default function ModuloVendas({
                                 type="button"
                                 onClick={() => handleIncrementarQtd(item.item_id)}
                                 style={{
-                                  width: '24px',
-                                  height: '24px',
+                                  width: '26px',
+                                  height: '26px',
                                   borderRadius: '4px',
-                                  border: '1px solid var(--border-color)',
-                                  backgroundColor: 'var(--bg-input)',
-                                  color: 'var(--text-main)',
+                                  border: '1px solid #333D52',
+                                  backgroundColor: '#1E2433',
+                                  color: '#E2E8F0',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '0.8rem',
-                                  fontWeight: '800'
+                                  fontSize: '0.85rem'
                                 }}
                                 title="Aumentar quantidade"
                               >
@@ -2005,8 +2062,8 @@ export default function ModuloVendas({
                               </button>
                             </div>
 
-                            {/* Subtotal */}
-                            <div style={{ textAlign: 'right', minWidth: '75px', fontSize: '0.86rem', fontWeight: '800', color: '#10B981', whiteSpace: 'nowrap' }}>
+                            {/* Subtotal do Item */}
+                            <div style={{ textAlign: 'right', minWidth: '80px', fontSize: '0.88rem', fontWeight: '800', color: '#DFB76C', whiteSpace: 'nowrap' }}>
                               {formatarMoeda(item.subtotal)}
                             </div>
                           </div>
@@ -2014,115 +2071,190 @@ export default function ModuloVendas({
                       </div>
                     ))
                   ) : (
-                    <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem' }}>
-                      <ShoppingCart size={32} style={{ opacity: 0.3, margin: '0 auto 0.4rem auto' }} />
-                      <div style={{ fontSize: '0.78rem', fontWeight: '600' }}>Carrinho vazio</div>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Clique nos produtos ao lado para incluir na venda.</div>
+                    <div style={{ margin: 'auto', textAlign: 'center', color: '#64748B', padding: '2rem 1rem' }}>
+                      <ShoppingCart size={34} style={{ opacity: 0.35, margin: '0 auto 0.5rem auto', color: '#8A94A6' }} />
+                      <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#8A94A6' }}>Carrinho vazio</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.2rem' }}>Clique em "+ Incluir" nos itens ao lado para adicionar à venda.</div>
                     </div>
                   )}
                 </div>
 
-                {/* Pagamento & Desconto */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem', flexShrink: 0 }}>
-                  <CustomSelect
-                    label="Forma de Pagamento *"
-                    value={formaPagamento}
-                    onChange={val => setFormaPagamento(val)}
-                    options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
-                    allowCustom={false}
-                  />
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>DESCONTO (R$)</label>
-                    </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="input-field"
-                      style={{ height: '34px', fontSize: '0.8rem' }}
-                      value={descontoVenda}
-                      onChange={e => setDescontoVenda(e.target.value)}
-                      placeholder="0.00"
+                {/* 3. SEÇÃO FIXA INFERIOR: FORMA DE PAGAMENTO, DESCONTOS, TOTALIZADORES E BOTÕES */}
+                <div style={{
+                  padding: '0.8rem 1rem',
+                  borderTop: '1px solid #232938',
+                  backgroundColor: '#161A26',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.55rem',
+                  flexShrink: 0
+                }}>
+                  {/* Pagamento & Desconto */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem' }}>
+                    <CustomSelect
+                      label="Forma de Pagamento *"
+                      value={formaPagamento}
+                      onChange={val => setFormaPagamento(val)}
+                      options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
+                      allowCustom={false}
                     />
-                  </div>
-                </div>
 
-                {/* Atalhos Rápidos de Desconto */}
-                {valorSubtotalCarrinho > 0 && (
-                  <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', flexShrink: 0 }}>
-                    <button type="button" onClick={() => setDescontoVenda(0)} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #4B5563', background: '#1F2937', color: '#D1D5DB', cursor: 'pointer', fontWeight: '700' }}>0%</button>
-                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.05).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-5%</button>
-                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.10).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-10%</button>
-                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.15).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-15%</button>
-                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.20).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-20%</button>
-                    <button type="button" onClick={() => setDescontoVenda(50)} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.15)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$50</button>
-                  </div>
-                )}
-
-                {/* Troco se Dinheiro */}
-                {formaPagamento === 'Dinheiro' && (
-                  <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', flexShrink: 0 }}>
                     <div>
-                      <label style={{ fontSize: '0.7rem', color: '#34D399' }}>Valor Recebido (R$)</label>
+                      <label style={{ fontSize: '0.7rem', color: '#8A94A6', fontWeight: '700', display: 'block', marginBottom: '0.2rem', textTransform: 'uppercase' }}>
+                        DESCONTO (R$)
+                      </label>
                       <input
                         type="number"
                         step="0.01"
                         className="input-field"
-                        style={{ height: '30px', fontSize: '0.78rem' }}
-                        value={valorPagoCliente}
-                        onChange={e => setValorPagoCliente(e.target.value)}
+                        style={{ height: '34px', fontSize: '0.8rem', backgroundColor: '#10131B', border: '1px solid #2F384C', color: '#F8FAFC' }}
+                        value={descontoVenda}
+                        onChange={e => setDescontoVenda(e.target.value)}
                         placeholder="0.00"
                       />
                     </div>
-                    <div>
-                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Troco a Devolver</label>
-                      <div style={{ fontSize: '0.95rem', fontWeight: '800', color: valorTrocoDevolver > 0 ? '#F59E0B' : '#FFFFFF', paddingTop: '0.2rem' }}>
-                        {formatarMoeda(valorTrocoDevolver)}
+                  </div>
+
+                  {/* Atalhos Rápidos de Desconto - Design Neutro e Discreto */}
+                  {valorSubtotalCarrinho > 0 && (
+                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                      {[
+                        { label: '0%', val: 0 },
+                        { label: '-5%', val: (valorSubtotalCarrinho * 0.05).toFixed(2) },
+                        { label: '-10%', val: (valorSubtotalCarrinho * 0.10).toFixed(2) },
+                        { label: '-15%', val: (valorSubtotalCarrinho * 0.15).toFixed(2) },
+                        { label: '-20%', val: (valorSubtotalCarrinho * 0.20).toFixed(2) },
+                        { label: '- R$50', val: 50 }
+                      ].map(d => {
+                        const isSelected = parseFloat(descontoVenda) === parseFloat(d.val)
+                        return (
+                          <button
+                            key={d.label}
+                            type="button"
+                            onClick={() => setDescontoVenda(d.val)}
+                            style={{
+                              fontSize: '0.67rem',
+                              padding: '0.18rem 0.45rem',
+                              borderRadius: '5px',
+                              border: isSelected ? '1px solid #C5A059' : '1px solid #2A3347',
+                              background: isSelected ? 'rgba(197, 160, 89, 0.15)' : '#191F2B',
+                              color: isSelected ? '#DFB76C' : '#8A94A6',
+                              cursor: 'pointer',
+                              fontWeight: '700',
+                              transition: 'all 0.12s ease'
+                            }}
+                          >
+                            {d.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Troco se Dinheiro */}
+                  {formaPagamento === 'Dinheiro' && (
+                    <div style={{
+                      backgroundColor: '#12151E',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid #252D3D',
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '0.5rem'
+                    }}>
+                      <div>
+                        <label style={{ fontSize: '0.68rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Valor Recebido (R$)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="input-field"
+                          style={{ height: '28px', fontSize: '0.78rem', backgroundColor: '#171B26', border: '1px solid #2C3549', color: '#F8FAFC' }}
+                          value={valorPagoCliente}
+                          onChange={e => setValorPagoCliente(e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.68rem', color: '#8A94A6', display: 'block', marginBottom: '0.15rem' }}>Troco a Devolver</label>
+                        <div style={{ fontSize: '0.92rem', fontWeight: '800', color: valorTrocoDevolver > 0 ? '#DFB76C' : '#CBD5E1', paddingTop: '0.2rem' }}>
+                          {formatarMoeda(valorTrocoDevolver)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Resumo Final & Totalizadores */}
-                <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      Subtotal: {formatarMoeda(valorSubtotalCarrinho)} {valorDescontoNum > 0 ? `| Desc: -${formatarMoeda(valorDescontoNum)}` : ''}
+                  {/* Resumo Final & Totalizador - Premium Gold & Titanium */}
+                  <div style={{
+                    background: 'linear-gradient(180deg, #1A1F2C 0%, #12151F 100%)',
+                    padding: '0.7rem 0.95rem',
+                    borderRadius: '8px',
+                    border: '1px solid #2F394F',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: '#828F9F' }}>
+                        Subtotal: <span style={{ color: '#CBD5E1', fontWeight: '600' }}>{formatarMoeda(valorSubtotalCarrinho)}</span>
+                        {valorDescontoNum > 0 ? (
+                          <span style={{ color: '#FCA5A5', marginLeft: '0.35rem' }}>| Desc: -{formatarMoeda(valorDescontoNum)}</span>
+                        ) : null}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#C5A059', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.15rem' }}>
+                        TOTAL DA VENDA
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase' }}>
-                      TOTAL DA VENDA
+                    <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+                      {formatarMoeda(valorFinalCarrinho)}
                     </div>
                   </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10B981' }}>
-                    {formatarMoeda(valorFinalCarrinho)}
-                  </div>
-                </div>
 
-                {/* Botão de Finalizar */}
-                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                  <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setModalNovaVenda(false)}>
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-gold"
-                    disabled={carrinho.length === 0}
-                    style={{
-                      flex: 2,
-                      backgroundColor: carrinho.length === 0 ? '#374151' : temArmaNoCarrinho ? '#F59E0B' : '#10B981',
-                      borderColor: carrinho.length === 0 ? '#4B5563' : temArmaNoCarrinho ? '#D97706' : '#059669',
-                      color: '#FFF',
-                      justifyContent: 'center',
-                      fontWeight: '800',
-                      padding: '0.6rem',
-                      boxShadow: carrinho.length > 0 ? (temArmaNoCarrinho ? '0 4px 14px rgba(245,158,11,0.35)' : '0 4px 14px rgba(16,185,129,0.3)') : 'none',
-                      cursor: carrinho.length === 0 ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {temArmaNoCarrinho ? <Shield size={16} /> : <CheckCircle2 size={16} />}
-                    <span>{temArmaNoCarrinho ? 'Registrar Venda & Gerar Proposta PF/Exército' : 'Finalizar Venda & Recibo'}</span>
-                  </button>
+                  {/* Botões de Ação */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        backgroundColor: '#191E2A',
+                        border: '1px solid #2D364A',
+                        color: '#8A94A6',
+                        borderRadius: '6px',
+                        padding: '0.55rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setModalNovaVenda(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={carrinho.length === 0}
+                      style={{
+                        flex: 2,
+                        backgroundColor: carrinho.length === 0 ? '#262D3D' : '#C5A059',
+                        border: carrinho.length === 0 ? '1px solid #333C4F' : '1px solid #D8B467',
+                        color: carrinho.length === 0 ? '#64748B' : '#0F1117',
+                        justifyContent: 'center',
+                        fontWeight: '900',
+                        fontSize: '0.82rem',
+                        padding: '0.6rem 0.8rem',
+                        borderRadius: '6px',
+                        boxShadow: carrinho.length > 0 ? '0 4px 15px rgba(197, 160, 89, 0.25)' : 'none',
+                        cursor: carrinho.length === 0 ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {temArmaNoCarrinho ? <Shield size={16} /> : <CheckCircle2 size={16} />}
+                      <span>{temArmaNoCarrinho ? 'Registrar Venda & Gerar Proposta PF/Exército' : 'Finalizar Venda & Recibo'}</span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

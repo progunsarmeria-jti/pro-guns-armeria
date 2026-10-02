@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { hojeISO, formatarData } from '../lib/dates'
 import {
   ShoppingCart,
   Plus,
+  Minus,
   Search,
   CheckCircle2,
   Trash2,
@@ -14,7 +15,13 @@ import {
   FileText,
   User,
   ArrowRight,
-  Lock
+  Lock,
+  Tag,
+  Sparkles,
+  Target,
+  Wrench,
+  Droplets,
+  RotateCcw
 } from 'lucide-react'
 import CustomSelect from './CustomSelect'
 import { dbUpsert, dbDelete, isSupabaseConfigured } from '../lib/supabase'
@@ -44,8 +51,8 @@ export default function ModuloVendas({
   // Form State Nova Venda
   const [clienteSelecionado, setClienteSelecionado] = useState('CLIENTE AVULSO / BALCÃO')
   const [carrinho, setCarrinho] = useState([])
-  const [itemIdParaAdicionar, setItemIdParaAdicionar] = useState('')
-  const [qtdParaAdicionar, setQtdParaAdicionar] = useState(1)
+  const [categoriaAtivaPDV, setCategoriaAtivaPDV] = useState('TODAS')
+  const [buscaCatalogo, setBuscaCatalogo] = useState('')
   const [descontoVenda, setDescontoVenda] = useState(0)
   const [formaPagamento, setFormaPagamento] = useState('Dinheiro')
   const [valorPagoCliente, setValorPagoCliente] = useState('')
@@ -59,16 +66,91 @@ export default function ModuloVendas({
   // Itens do Estoque Disponíveis (Qtd > 0)
   const itensDisponiveis = (estoque || []).filter(i => (parseInt(i.quantidade) || 0) > 0)
 
-  // Adicionar Item ao Carrinho
-  const handleAdicionarAoCarrinho = () => {
-    if (!itemIdParaAdicionar) return
-    const itemEstoque = estoque.find(i => String(i.id) === String(itemIdParaAdicionar))
-    if (!itemEstoque) return
+  // ── NORMALIZADOR DE CATEGORIA DO PRODUTO ────────────────────────────────────
+  const normalizarCategoria = (item) => {
+    if (item.categoria && item.categoria.trim()) {
+      const catUpper = item.categoria.trim().toUpperCase()
+      if (catUpper.includes('ARMA')) return 'Armas de Fogo'
+      if (catUpper.includes('MUNI')) return 'Munições'
+      if (catUpper.includes('PEÇA') || catUpper.includes('PECA') || catUpper.includes('COMPONENTE')) return 'Peças & Componentes'
+      if (catUpper.includes('LIMP') || catUpper.includes('CONSERV')) return 'Limpeza & Conservação'
+      if (catUpper.includes('MIRA') || catUpper.includes('ÓPTIC') || catUpper.includes('OPTIC')) return 'Miras & Ópticas'
+      if (catUpper.includes('ACESS') || catUpper.includes('CARREG')) return 'Acessórios & Carregadores'
+      if (catUpper.includes('INSUMO')) return 'Insumos'
+      return item.categoria.trim()
+    }
+    if (item.tipo_estoque === 'ARMA') return 'Armas de Fogo'
+    if (item.tipo_estoque === 'MUNICAO') return 'Munições'
+    if (item.tipo_estoque === 'PECA') return 'Peças & Componentes'
+    if (item.tipo_estoque === 'SUPRIMENTO') return 'Limpeza & Conservação'
+    return 'Outros'
+  }
 
-    const qtdDesejada = parseInt(qtdParaAdicionar) || 1
+  // Ícone representativo por categoria
+  const getCategoryIcon = (categoria) => {
+    const cat = (categoria || '').toUpperCase()
+    if (cat.includes('ARMA')) return <Target size={14} color="#F59E0B" />
+    if (cat.includes('MUNI')) return <Sparkles size={14} color="#60A5FA" />
+    if (cat.includes('PEÇA') || cat.includes('PECA') || cat.includes('COMPONENTE')) return <Wrench size={14} color="#34D399" />
+    if (cat.includes('LIMP') || cat.includes('CONSERV')) return <Droplets size={14} color="#A78BFA" />
+    if (cat.includes('MIRA') || cat.includes('ÓPTIC') || cat.includes('OPTIC')) return <Search size={14} color="#F472B6" />
+    if (cat.includes('ACESS') || cat.includes('CARREG')) return <Package size={14} color="#FBBF24" />
+    return <Tag size={14} color="var(--text-muted)" />
+  }
+
+  // Categorias únicas presentes com contagem de itens em estoque
+  const categoriasComContagem = useMemo(() => {
+    const contagem = { 'TODAS': itensDisponiveis.length }
+    itensDisponiveis.forEach(item => {
+      const cat = normalizarCategoria(item)
+      contagem[cat] = (contagem[cat] || 0) + 1
+    })
+    return contagem
+  }, [itensDisponiveis])
+
+  // Lista ordenada de categorias disponíveis
+  const listaCategoriasDisponiveis = useMemo(() => {
+    const chaves = Object.keys(categoriasComContagem).filter(c => c !== 'TODAS')
+    const prioridade = ['Armas de Fogo', 'Munições', 'Peças & Componentes', 'Limpeza & Conservação', 'Miras & Ópticas', 'Acessórios & Carregadores', 'Insumos']
+    chaves.sort((a, b) => {
+      const idxA = prioridade.indexOf(a)
+      const idxB = prioridade.indexOf(b)
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB
+      if (idxA !== -1) return -1
+      if (idxB !== -1) return 1
+      return a.localeCompare(b)
+    })
+    return ['TODAS', ...chaves]
+  }, [categoriasComContagem])
+
+  // Produtos filtrados por categoria e termo de busca
+  const produtosFiltradosCatalogo = useMemo(() => {
+    const termo = (buscaCatalogo || '').toLowerCase().trim()
+    return itensDisponiveis.filter(item => {
+      // Filtro por Categoria
+      if (categoriaAtivaPDV !== 'TODAS') {
+        const catItem = normalizarCategoria(item)
+        if (catItem !== categoriaAtivaPDV) return false
+      }
+      // Filtro de Texto (nome, sku, calibre, fabricante, codigo_barras)
+      if (termo) {
+        const matchNome = (item.nome || '').toLowerCase().includes(termo)
+        const matchSku = (item.codigo_sku || '').toLowerCase().includes(termo)
+        const matchCalibre = (item.calibre || '').toLowerCase().includes(termo)
+        const matchFab = (item.fabricante || '').toLowerCase().includes(termo)
+        const matchBarras = (item.codigo_barras || '').toLowerCase().includes(termo)
+        return matchNome || matchSku || matchCalibre || matchFab || matchBarras
+      }
+      return true
+    })
+  }, [itensDisponiveis, categoriaAtivaPDV, buscaCatalogo])
+
+  // ── MANIPULAÇÃO DO CARRINHO ────────────────────────────────────────────────
+  const handleAdicionarAoCarrinho = (itemEstoque, qtd = 1) => {
+    if (!itemEstoque) return
+    const qtdDesejada = parseInt(qtd) || 1
     const qtdEstoqueDisponivel = parseInt(itemEstoque.quantidade) || 0
 
-    // Verifica se já está no carrinho
     const itemExistenteNoCarrinho = carrinho.find(c => String(c.item_id) === String(itemEstoque.id))
     const qtdAtualNoCarrinho = itemExistenteNoCarrinho ? itemExistenteNoCarrinho.quantidade : 0
 
@@ -95,21 +177,71 @@ export default function ModuloVendas({
         item_id: itemEstoque.id,
         sku: itemEstoque.codigo_sku || 'N/A',
         nome: itemEstoque.nome,
-        categoria: itemEstoque.categoria || 'Geral',
+        categoria: normalizarCategoria(itemEstoque),
+        calibre: itemEstoque.calibre || '',
         preco_unitario: precoVenda,
         quantidade: qtdDesejada,
         subtotal: qtdDesejada * precoVenda
       }
-      setCarrinho([...carrinho, novoItemCarrinho])
+      setCarrinho(prev => [...prev, novoItemCarrinho])
+    }
+  }
+
+  // Alterar quantidade diretamente no carrinho (+ / - / digitação)
+  const handleAlterarQtdCarrinho = (itemId, novaQtd) => {
+    const itemEstoque = estoque.find(i => String(i.id) === String(itemId))
+    const qtdEstoqueDisponivel = itemEstoque ? (parseInt(itemEstoque.quantidade) || 0) : 9999
+
+    const qtdNum = parseInt(novaQtd)
+    if (isNaN(qtdNum) || qtdNum <= 0) {
+      handleRemoverDoCarrinho(itemId)
+      return
     }
 
-    setItemIdParaAdicionar('')
-    setQtdParaAdicionar(1)
+    if (qtdNum > qtdEstoqueDisponivel) {
+      alert(`Estoque máximo disponível: ${qtdEstoqueDisponivel} unidade(s).`)
+      return
+    }
+
+    setCarrinho(prev => prev.map(c => {
+      if (String(c.item_id) === String(itemId)) {
+        return {
+          ...c,
+          quantidade: qtdNum,
+          subtotal: qtdNum * (parseFloat(c.preco_unitario) || 0)
+        }
+      }
+      return c
+    }))
+  }
+
+  const handleIncrementarQtd = (itemId) => {
+    const itemCart = carrinho.find(c => String(c.item_id) === String(itemId))
+    if (!itemCart) return
+    handleAlterarQtdCarrinho(itemId, itemCart.quantidade + 1)
+  }
+
+  const handleDecrementarQtd = (itemId) => {
+    const itemCart = carrinho.find(c => String(c.item_id) === String(itemId))
+    if (!itemCart) return
+    if (itemCart.quantidade <= 1) {
+      handleRemoverDoCarrinho(itemId)
+    } else {
+      handleAlterarQtdCarrinho(itemId, itemCart.quantidade - 1)
+    }
   }
 
   // Remover Item do Carrinho
   const handleRemoverDoCarrinho = (itemId) => {
     setCarrinho(prev => prev.filter(c => String(c.item_id) !== String(itemId)))
+  }
+
+  // Limpar todo o carrinho
+  const handleLimparCarrinho = () => {
+    if (carrinho.length === 0) return
+    if (window.confirm('Tem certeza que deseja limpar todos os itens do carrinho?')) {
+      setCarrinho([])
+    }
   }
 
   // Cálculos do Carrinho
@@ -311,7 +443,11 @@ export default function ModuloVendas({
         </div>
 
         <button
-          onClick={() => setModalNovaVenda(true)}
+          onClick={() => {
+            setCategoriaAtivaPDV('TODAS')
+            setBuscaCatalogo('')
+            setModalNovaVenda(true)
+          }}
           className="btn-gold"
           style={{ backgroundColor: '#F59E0B', borderColor: '#D97706', color: '#FFF', padding: '0.55rem 1.1rem', fontSize: '0.85rem', fontWeight: '800', boxShadow: '0 4px 14px rgba(245,158,11,0.3)' }}
         >
@@ -463,207 +599,547 @@ export default function ModuloVendas({
         </div>
       </div>
 
-      {/* ── MODAL NOVA VENDA DE BALCÃO (CARRINHO PDV) ── */}
+      {/* ── MODAL NOVA VENDA DE BALCÃO (LAYOUT PDV 2 COLUNAS) ── */}
       {modalNovaVenda && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '720px', maxHeight: '92vh', overflowY: 'auto', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#F59E0B', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '800' }}>
-                <ShoppingCart size={22} color="#F59E0B" />
-                Nova Venda de Balcão
-              </h3>
-              <button style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setModalNovaVenda(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleFinalizarVenda} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              {/* Seleção do Cliente */}
-              <div>
-                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', display: 'block', marginBottom: '0.3rem' }}>CLIENTE REQUERENTE</label>
-                <CustomSelect
-                  value={clienteSelecionado}
-                  onChange={val => setClienteSelecionado(val)}
-                  options={['CLIENTE AVULSO / BALCÃO', ...(clientes || []).map(c => c.nome_completo)]}
-                  placeholder="Selecione ou digite o nome..."
-                  allowCustom={true}
-                />
-              </div>
-
-              {/* Bloco Adicionar Item do Estoque */}
-              <div style={{ backgroundColor: 'var(--bg-input)', padding: '0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#F59E0B', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Package size={14} /> ADICIONAR ITEM DO ESTOQUE AO CARRINHO
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.88)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '0.75rem'
+        }}>
+          <div className="card" style={{
+            width: '100%',
+            maxWidth: '1360px',
+            height: '94vh',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '1.25rem',
+            overflow: 'hidden',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+          }}>
+            {/* Header do PDV */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.5rem', borderRadius: '8px', color: '#F59E0B' }}>
+                  <ShoppingCart size={22} />
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.6rem', alignItems: 'end' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Item do Estoque *</label>
-                    <select
-                      className="input-field"
-                      value={itemIdParaAdicionar}
-                      onChange={e => setItemIdParaAdicionar(e.target.value)}
-                    >
-                      <option value="">-- Selecione o Produto ({itensDisponiveis.length} disponíveis) --</option>
-                      {itensDisponiveis.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.nome} (SKU: {item.codigo_sku || 'N/A'}) — Disp: {item.quantidade} | R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Quantidade *</label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="input-field"
-                      value={qtdParaAdicionar}
-                      onChange={e => setQtdParaAdicionar(e.target.value)}
-                    />
-                  </div>
-
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', color: '#F59E0B', margin: 0, fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    Ponto de Venda de Balcão (PDV)
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Selecione a categoria ou pesquise o produto para adicionar com 1 clique ao carrinho.
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {carrinho.length > 0 && (
                   <button
                     type="button"
-                    onClick={handleAdicionarAoCarrinho}
-                    className="btn-gold"
-                    style={{ backgroundColor: '#10B981', borderColor: '#059669', color: '#FFF', height: '36px' }}
+                    onClick={handleLimparCarrinho}
+                    style={{ background: 'transparent', border: '1px solid rgba(248,113,113,0.3)', color: '#F87171', padding: '0.35rem 0.65rem', borderRadius: '5px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
+                    title="Esvaziar carrinho"
                   >
-                    <Plus size={16} /> Adicionar
+                    <RotateCcw size={13} /> Limpar Carrinho
                   </button>
-                </div>
+                )}
+                <button
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.35rem' }}
+                  onClick={() => setModalNovaVenda(false)}
+                >
+                  <X size={18} />
+                </button>
               </div>
+            </div>
 
-              {/* Tabela do Carrinho */}
-              <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'left' }}>PRODUTO / ITEM</th>
-                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>QTD</th>
-                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>VALOR UNIT.</th>
-                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>SUBTOTAL</th>
-                      <th style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>AÇÃO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {carrinho.length > 0 ? (
-                      carrinho.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                          <td style={{ padding: '0.6rem 0.8rem', fontWeight: '600' }}>
-                            {item.nome} <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>({item.sku})</span>
-                          </td>
-                          <td style={{ padding: '0.6rem 0.8rem', textAlign: 'center', fontWeight: '800', color: '#F59E0B' }}>
-                            {item.quantidade}
-                          </td>
-                          <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>
-                            R$ {(item.preco_unitario || 0).toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right', fontWeight: '700', color: '#10B981' }}>
-                            R$ {(item.subtotal || 0).toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>
+            {/* Corpo em 2 Colunas */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1.45fr) minmax(350px, 420px)',
+              gap: '1rem',
+              flex: 1,
+              minHeight: 0,
+              overflow: 'hidden'
+            }}>
+              {/* ── COLUNA ESQUERDA: CATÁLOGO DE PRODUTOS ── */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+                
+                {/* Barra de Busca Instantânea com leitor / filtro */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.45rem 0.75rem', flexShrink: 0 }}>
+                  <Search size={16} color="#F59E0B" />
+                  <input
+                    type="text"
+                    className="input-field"
+                    style={{ border: 'none', background: 'transparent', padding: 0, fontSize: '0.82rem', width: '100%' }}
+                    placeholder="Buscar por nome, calibre, código SKU, fabricante ou leitor de código de barras..."
+                    value={buscaCatalogo}
+                    onChange={e => setBuscaCatalogo(e.target.value)}
+                    autoFocus
+                  />
+                  {buscaCatalogo && (
+                    <button
+                      type="button"
+                      onClick={() => setBuscaCatalogo('')}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                      title="Limpar busca"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Abas de Categorias Rápidas com Contagem */}
+                <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem', flexShrink: 0, scrollbarWidth: 'thin' }}>
+                  {listaCategoriasDisponiveis.map(cat => {
+                    const isAtiva = categoriaAtivaPDV === cat
+                    const count = categoriasComContagem[cat] || 0
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategoriaAtivaPDV(cat)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: '20px',
+                          fontSize: '0.74rem',
+                          fontWeight: isAtiva ? '800' : '600',
+                          whiteSpace: 'nowrap',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          border: isAtiva ? '1px solid #F59E0B' : '1px solid var(--border-color)',
+                          backgroundColor: isAtiva ? 'rgba(245, 158, 11, 0.18)' : 'var(--bg-input)',
+                          color: isAtiva ? '#FBBF24' : 'var(--text-muted)'
+                        }}
+                      >
+                        {getCategoryIcon(cat)}
+                        <span>{cat}</span>
+                        <span style={{
+                          fontSize: '0.66rem',
+                          padding: '0.1rem 0.35rem',
+                          borderRadius: '10px',
+                          backgroundColor: isAtiva ? '#F59E0B' : 'rgba(255,255,255,0.08)',
+                          color: isAtiva ? '#000' : 'var(--text-muted)',
+                          fontWeight: '800'
+                        }}>
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Grade de Produtos */}
+                <div style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  minHeight: 0,
+                  paddingRight: '0.25rem',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
+                  gap: '0.65rem',
+                  alignContent: 'start'
+                }}>
+                  {produtosFiltradosCatalogo.length > 0 ? (
+                    produtosFiltradosCatalogo.map(item => {
+                      const itemNoCart = carrinho.find(c => String(c.item_id) === String(item.id))
+                      const qtdNoCart = itemNoCart ? itemNoCart.quantidade : 0
+                      const qtdEstoque = parseInt(item.quantidade) || 0
+                      const semEstoque = qtdNoCart >= qtdEstoque
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => !semEstoque && handleAdicionarAoCarrinho(item, 1)}
+                          style={{
+                            backgroundColor: itemNoCart ? 'rgba(245, 158, 11, 0.06)' : 'var(--bg-input)',
+                            border: itemNoCart ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem',
+                            cursor: semEstoque ? 'not-allowed' : 'pointer',
+                            opacity: semEstoque ? 0.6 : 1,
+                            transition: 'all 0.15s ease',
+                            position: 'relative'
+                          }}
+                          onMouseEnter={e => {
+                            if (!semEstoque) e.currentTarget.style.borderColor = '#F59E0B'
+                          }}
+                          onMouseLeave={e => {
+                            if (!semEstoque) e.currentTarget.style.borderColor = itemNoCart ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-color)'
+                          }}
+                        >
+                          {/* Badge de calibre ou categoria */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.3rem' }}>
+                            <span style={{
+                              fontSize: '0.66rem',
+                              fontWeight: '700',
+                              color: '#F59E0B',
+                              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                              padding: '0.15rem 0.4rem',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase'
+                            }}>
+                              {item.calibre || normalizarCategoria(item)}
+                            </span>
+                            {qtdNoCart > 0 && (
+                              <span style={{
+                                fontSize: '0.66rem',
+                                fontWeight: '800',
+                                color: '#10B981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                padding: '0.1rem 0.35rem',
+                                borderRadius: '10px'
+                              }}>
+                                {qtdNoCart} no carrinho
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Nome do Produto */}
+                          <div>
+                            <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.25', marginBottom: '0.2rem' }}>
+                              {item.nome}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                              SKU: {item.codigo_sku || 'S/N'} {item.fabricante ? `• ${item.fabricante}` : ''}
+                            </div>
+                          </div>
+
+                          {/* Preço e Estoque / Botão */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.4rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div>
+                              <div style={{ fontSize: '0.68rem', color: qtdEstoque <= 2 ? '#F87171' : 'var(--text-muted)', fontWeight: '600' }}>
+                                Disp: {qtdEstoque} {item.unidade || 'UN'}
+                              </div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#10B981' }}>
+                                R$ {(parseFloat(item.preco_venda) || 0).toFixed(2)}
+                              </div>
+                            </div>
+
                             <button
                               type="button"
-                              onClick={() => handleRemoverDoCarrinho(item.item_id)}
-                              style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer' }}
+                              disabled={semEstoque}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAdicionarAoCarrinho(item, 1)
+                              }}
+                              style={{
+                                backgroundColor: semEstoque ? '#374151' : '#10B981',
+                                borderColor: semEstoque ? '#4B5563' : '#059669',
+                                color: '#FFF',
+                                borderRadius: '6px',
+                                padding: '0.35rem 0.6rem',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: semEstoque ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                border: 'none'
+                              }}
                             >
-                              <Trash2 size={15} />
+                              <Plus size={14} />
+                              {semEstoque ? 'Esgotado' : 'Adicionar'}
                             </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" style={{ padding: '1.2rem', textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                          Nenhum item adicionado ao carrinho de venda.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Totalizador & Pagamento */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-                <CustomSelect
-                  label="Forma de Pagamento *"
-                  value={formaPagamento}
-                  onChange={val => setFormaPagamento(val)}
-                  options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
-                  allowCustom={false}
-                />
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700' }}>DESCONTO (R$)</label>
-                    <span style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: '700' }}>🧮 CÁLCULO INTELIGENTE</span>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="input-field"
-                    value={descontoVenda}
-                    onChange={e => setDescontoVenda(e.target.value)}
-                    placeholder="0.00"
-                  />
-                  {/* Atalhos Rápidos de Desconto na Venda de Balcão */}
-                  {valorSubtotalCarrinho > 0 && (
-                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
-                      <button type="button" onClick={() => setDescontoVenda(0)} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #4B5563', background: '#1F2937', color: '#D1D5DB', cursor: 'pointer', fontWeight: '700' }}>0%</button>
-                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.05).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-5%</button>
-                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.10).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-10%</button>
-                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.15).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-15%</button>
-                      <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.20).toFixed(2))} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-20%</button>
-                      <button type="button" onClick={() => setDescontoVenda(50)} style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.15)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$ 50</button>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div style={{ gridColumn: '1 / -1', padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)', backgroundColor: 'var(--bg-input)', borderRadius: '8px', border: '1px dashed var(--border-color)' }}>
+                      <Package size={36} color="var(--text-muted)" style={{ margin: '0 auto 0.5rem auto', opacity: 0.5 }} />
+                      <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--text-main)' }}>Nenhum produto encontrado</div>
+                      <div style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                        Tente selecionar outra categoria ou limpar o termo de pesquisa.
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Troco se Dinheiro */}
-              {formaPagamento === 'Dinheiro' && (
-                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              {/* ── COLUNA DIREITA: PEDIDO, CARRINHO & CHECKOUT ── */}
+              <form onSubmit={handleFinalizarVenda} style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                minHeight: 0,
+                backgroundColor: 'var(--bg-input)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '0.85rem',
+                gap: '0.65rem',
+                overflow: 'hidden'
+              }}>
+                {/* Topo do Carrinho: Cliente e Status */}
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>
+                      CLIENTE REQUERENTE
+                    </label>
+                    <span style={{ fontSize: '0.7rem', color: '#F59E0B', fontWeight: '800' }}>
+                      {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'} no carrinho
+                    </span>
+                  </div>
+                  <CustomSelect
+                    value={clienteSelecionado}
+                    onChange={val => setClienteSelecionado(val)}
+                    options={['CLIENTE AVULSO / BALCÃO', ...(clientes || []).map(c => c.nome_completo)]}
+                    placeholder="Selecione ou digite o nome..."
+                    allowCustom={true}
+                  />
+                </div>
+
+                {/* Lista de Itens no Carrinho (Área Rolável) */}
+                <div style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  minHeight: 0,
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  padding: '0.4rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.4rem'
+                }}>
+                  {carrinho.length > 0 ? (
+                    carrinho.map(item => (
+                      <div
+                        key={item.item_id}
+                        style={{
+                          backgroundColor: 'var(--bg-card)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          padding: '0.5rem 0.6rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        {/* Descrição */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.nome}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            R$ {(item.preco_unitario || 0).toFixed(2)} un. {item.sku ? `• ${item.sku}` : ''}
+                          </div>
+                        </div>
+
+                        {/* Controles de Quantidade */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDecrementarQtd(item.item_id)}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-input)',
+                              color: 'var(--text-main)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.8rem',
+                              fontWeight: '800'
+                            }}
+                            title="Diminuir quantidade"
+                          >
+                            <Minus size={12} />
+                          </button>
+
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantidade}
+                            onChange={e => handleAlterarQtdCarrinho(item.item_id, e.target.value)}
+                            style={{
+                              width: '42px',
+                              height: '24px',
+                              textAlign: 'center',
+                              backgroundColor: 'var(--bg-input)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '4px',
+                              color: '#F59E0B',
+                              fontWeight: '800',
+                              fontSize: '0.78rem',
+                              padding: 0
+                            }}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => handleIncrementarQtd(item.item_id)}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-input)',
+                              color: 'var(--text-main)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.8rem',
+                              fontWeight: '800'
+                            }}
+                            title="Aumentar quantidade"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+
+                        {/* Subtotal */}
+                        <div style={{ textAlign: 'right', minWidth: '65px' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#10B981' }}>
+                            R$ {(item.subtotal || 0).toFixed(2)}
+                          </div>
+                        </div>
+
+                        {/* Lixeira */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoverDoCarrinho(item.item_id)}
+                          style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', padding: '0.2rem' }}
+                          title="Remover do carrinho"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem 1rem' }}>
+                      <ShoppingCart size={32} style={{ opacity: 0.3, margin: '0 auto 0.4rem auto' }} />
+                      <div style={{ fontSize: '0.78rem', fontWeight: '600' }}>Carrinho vazio</div>
+                      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Clique nos produtos ao lado para incluir na venda.</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pagamento & Desconto */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem', flexShrink: 0 }}>
+                  <CustomSelect
+                    label="Forma de Pagamento *"
+                    value={formaPagamento}
+                    onChange={val => setFormaPagamento(val)}
+                    options={['Dinheiro', 'PIX', 'Cartão de Crédito na máquina', 'Cartão de Débito na máquina']}
+                    allowCustom={false}
+                  />
+
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: '#34D399' }}>Valor Entregue pelo Cliente (R$)</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700' }}>DESCONTO (R$)</label>
+                    </div>
                     <input
                       type="number"
                       step="0.01"
                       className="input-field"
-                      value={valorPagoCliente}
-                      onChange={e => setValorPagoCliente(e.target.value)}
+                      style={{ height: '34px', fontSize: '0.8rem' }}
+                      value={descontoVenda}
+                      onChange={e => setDescontoVenda(e.target.value)}
                       placeholder="0.00"
                     />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Troco a Devolver (R$)</label>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '800', color: valorTrocoDevolver > 0 ? '#F59E0B' : '#FFFFFF', paddingTop: '0.4rem' }}>
-                      R$ {valorTrocoDevolver.toFixed(2)}
+                </div>
+
+                {/* Atalhos Rápidos de Desconto */}
+                {valorSubtotalCarrinho > 0 && (
+                  <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', flexShrink: 0 }}>
+                    <button type="button" onClick={() => setDescontoVenda(0)} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #4B5563', background: '#1F2937', color: '#D1D5DB', cursor: 'pointer', fontWeight: '700' }}>0%</button>
+                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.05).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-5%</button>
+                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.10).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-10%</button>
+                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.15).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-15%</button>
+                    <button type="button" onClick={() => setDescontoVenda((valorSubtotalCarrinho * 0.20).toFixed(2))} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #F59E0B', background: 'rgba(245,158,11,0.15)', color: '#FBBF24', cursor: 'pointer', fontWeight: '700' }}>-20%</button>
+                    <button type="button" onClick={() => setDescontoVenda(50)} style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem', borderRadius: '4px', border: '1px solid #10B981', background: 'rgba(16,185,129,0.15)', color: '#34D399', cursor: 'pointer', fontWeight: '700' }}>- R$50</button>
+                  </div>
+                )}
+
+                {/* Troco se Dinheiro */}
+                {formaPagamento === 'Dinheiro' && (
+                  <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', flexShrink: 0 }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#34D399' }}>Valor Recebido (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="input-field"
+                        style={{ height: '30px', fontSize: '0.78rem' }}
+                        value={valorPagoCliente}
+                        onChange={e => setValorPagoCliente(e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Troco a Devolver</label>
+                      <div style={{ fontSize: '0.95rem', fontWeight: '800', color: valorTrocoDevolver > 0 ? '#F59E0B' : '#FFFFFF', paddingTop: '0.2rem' }}>
+                        R$ {valorTrocoDevolver.toFixed(2)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Resumo Financeiro da Venda */}
-              <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SUBTOTAL: R$ {valorSubtotalCarrinho.toFixed(2)} | DESCONTO: R$ {valorDescontoNum.toFixed(2)}</div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#F59E0B' }}>VALOR TOTAL FINAL DA VENDA</div>
+                {/* Resumo Final & Totalizadores */}
+                <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      Subtotal: R$ {valorSubtotalCarrinho.toFixed(2)} {valorDescontoNum > 0 ? `| Desc: -R$ ${valorDescontoNum.toFixed(2)}` : ''}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase' }}>
+                      TOTAL DA VENDA
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10B981' }}>
+                    R$ {valorFinalCarrinho.toFixed(2)}
+                  </div>
                 </div>
-                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#10B981' }}>
-                  R$ {valorFinalCarrinho.toFixed(2)}
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setModalNovaVenda(false)}>Cancelar</button>
-                <button type="submit" className="btn-gold" style={{ backgroundColor: '#10B981', borderColor: '#059669', color: '#FFF' }}>
-                  <CheckCircle2 size={16} />
-                  <span>Finalizar Venda & Dar Baixa no Estoque</span>
-                </button>
-              </div>
-            </form>
+                {/* Botão de Finalizar */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                  <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setModalNovaVenda(false)}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-gold"
+                    disabled={carrinho.length === 0}
+                    style={{
+                      flex: 2,
+                      backgroundColor: carrinho.length === 0 ? '#374151' : '#10B981',
+                      borderColor: carrinho.length === 0 ? '#4B5563' : '#059669',
+                      color: '#FFF',
+                      justifyContent: 'center',
+                      fontWeight: '800',
+                      padding: '0.6rem',
+                      boxShadow: carrinho.length > 0 ? '0 4px 14px rgba(16,185,129,0.3)' : 'none',
+                      cursor: carrinho.length === 0 ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>Finalizar Venda & Recibo</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
